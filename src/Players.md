@@ -30,69 +30,84 @@ statsPeriods.forEach(periodInfo => {
   statsData[periodInfo.period] = periodInfo.data;
 });
 
-// Calculate period-by-period stats (current period - previous period)
+// Get all available periods for the selector
+const availablePeriods = Object.keys(statsData).map(Number).sort((a, b) => a - b);
+const periodOptions = ["Overall", ...availablePeriods.map(p => `Period ${p}`)];
+
+// Get unique teams for the selector
+const teams = teamInfo.map(team => team.ABBR).sort();
+```
+
+```js
+const teamSelector = Inputs.select(teams, {label: "Select Team:", value: teams[0]});
+const selectedTeam = Generators.input(teamSelector);
+
+const periodSelector = Inputs.select(periodOptions, {label: "Select Period:", value: "Overall"});
+const selectedPeriod = Generators.input(periodSelector);
+```
+
+${teamSelector}
+${periodSelector}
+
+```js
+// Calculate stats for the selected period
 const playerStats = {};
 
-// Get all available periods
-const availablePeriods = Object.keys(statsData).map(Number).sort((a, b) => a - b);
-
-availablePeriods.forEach(period => {
-  const currentPeriodData = statsData[period];
-  const previousPeriodData = period > 1 ? statsData[period - 1] : null;
+if (selectedPeriod === "Overall") {
+  // Show cumulative stats from the latest period (no subtraction)
+  const latestPeriod = Math.max(...availablePeriods);
+  const latestPeriodData = statsData[latestPeriod];
   
-  // Create a map of previous period stats for quick lookup
-  const previousStats = {};
-  if (previousPeriodData) {
-    previousPeriodData.forEach(stat => {
-      previousStats[stat.hockeyRef] = stat;
-    });
-  }
-  
-  // Process current period data
-  currentPeriodData.forEach(currentStat => {
-    const id = currentStat.hockeyRef;
-    const prevStat = previousStats[id];
-    
-    // Calculate period stats (current - previous, or current if no previous)
-    const periodStats = {
+  latestPeriodData.forEach(stat => {
+    const id = stat.hockeyRef;
+    playerStats[id] = {
       hockeyRef: id,
-      team: currentStat.team,
-      pos: currentStat.pos,
-      goals: (currentStat["stats/goals"] || 0) - (prevStat ? (prevStat["stats/goals"] || 0) : 0),
-      assists: (currentStat["stats/assists"] || 0) - (prevStat ? (prevStat["stats/assists"] || 0) : 0),
-      toughness: (currentStat["stats/toughness"] || 0) - (prevStat ? (prevStat["stats/toughness"] || 0) : 0),
-      dstat: (currentStat["stats/dstat"] || 0) - (prevStat ? (prevStat["stats/dstat"] || 0) : 0),
-      gstat: (currentStat["stats/gstat"] || 0) - (prevStat ? (prevStat["stats/gstat"] || 0) : 0),
-      games_played: (currentStat["stats/gp"] || 0) - (prevStat ? (prevStat["stats/gp"] || 0) : 0)
+      team: stat.team,
+      pos: stat.pos,
+      goals: stat["stats/goals"] || 0,
+      assists: stat["stats/assists"] || 0,
+      toughness: stat["stats/toughness"] || 0,
+      dstat: stat["stats/dstat"] || 0,
+      gstat: stat["stats/gstat"] || 0,
+      games_played: stat["stats/gp"] || 0
     };
+  });
+} else {
+  // Show period-specific stats (current - previous)
+  const selectedPeriodNum = parseInt(selectedPeriod.replace('Period ', ''));
+  
+  if (availablePeriods.includes(selectedPeriodNum)) {
+    const currentPeriodData = statsData[selectedPeriodNum];
+    const previousPeriodData = selectedPeriodNum > 1 ? statsData[selectedPeriodNum - 1] : null;
     
-    // Add to or update player's total stats
-    if (!playerStats[id]) {
-      playerStats[id] = {
-        hockeyRef: id,
-        team: periodStats.team,
-        pos: periodStats.pos,
-        goals: 0,
-        assists: 0,
-        toughness: 0,
-        dstat: 0,
-        gstat: 0,
-        games_played: 0
-      };
+    // Create a map of previous period stats for quick lookup
+    const previousStats = {};
+    if (previousPeriodData) {
+      previousPeriodData.forEach(stat => {
+        previousStats[stat.hockeyRef] = stat;
+      });
     }
     
-    // Add this period's stats to the total
-    playerStats[id].goals += periodStats.goals;
-    playerStats[id].assists += periodStats.assists;
-    playerStats[id].toughness += periodStats.toughness;
-    playerStats[id].dstat += periodStats.dstat;
-    playerStats[id].gstat += periodStats.gstat;
-    playerStats[id].games_played += periodStats.games_played;
-    
-    // Update team info in case player was traded
-    playerStats[id].team = periodStats.team;
-  });
-});
+    // Process current period data to get the difference
+    currentPeriodData.forEach(currentStat => {
+      const id = currentStat.hockeyRef;
+      const prevStat = previousStats[id];
+      
+      // Calculate period stats (current - previous, or current if no previous)
+      playerStats[id] = {
+        hockeyRef: id,
+        team: currentStat.team,
+        pos: currentStat.pos,
+        goals: (currentStat["stats/goals"] || 0) - (prevStat ? (prevStat["stats/goals"] || 0) : 0),
+        assists: (currentStat["stats/assists"] || 0) - (prevStat ? (prevStat["stats/assists"] || 0) : 0),
+        toughness: (currentStat["stats/toughness"] || 0) - (prevStat ? (prevStat["stats/toughness"] || 0) : 0),
+        dstat: (currentStat["stats/dstat"] || 0) - (prevStat ? (prevStat["stats/dstat"] || 0) : 0),
+        gstat: (currentStat["stats/gstat"] || 0) - (prevStat ? (prevStat["stats/gstat"] || 0) : 0),
+        games_played: (currentStat["stats/gp"] || 0) - (prevStat ? (prevStat["stats/gp"] || 0) : 0)
+      };
+    });
+  }
+}
 
 // Convert back to array
 const combinedStats = Object.values(playerStats);
@@ -175,19 +190,7 @@ const playerStatsData = playerInfo.map(player => {
   };
 }).filter(player => player.Team !== "N/A");
 
-// Get unique teams for the selector
-const teams = teamInfo.map(team => team.ABBR).sort();
-```
-
-```js
-const teamSelector = Inputs.select(teams, {label: "Select Team:", value: teams[0]});
-const selectedTeam = Generators.input(teamSelector);
-```
-
-${teamSelector}
-
-```js
-// Filter data based on selected team
+// Filter data based on selected team and sort
 const filteredContractData = playerContractData.filter(player => player.Team === selectedTeam);
 const filteredRosterData = playerRosterData
   .filter(player => player.Team === selectedTeam)
