@@ -8,26 +8,40 @@ toc: false
 ```js
 // Load the data files
 const contracts = await FileAttachment("data/contracts.csv").csv({typed: true});
-const rosters = await FileAttachment("data/rosters.csv").csv({typed: true});
 const playerInfo = await FileAttachment("data/player_info.csv").csv({typed: true});
 const teamInfo = await FileAttachment("data/team_info.csv").csv({typed: true});
 
 // Load available stats periods (add more as files become available)
 const statsData = {};
+const rosterData = {};
 
 // Only include FileAttachment calls for files that actually exist
 const statsPeriods = [
   { period: 1, data: await FileAttachment("data/stats_p01.csv").csv({typed: true}) },
-  { period: 2, data: await FileAttachment("data/stats_p02.csv").csv({typed: true}) }
+  { period: 2, data: await FileAttachment("data/stats_p02.csv").csv({typed: true}) },
+  { period: 3, data: await FileAttachment("data/stats_p03.csv").csv({typed: true}) },
   // Add more periods here as files become available:
-  // { period: 3, data: await FileAttachment("data/stats_p03.csv").csv({typed: true}) },
   // { period: 4, data: await FileAttachment("data/stats_p04.csv").csv({typed: true}) },
   // etc...
 ];
 
-// Populate statsData
+// Load period-specific roster files (add more as files become available)
+const rosterPeriods = [
+  { period: 1, data: await FileAttachment("data/rosters_p01.csv").csv({typed: true}) },
+  { period: 2, data: await FileAttachment("data/rosters_p02.csv").csv({typed: true}) },
+  { period: 3, data: await FileAttachment("data/rosters_p03.csv").csv({typed: true}) },
+  // Add more periods here as files become available:
+  // { period: 4, data: await FileAttachment("data/rosters_p04.csv").csv({typed: true}) },
+  // etc...
+];
+
+// Populate statsData and rosterData
 statsPeriods.forEach(periodInfo => {
   statsData[periodInfo.period] = periodInfo.data;
+});
+
+rosterPeriods.forEach(periodInfo => {
+  rosterData[periodInfo.period] = periodInfo.data;
 });
 
 // Get all available periods for the selector
@@ -36,9 +50,7 @@ const periodOptions = ["Overall", ...availablePeriods.map(p => `Period ${p}`)];
 
 // Get unique teams for the selector
 const teams = teamInfo.map(team => team.ABBR).sort();
-```
 
-```js
 const teamSelector = Inputs.select(teams, {label: "Select Team:", value: teams[0]});
 const selectedTeam = Generators.input(teamSelector);
 
@@ -50,18 +62,15 @@ ${teamSelector}
 ${periodSelector}
 
 ```js
-// Calculate stats for the selected period
-const playerStats = {};
-
-if (selectedPeriod === "Overall") {
-  // Show cumulative stats from the latest period (no subtraction)
-  const latestPeriod = Math.max(...availablePeriods);
-  const latestPeriodData = statsData[latestPeriod];
-  
-  latestPeriodData.forEach(stat => {
-    const id = stat.hockeyRef;
-    playerStats[id] = {
-      hockeyRef: id,
+// Function to get stats for the selected period
+function getStatsForPeriod(selectedPeriod) {
+  if (selectedPeriod === "Overall") {
+    // Show cumulative stats from the latest period (no subtraction)
+    const latestPeriod = Math.max(...availablePeriods);
+    const latestPeriodData = statsData[latestPeriod];
+    
+    return latestPeriodData.map(stat => ({
+      hockeyRef: stat.hockeyRef,
       team: stat.team,
       pos: stat.pos,
       goals: stat["stats/goals"] || 0,
@@ -69,48 +78,39 @@ if (selectedPeriod === "Overall") {
       toughness: stat["stats/toughness"] || 0,
       dstat: stat["stats/dstat"] || 0,
       gstat: stat["stats/gstat"] || 0,
-      games_played: stat["stats/gp"] || 0
-    };
-  });
-} else {
-  // Show period-specific stats (current - previous)
-  const selectedPeriodNum = parseInt(selectedPeriod.replace('Period ', ''));
-  
-  if (availablePeriods.includes(selectedPeriodNum)) {
-    const currentPeriodData = statsData[selectedPeriodNum];
-    const previousPeriodData = selectedPeriodNum > 1 ? statsData[selectedPeriodNum - 1] : null;
+      games_played: stat["stats/gp"] || stat["stats/games_played"] || 0
+    }));
+  } else {
+    // For specific periods, calculate differences
+    const selectedPeriodNum = parseInt(selectedPeriod.replace('Period ', ''));
     
-    // Create a map of previous period stats for quick lookup
-    const previousStats = {};
-    if (previousPeriodData) {
-      previousPeriodData.forEach(stat => {
-        previousStats[stat.hockeyRef] = stat;
+    if (availablePeriods.includes(selectedPeriodNum)) {
+      const currentPeriodData = statsData[selectedPeriodNum];
+      const previousPeriodData = selectedPeriodNum > 1 ? statsData[selectedPeriodNum - 1] : null;
+      
+      return currentPeriodData.map(stat => {
+        const prevStat = previousPeriodData?.find(p => p.hockeyRef === stat.hockeyRef);
+        
+        return {
+          hockeyRef: stat.hockeyRef,
+          team: stat.team,
+          pos: stat.pos,
+          goals: (stat["stats/goals"] || 0) - (prevStat?.["stats/goals"] || 0),
+          assists: (stat["stats/assists"] || 0) - (prevStat?.["stats/assists"] || 0),
+          toughness: (stat["stats/toughness"] || 0) - (prevStat?.["stats/toughness"] || 0),
+          dstat: (stat["stats/dstat"] || 0) - (prevStat?.["stats/dstat"] || 0),
+          gstat: (stat["stats/gstat"] || 0) - (prevStat?.["stats/gstat"] || 0),
+          games_played: (stat["stats/gp"] || stat["stats/games_played"] || 0) - (prevStat?.["stats/gp"] || prevStat?.["stats/games_played"] || 0)
+        };
       });
     }
-    
-    // Process current period data to get the difference
-    currentPeriodData.forEach(currentStat => {
-      const id = currentStat.hockeyRef;
-      const prevStat = previousStats[id];
-      
-      // Calculate period stats (current - previous, or current if no previous)
-      playerStats[id] = {
-        hockeyRef: id,
-        team: currentStat.team,
-        pos: currentStat.pos,
-        goals: (currentStat["stats/goals"] || 0) - (prevStat ? (prevStat["stats/goals"] || 0) : 0),
-        assists: (currentStat["stats/assists"] || 0) - (prevStat ? (prevStat["stats/assists"] || 0) : 0),
-        toughness: (currentStat["stats/toughness"] || 0) - (prevStat ? (prevStat["stats/toughness"] || 0) : 0),
-        dstat: (currentStat["stats/dstat"] || 0) - (prevStat ? (prevStat["stats/dstat"] || 0) : 0),
-        gstat: (currentStat["stats/gstat"] || 0) - (prevStat ? (prevStat["stats/gstat"] || 0) : 0),
-        games_played: (currentStat["stats/gp"] || 0) - (prevStat ? (prevStat["stats/gp"] || 0) : 0)
-      };
-    });
   }
+  
+  return [];
 }
 
-// Convert back to array
-const combinedStats = Object.values(playerStats);
+// Calculate stats for the selected period using the function
+const combinedStats = getStatsForPeriod(selectedPeriod);
 
 // Function to map positions to G, D, or F
 function mapPosition(pos) {
@@ -138,10 +138,42 @@ function calculateAge(birthDateStr) {
   return age;
 }
 
-// Create player contract data
-const playerContractData = playerInfo.map(player => {
-  const roster = rosters.find(r => r.ID === player.ID);
-  const contract = contracts.find(c => c.ID === player.ID);
+// Function to get roster data for a specific period
+function getRosterData(selectedPeriod) {
+  if (selectedPeriod === "Overall") {
+    // For Overall, combine all roster periods
+    const allRosters = [];
+    Object.values(rosterData).forEach(periodRoster => {
+      allRosters.push(...periodRoster);
+    });
+    // Remove duplicates based on playerId and teamName
+    const uniqueRosters = [];
+    const seen = new Set();
+    allRosters.forEach(roster => {
+      const key = `${roster.ID}-${roster.ABBR}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueRosters.push({
+          ...roster,
+          RESERVE: "" // Always set reserve to false for Overall period
+        });
+      }
+    });
+    return uniqueRosters;
+  } else {
+    // For specific periods, extract the period number
+    const selectedPeriodNum = parseInt(selectedPeriod.replace('Period ', ''));
+    return rosterData[selectedPeriodNum] || [];
+  }
+}
+
+// Function to create player contract data for a specific period
+function createPlayerContractData(selectedPeriod) {
+  const rostersForPeriod = getRosterData(selectedPeriod);
+  
+  return playerInfo.map(player => {
+    const roster = rostersForPeriod.find(r => r.ID === player.ID);
+    const contract = contracts.find(c => c.ID === player.ID);
   
   return {
     ID: player.ID,
@@ -153,11 +185,15 @@ const playerContractData = playerInfo.map(player => {
     Contract: contract ? contract.Contract : "N/A",
     BirthDate: player.BirthDate
   };
-}).filter(player => player.Team !== "N/A");
+  }).filter(player => player.Team !== "N/A");
+}
 
-// Create player roster data  
-const playerRosterData = playerInfo.map(player => {
-  const roster = rosters.find(r => r.ID === player.ID);
+// Function to create player roster data for a specific period
+function createPlayerRosterData(selectedPeriod) {
+  const rostersForPeriod = getRosterData(selectedPeriod);
+  
+  return playerInfo.map(player => {
+    const roster = rostersForPeriod.find(r => r.ID === player.ID);
   
   return {
     ID: player.ID,
@@ -167,12 +203,16 @@ const playerRosterData = playerInfo.map(player => {
     Reserve: roster ? roster.RESERVE : "N/A",
     NHLTeam: player["NHL Team"]
   };
-}).filter(player => player.Team !== "N/A");
+  }).filter(player => player.Team !== "N/A");
+}
 
-// Create player stats data
-const playerStatsData = playerInfo.map(player => {
-  const roster = rosters.find(r => r.ID === player.ID);
-  const stats = combinedStats.find(s => s.hockeyRef === player.ID);
+// Function to create player stats data for a specific period
+function createPlayerStatsData(selectedPeriod) {
+  const rostersForPeriod = getRosterData(selectedPeriod);
+  
+  return playerInfo.map(player => {
+    const roster = rostersForPeriod.find(r => r.ID === player.ID);
+    const stats = getStatsForPeriod(selectedPeriod).find(s => s.hockeyRef === player.ID);
   
   return {
     ID: player.ID,
@@ -188,7 +228,13 @@ const playerStatsData = playerInfo.map(player => {
     GamesPlayed: stats ? stats.games_played : 0,
     NHLTeam: player["NHL Team"]
   };
-}).filter(player => player.Team !== "N/A");
+  }).filter(player => player.Team !== "N/A");
+}
+
+// Create initial data for default period (Overall)
+const playerContractData = createPlayerContractData(selectedPeriod);
+const playerRosterData = createPlayerRosterData(selectedPeriod);
+const playerStatsData = createPlayerStatsData(selectedPeriod);
 
 // Filter data based on selected team and sort
 const filteredContractData = playerContractData.filter(player => player.Team === selectedTeam);
@@ -323,7 +369,120 @@ const filteredStatsData = playerStatsData
   </div>
 </div>
 
+```js
+// Make the data globally accessible for JavaScript
+window.teamsData = teams;
+window.contractData = playerContractData;
+window.rosterData = playerRosterData;
+window.statsData = playerStatsData;
+
+// Pass raw data for period-based processing
+window.allPlayerInfo = playerInfo;
+window.allContracts = contracts;
+window.rosterPeriodData = rosterData;
+window.statsPeriodData = statsData;
+
+// Pass utility functions
+window.mapPosition = mapPosition;
+window.calculateAge = calculateAge;
+window.getStatsForPeriod = getStatsForPeriod;
+
+// Pass current period selection to JavaScript
+window.currentObservablePeriod = selectedPeriod;
+```
+
 <script>
+// Make period-specific data creation functions globally available
+window.getRosterData = function(selectedPeriod) {
+  if (selectedPeriod === "Overall") {
+    // For Overall, combine all roster periods
+    const allRosters = [];
+    Object.values(window.rosterPeriodData).forEach(periodRoster => {
+      allRosters.push(...periodRoster);
+    });
+    // Remove duplicates based on playerId and teamName
+    const uniqueRosters = [];
+    const seen = new Set();
+    allRosters.forEach(roster => {
+      const key = `${roster.ID}-${roster.ABBR}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueRosters.push({
+          ...roster,
+          RESERVE: "" // Always set reserve to false for Overall period
+        });
+      }
+    });
+    return uniqueRosters;
+  } else {
+    // For specific periods, extract the period number
+    const selectedPeriodNum = parseInt(selectedPeriod.replace('Period ', ''));
+    return window.rosterPeriodData[selectedPeriodNum] || [];
+  }
+};
+
+window.createPlayerContractData = function(selectedPeriod) {
+  const rostersForPeriod = window.getRosterData(selectedPeriod);
+  
+  return window.allPlayerInfo.map(player => {
+    const roster = rostersForPeriod.find(r => r.ID === player.ID);
+    const contract = window.allContracts.find(c => c.ID === player.ID);
+  
+    return {
+      ID: player.ID,
+      Name: player.Name,
+      Team: roster ? roster.ABBR : "N/A",
+      Position: window.mapPosition(player.Pos),
+      Age: window.calculateAge(player.BirthDate),
+      Salary: contract ? contract.Salary : 0,
+      Contract: contract ? contract.Contract : "N/A",
+      BirthDate: player.BirthDate
+    };
+  }).filter(player => player.Team !== "N/A");
+};
+
+window.createPlayerRosterData = function(selectedPeriod) {
+  const rostersForPeriod = window.getRosterData(selectedPeriod);
+  
+  return window.allPlayerInfo.map(player => {
+    const roster = rostersForPeriod.find(r => r.ID === player.ID);
+  
+    return {
+      ID: player.ID,
+      Name: player.Name,
+      Team: roster ? roster.ABBR : "N/A",
+      Position: window.mapPosition(player.Pos),
+      Reserve: roster ? roster.RESERVE : "N/A",
+      NHLTeam: player["NHL Team"]
+    };
+  }).filter(player => player.Team !== "N/A");
+};
+
+window.createPlayerStatsData = function(selectedPeriod) {
+  const rostersForPeriod = window.getRosterData(selectedPeriod);
+  const statsForPeriod = window.getStatsForPeriod(selectedPeriod);
+  
+  return window.allPlayerInfo.map(player => {
+    const roster = rostersForPeriod.find(r => r.ID === player.ID);
+    const stats = statsForPeriod.find(s => s.hockeyRef === player.ID);
+  
+    return {
+      ID: player.ID,
+      Name: player.Name,
+      Team: roster ? roster.ABBR : "N/A",
+      Position: window.mapPosition(player.Pos),
+      Reserve: roster ? roster.RESERVE : "N/A",
+      Goals: stats ? stats.goals : 0,
+      Assists: stats ? stats.assists : 0,
+      Toughness: stats ? stats.toughness : 0,
+      DStat: stats ? stats.dstat : 0,
+      GStat: stats ? stats.gstat : 0,
+      GamesPlayed: stats ? stats.games_played : 0,
+      NHLTeam: player["NHL Team"]
+    };
+  }).filter(player => player.Team !== "N/A");
+};
+
 // Make variables global
 window.playerData = {
   teams: [],
@@ -340,10 +499,33 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.teamsData && window.contractData) {
       window.playerData.teams = window.teamsData;
       window.playerData.currentTeam = window.teamsData[0];
+      
+      // Store raw data for period-based processing
+      window.allPlayerInfo = window.allPlayerInfo || [];
+      window.allContracts = window.allContracts || [];
+      window.rosterPeriodData = window.rosterPeriodData || {};
+      window.statsPeriodData = window.statsPeriodData || {};
+      
+      // Initial data load with current Observable data
       window.playerData.playerContractData = window.contractData;
       window.playerData.playerRosterData = window.rosterData;
       window.playerData.playerStatsData = window.statsData;
+      
       initializeTables();
+      
+      // Set up periodic check for period changes
+      window.currentSelectedPeriod = "Overall";
+      setInterval(function() {
+        // Check if period has changed by looking at the Observable data
+        if (window.currentObservablePeriod && window.currentObservablePeriod !== window.currentSelectedPeriod) {
+          window.currentSelectedPeriod = window.currentObservablePeriod;
+          // Update data for new period
+          window.playerData.playerContractData = window.createPlayerContractData(window.currentSelectedPeriod);
+          window.playerData.playerRosterData = window.createPlayerRosterData(window.currentSelectedPeriod);
+          window.playerData.playerStatsData = window.createPlayerStatsData(window.currentSelectedPeriod);
+          updateTables();
+        }
+      }, 100);
     } else {
       // Retry if data not loaded yet
       setTimeout(arguments.callee, 500);
