@@ -69,17 +69,37 @@ function getStatsForPeriod(selectedPeriod) {
     const latestPeriod = Math.max(...availablePeriods);
     const latestPeriodData = statsData[latestPeriod];
     
-    return latestPeriodData.map(stat => ({
-      hockeyRef: stat.hockeyRef,
-      team: stat.team,
-      pos: stat.pos,
-      goals: stat["stats/goals"] || 0,
-      assists: stat["stats/assists"] || 0,
-      toughness: stat["stats/toughness"] || 0,
-      dstat: stat["stats/dstat"] || 0,
-      gstat: stat["stats/gstat"] || 0,
-      games_played: stat["stats/gp"] || stat["stats/games_played"] || 0
-    }));
+    return latestPeriodData.map(stat => {
+      // Calculate dstat based on position
+      let dstat = 0;
+      if (stat.pos === "G") {
+        dstat = 0;
+      } else if (stat.pos === "D") {
+        dstat = (stat["stats/toi"] || 0) / 20 + (stat["stats/blocks"] || 0) + (stat["stats/take"] || 0) - (stat["stats/give"] || 0);
+      } else { // Forward positions (F, C, LW, RW, etc.)
+        dstat = (stat["stats/toi"] || 0) / 30 + (stat["stats/blocks"] || 0) + (stat["stats/take"] || 0) - (stat["stats/give"] || 0);
+      }
+      
+      // Calculate gstat based on position
+      let gstat = 0;
+      if (stat.pos === "G") {
+        gstat = 2 * (stat["stats/wins"] || 0) + (stat["stats/ties"] || 0) + 2 * (stat["stats/so"] || 0) + 0.15 * (stat["stats/sa"] || 0) - (stat["stats/ga"] || 0);
+      } else {
+        gstat = 0;
+      }
+      
+      return {
+        hockeyRef: stat.hockeyRef,
+        team: stat.team,
+        pos: stat.pos,
+        goals: stat["stats/goals"] || 0,
+        assists: stat["stats/assists"] || 0,
+        toughness: (stat.pos === "G") ? 0 : ((stat["stats/pim"] || 0) + (stat["stats/hits"] || 0)),
+        dstat: dstat,
+        gstat: gstat,
+        games_played: stat["stats/gp"] || 0
+      };
+    });
   } else {
     // For specific periods, calculate differences
     const selectedPeriodNum = parseInt(selectedPeriod.replace('Period ', ''));
@@ -91,16 +111,56 @@ function getStatsForPeriod(selectedPeriod) {
       return currentPeriodData.map(stat => {
         const prevStat = previousPeriodData?.find(p => p.hockeyRef === stat.hockeyRef);
         
+        // Calculate current period dstat
+        let currentDstat = 0;
+        if (stat.pos === "G") {
+          currentDstat = 0;
+        } else if (stat.pos === "D") {
+          currentDstat = (stat["stats/toi"] || 0) / 20 + (stat["stats/blocks"] || 0) + (stat["stats/take"] || 0) - (stat["stats/give"] || 0);
+        } else { // Forward positions
+          currentDstat = (stat["stats/toi"] || 0) / 30 + (stat["stats/blocks"] || 0) + (stat["stats/take"] || 0) - (stat["stats/give"] || 0);
+        }
+        
+        // Calculate previous period dstat
+        let prevDstat = 0;
+        if (prevStat) {
+          if (prevStat.pos === "G") {
+            prevDstat = 0;
+          } else if (prevStat.pos === "D") {
+            prevDstat = (prevStat["stats/toi"] || 0) / 20 + (prevStat["stats/blocks"] || 0) + (prevStat["stats/take"] || 0) - (prevStat["stats/give"] || 0);
+          } else { // Forward positions
+            prevDstat = (prevStat["stats/toi"] || 0) / 30 + (prevStat["stats/blocks"] || 0) + (prevStat["stats/take"] || 0) - (prevStat["stats/give"] || 0);
+          }
+        }
+        
+        // Calculate current period gstat
+        let currentGstat = 0;
+        if (stat.pos === "G") {
+          currentGstat = 2 * (stat["stats/wins"] || 0) + (stat["stats/ties"] || 0) + 2 * (stat["stats/so"] || 0) + 0.15 * (stat["stats/sa"] || 0) - (stat["stats/ga"] || 0);
+        } else {
+          currentGstat = 0;
+        }
+        
+        // Calculate previous period gstat
+        let prevGstat = 0;
+        if (prevStat) {
+          if (prevStat.pos === "G") {
+            prevGstat = 2 * (prevStat["stats/wins"] || 0) + (prevStat["stats/ties"] || 0) + 2 * (prevStat["stats/so"] || 0) + 0.15 * (prevStat["stats/sa"] || 0) - (prevStat["stats/ga"] || 0);
+          } else {
+            prevGstat = 0;
+          }
+        }
+        
         return {
           hockeyRef: stat.hockeyRef,
           team: stat.team,
           pos: stat.pos,
           goals: (stat["stats/goals"] || 0) - (prevStat?.["stats/goals"] || 0),
           assists: (stat["stats/assists"] || 0) - (prevStat?.["stats/assists"] || 0),
-          toughness: (stat["stats/toughness"] || 0) - (prevStat?.["stats/toughness"] || 0),
-          dstat: (stat["stats/dstat"] || 0) - (prevStat?.["stats/dstat"] || 0),
-          gstat: (stat["stats/gstat"] || 0) - (prevStat?.["stats/gstat"] || 0),
-          games_played: (stat["stats/gp"] || stat["stats/games_played"] || 0) - (prevStat?.["stats/gp"] || prevStat?.["stats/games_played"] || 0)
+          toughness: (stat.pos === "G") ? 0 : (((stat["stats/pim"] || 0) + (stat["stats/hits"] || 0)) - ((prevStat?.["stats/pim"] || 0) + (prevStat?.["stats/hits"] || 0))),
+          dstat: currentDstat - prevDstat,
+          gstat: currentGstat - prevGstat,
+          games_played: (stat["stats/gp"] || 0) - (prevStat?.["stats/gp"] || 0)
         };
       });
     }
@@ -268,6 +328,29 @@ const filteredStatsData = playerStatsData
   });
 ```
 
+```js
+// Calculate totals for active and reserve players
+const activeTotals = filteredStatsData
+  .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
+  .reduce((totals, player) => ({
+    goals: totals.goals + (player.Goals || 0),
+    assists: totals.assists + (player.Assists || 0),
+    toughness: totals.toughness + (player.Toughness || 0),
+    dstat: totals.dstat + (player.DStat || 0),
+    gstat: totals.gstat + (player.GStat || 0)
+  }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
+
+const reserveTotals = filteredStatsData
+  .filter(player => player.Reserve === "R")
+  .reduce((totals, player) => ({
+    goals: totals.goals + (player.Goals || 0),
+    assists: totals.assists + (player.Assists || 0),
+    toughness: totals.toughness + (player.Toughness || 0),
+    dstat: totals.dstat + (player.DStat || 0),
+    gstat: totals.gstat + (player.GStat || 0)
+  }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
+```
+
 <div class="tabs">
   <div class="tab-buttons">
     <button class="tab-button active" onclick="showTab('contract-tab', this)">Player Contracts</button>
@@ -331,6 +414,24 @@ const filteredStatsData = playerStatsData
   
   <div id="stats-tab" class="tab-content">
     <h3>Player Statistics</h3>
+    <div class="stats-totals">
+      <div class="totals-row active-totals">
+        <strong>Active Totals:</strong>
+        <span>Goals: ${activeTotals.goals}</span>
+        <span>Assists: ${activeTotals.assists}</span>
+        <span>Toughness: ${activeTotals.toughness}</span>
+        <span>D-Stat: ${activeTotals.dstat.toFixed(2)}</span>
+        <span>G-Stat: ${activeTotals.gstat.toFixed(2)}</span>
+      </div>
+      <div class="totals-row reserve-totals">
+        <strong>Reserve Totals:</strong>
+        <span>Goals: ${reserveTotals.goals}</span>
+        <span>Assists: ${reserveTotals.assists}</span>
+        <span>Toughness: ${reserveTotals.toughness}</span>
+        <span>D-Stat: ${reserveTotals.dstat.toFixed(2)}</span>
+        <span>G-Stat: ${reserveTotals.gstat.toFixed(2)}</span>
+      </div>
+    </div>
     ${Inputs.table(filteredStatsData, {
       columns: ["Name", "Team", "Position", "Reserve", "Goals", "Assists", "Toughness", "DStat", "GStat", "GamesPlayed", "NHLTeam"],
       header: {
@@ -571,6 +672,27 @@ function updateTables() {
   const filteredRosterData = filterPlayers(window.playerData.playerRosterData);
   const filteredStatsData = filterPlayers(window.playerData.playerStatsData);
   
+  // Calculate totals for active and reserve players
+  const activeTotals = filteredStatsData
+    .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
+    .reduce((totals, player) => ({
+      goals: totals.goals + (player.Goals || 0),
+      assists: totals.assists + (player.Assists || 0),
+      toughness: totals.toughness + (player.Toughness || 0),
+      dstat: totals.dstat + (player.DStat || 0),
+      gstat: totals.gstat + (player.GStat || 0)
+    }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
+
+  const reserveTotals = filteredStatsData
+    .filter(player => player.Reserve === "R")
+    .reduce((totals, player) => ({
+      goals: totals.goals + (player.Goals || 0),
+      assists: totals.assists + (player.Assists || 0),
+      toughness: totals.toughness + (player.Toughness || 0),
+      dstat: totals.dstat + (player.DStat || 0),
+      gstat: totals.gstat + (player.GStat || 0)
+    }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
+  
   console.log('Filtered data lengths:', {
     contract: filteredContractData.length,
     roster: filteredRosterData.length, 
@@ -646,6 +768,29 @@ function updateTables() {
   // Update stats table
   const statsContainer = document.getElementById('stats-table');
   if (statsContainer && typeof Inputs !== 'undefined') {
+    // Update totals display
+    const statsTotalsContainer = statsContainer.parentElement.querySelector('.stats-totals');
+    if (statsTotalsContainer) {
+      statsTotalsContainer.innerHTML = `
+        <div class="totals-row active-totals">
+          <strong>Active Totals:</strong>
+          <span>Goals: ${activeTotals.goals}</span>
+          <span>Assists: ${activeTotals.assists}</span>
+          <span>Toughness: ${activeTotals.toughness}</span>
+          <span>D-Stat: ${activeTotals.dstat.toFixed(2)}</span>
+          <span>G-Stat: ${activeTotals.gstat.toFixed(2)}</span>
+        </div>
+        <div class="totals-row reserve-totals">
+          <strong>Reserve Totals:</strong>
+          <span>Goals: ${reserveTotals.goals}</span>
+          <span>Assists: ${reserveTotals.assists}</span>
+          <span>Toughness: ${reserveTotals.toughness}</span>
+          <span>D-Stat: ${reserveTotals.dstat.toFixed(2)}</span>
+          <span>G-Stat: ${reserveTotals.gstat.toFixed(2)}</span>
+        </div>
+      `;
+    }
+    
     statsContainer.innerHTML = filteredStatsData.length > 0 ? '' : '<p>No players found for this team.</p>';
     if (filteredStatsData.length > 0) {
       try {
@@ -784,5 +929,45 @@ window.showTab = function(tabId, buttonElement) {
   color: #333;
   border-bottom: 1px solid #e0e0e0;
   padding-bottom: 8px;
+}
+
+.stats-totals {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.totals-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px 0;
+}
+
+.totals-row:last-child {
+  margin-bottom: 0;
+}
+
+.active-totals {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 12px;
+}
+
+.totals-row strong {
+  min-width: 120px;
+  color: #333;
+}
+
+.totals-row span {
+  font-weight: 500;
+  color: #555;
+  background-color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 14px;
 }
 </style>
