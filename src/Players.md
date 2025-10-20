@@ -12,43 +12,22 @@ const rosters = await FileAttachment("data/rosters.csv").csv({typed: true});
 const playerInfo = await FileAttachment("data/player_info.csv").csv({typed: true});
 const teamInfo = await FileAttachment("data/team_info.csv").csv({typed: true});
 
-// Load all available stats periods (up to 25)
+// Load available stats periods (add more as files become available)
 const statsData = {};
 
-// Pre-define all possible FileAttachments
+// Only include FileAttachment calls for files that actually exist
 const statsPeriods = [
-  { period: 1, data: await FileAttachment("data/stats_p01.csv").csv({typed: true}).catch(() => null) },
-  { period: 2, data: await FileAttachment("data/stats_p02.csv").csv({typed: true}).catch(() => null) },
-  { period: 3, data: await FileAttachment("data/stats_p03.csv").csv({typed: true}).catch(() => null) },
-  { period: 4, data: await FileAttachment("data/stats_p04.csv").csv({typed: true}).catch(() => null) },
-  { period: 5, data: await FileAttachment("data/stats_p05.csv").csv({typed: true}).catch(() => null) },
-  { period: 6, data: await FileAttachment("data/stats_p06.csv").csv({typed: true}).catch(() => null) },
-  { period: 7, data: await FileAttachment("data/stats_p07.csv").csv({typed: true}).catch(() => null) },
-  { period: 8, data: await FileAttachment("data/stats_p08.csv").csv({typed: true}).catch(() => null) },
-  { period: 9, data: await FileAttachment("data/stats_p09.csv").csv({typed: true}).catch(() => null) },
-  { period: 10, data: await FileAttachment("data/stats_p10.csv").csv({typed: true}).catch(() => null) },
-  { period: 11, data: await FileAttachment("data/stats_p11.csv").csv({typed: true}).catch(() => null) },
-  { period: 12, data: await FileAttachment("data/stats_p12.csv").csv({typed: true}).catch(() => null) },
-  { period: 13, data: await FileAttachment("data/stats_p13.csv").csv({typed: true}).catch(() => null) },
-  { period: 14, data: await FileAttachment("data/stats_p14.csv").csv({typed: true}).catch(() => null) },
-  { period: 15, data: await FileAttachment("data/stats_p15.csv").csv({typed: true}).catch(() => null) },
-  { period: 16, data: await FileAttachment("data/stats_p16.csv").csv({typed: true}).catch(() => null) },
-  { period: 17, data: await FileAttachment("data/stats_p17.csv").csv({typed: true}).catch(() => null) },
-  { period: 18, data: await FileAttachment("data/stats_p18.csv").csv({typed: true}).catch(() => null) },
-  { period: 19, data: await FileAttachment("data/stats_p19.csv").csv({typed: true}).catch(() => null) },
-  { period: 20, data: await FileAttachment("data/stats_p20.csv").csv({typed: true}).catch(() => null) },
-  { period: 21, data: await FileAttachment("data/stats_p21.csv").csv({typed: true}).catch(() => null) },
-  { period: 22, data: await FileAttachment("data/stats_p22.csv").csv({typed: true}).catch(() => null) },
-  { period: 23, data: await FileAttachment("data/stats_p23.csv").csv({typed: true}).catch(() => null) },
-  { period: 24, data: await FileAttachment("data/stats_p24.csv").csv({typed: true}).catch(() => null) },
-  { period: 25, data: await FileAttachment("data/stats_p25.csv").csv({typed: true}).catch(() => null) }
+  { period: 1, data: await FileAttachment("data/stats_p01.csv").csv({typed: true}) },
+  { period: 2, data: await FileAttachment("data/stats_p02.csv").csv({typed: true}) }
+  // Add more periods here as files become available:
+  // { period: 3, data: await FileAttachment("data/stats_p03.csv").csv({typed: true}) },
+  // { period: 4, data: await FileAttachment("data/stats_p04.csv").csv({typed: true}) },
+  // etc...
 ];
 
-// Filter out null results and populate statsData
+// Populate statsData
 statsPeriods.forEach(periodInfo => {
-  if (periodInfo.data) {
-    statsData[periodInfo.period] = periodInfo.data;
-  }
+  statsData[periodInfo.period] = periodInfo.data;
 });
 
 // Calculate period-by-period stats (current period - previous period)
