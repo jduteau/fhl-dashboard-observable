@@ -71,9 +71,9 @@ function getStatsForPeriod(selectedPeriod) {
     
     return latestPeriodData.map(stat => {
       // Calculate dstat based on position
-      let dstat = 0;
+      let dstat = null;
       if (stat.pos === "G") {
-        dstat = 0;
+        dstat = null;
       } else if (stat.pos === "D") {
         dstat = (stat["stats/toi"] || 0) / 20 + (stat["stats/blocks"] || 0) + (stat["stats/take"] || 0) - (stat["stats/give"] || 0);
       } else { // Forward positions (F, C, LW, RW, etc.)
@@ -81,20 +81,18 @@ function getStatsForPeriod(selectedPeriod) {
       }
       
       // Calculate gstat based on position
-      let gstat = 0;
+      let gstat = null;
       if (stat.pos === "G") {
         gstat = 2 * (stat["stats/wins"] || 0) + (stat["stats/ties"] || 0) + 2 * (stat["stats/so"] || 0) + 0.15 * (stat["stats/sa"] || 0) - (stat["stats/ga"] || 0);
-      } else {
-        gstat = 0;
       }
       
       return {
         hockeyRef: stat.hockeyRef,
         team: stat.team,
         pos: stat.pos,
-        goals: stat["stats/goals"] || 0,
-        assists: stat["stats/assists"] || 0,
-        toughness: (stat.pos === "G") ? 0 : ((stat["stats/pim"] || 0) + (stat["stats/hits"] || 0)),
+        goals: (stat.pos === "G") ? null : (stat["stats/goals"] || 0),
+        assists: (stat.pos === "G") ? null : (stat["stats/assists"] || 0),
+        toughness: (stat.pos === "G") ? null : ((stat["stats/pim"] || 0) + (stat["stats/hits"] || 0)),
         dstat: dstat,
         gstat: gstat,
         games_played: stat["stats/gp"] || 0
@@ -134,32 +132,41 @@ function getStatsForPeriod(selectedPeriod) {
         }
         
         // Calculate current period gstat
-        let currentGstat = 0;
+        let currentGstat = null;
         if (stat.pos === "G") {
           currentGstat = 2 * (stat["stats/wins"] || 0) + (stat["stats/ties"] || 0) + 2 * (stat["stats/so"] || 0) + 0.15 * (stat["stats/sa"] || 0) - (stat["stats/ga"] || 0);
-        } else {
-          currentGstat = 0;
         }
         
         // Calculate previous period gstat
-        let prevGstat = 0;
-        if (prevStat) {
-          if (prevStat.pos === "G") {
-            prevGstat = 2 * (prevStat["stats/wins"] || 0) + (prevStat["stats/ties"] || 0) + 2 * (prevStat["stats/so"] || 0) + 0.15 * (prevStat["stats/sa"] || 0) - (prevStat["stats/ga"] || 0);
-          } else {
-            prevGstat = 0;
-          }
+        let prevGstat = null;
+        if (prevStat && prevStat.pos === "G") {
+          prevGstat = 2 * (prevStat["stats/wins"] || 0) + (prevStat["stats/ties"] || 0) + 2 * (prevStat["stats/so"] || 0) + 0.15 * (prevStat["stats/sa"] || 0) - (prevStat["stats/ga"] || 0);
+        }
+        
+        // Calculate gstat difference (only for goalies)
+        let gstatDiff = null;
+        if (stat.pos === "G") {
+          gstatDiff = (currentGstat || 0) - (prevGstat || 0);
+        }
+        
+        // Calculate current period toughness
+        let currentToughness = (stat.pos === "G") ? 0 : ((stat["stats/pim"] || 0) + (stat["stats/hits"] || 0));
+        
+        // Calculate previous period toughness
+        let prevToughness = 0;
+        if (prevStat && prevStat.pos !== "G") {
+          prevToughness = (prevStat["stats/pim"] || 0) + (prevStat["stats/hits"] || 0);
         }
         
         return {
           hockeyRef: stat.hockeyRef,
           team: stat.team,
           pos: stat.pos,
-          goals: (stat["stats/goals"] || 0) - (prevStat?.["stats/goals"] || 0),
-          assists: (stat["stats/assists"] || 0) - (prevStat?.["stats/assists"] || 0),
-          toughness: (stat.pos === "G") ? 0 : (((stat["stats/pim"] || 0) + (stat["stats/hits"] || 0)) - ((prevStat?.["stats/pim"] || 0) + (prevStat?.["stats/hits"] || 0))),
-          dstat: currentDstat - prevDstat,
-          gstat: currentGstat - prevGstat,
+          goals: (stat.pos === "G") ? null : ((stat["stats/goals"] || 0) - (prevStat?.["stats/goals"] || 0)),
+          assists: (stat.pos === "G") ? null : ((stat["stats/assists"] || 0) - (prevStat?.["stats/assists"] || 0)),
+          toughness: (stat.pos === "G") ? null : (currentToughness - prevToughness),
+          dstat: (stat.pos === "G") ? null : (currentDstat - prevDstat),
+          gstat: gstatDiff,
           games_played: (stat["stats/gp"] || 0) - (prevStat?.["stats/gp"] || 0)
         };
       });
@@ -280,11 +287,11 @@ function createPlayerStatsData(selectedPeriod) {
     Team: roster ? roster.ABBR : "N/A",
     Position: mapPosition(player.Pos),
     Reserve: roster ? roster.RESERVE : "N/A",
-    Goals: stats ? stats.goals : 0,
-    Assists: stats ? stats.assists : 0,
-    Toughness: stats ? stats.toughness : 0,
-    DStat: stats ? stats.dstat : 0,
-    GStat: stats ? stats.gstat : 0,
+    Goals: stats ? stats.goals : (mapPosition(player.Pos) === "G" ? null : 0),
+    Assists: stats ? stats.assists : (mapPosition(player.Pos) === "G" ? null : 0),
+    Toughness: stats ? stats.toughness : (mapPosition(player.Pos) === "G" ? null : 0),
+    DStat: stats ? stats.dstat : (mapPosition(player.Pos) === "G" ? null : 0),
+    GStat: stats ? (stats.gstat !== null ? stats.gstat : (mapPosition(player.Pos) === "G" ? 0 : null)) : (mapPosition(player.Pos) === "G" ? 0 : null),
     GamesPlayed: stats ? stats.games_played : 0,
     NHLTeam: player["NHL Team"]
   };
@@ -333,21 +340,21 @@ const filteredStatsData = playerStatsData
 const activeTotals = filteredStatsData
   .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
   .reduce((totals, player) => ({
-    goals: totals.goals + (player.Goals || 0),
-    assists: totals.assists + (player.Assists || 0),
-    toughness: totals.toughness + (player.Toughness || 0),
+    goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
+    assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
+    toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
     dstat: totals.dstat + (player.DStat || 0),
-    gstat: totals.gstat + (player.GStat || 0)
+    gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
   }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
 
 const reserveTotals = filteredStatsData
   .filter(player => player.Reserve === "R")
   .reduce((totals, player) => ({
-    goals: totals.goals + (player.Goals || 0),
-    assists: totals.assists + (player.Assists || 0),
-    toughness: totals.toughness + (player.Toughness || 0),
+    goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
+    assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
+    toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
     dstat: totals.dstat + (player.DStat || 0),
-    gstat: totals.gstat + (player.GStat || 0)
+    gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
   }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
 ```
 
@@ -449,8 +456,11 @@ const reserveTotals = filteredStatsData
       },
       format: {
         Reserve: x => x === "R" ? "✓" : "",
-        DStat: x => x ? x.toFixed(2) : "0.00",
-        GStat: x => x ? x.toFixed(2) : "0.00"
+        Goals: x => x !== null ? x : "",
+        Assists: x => x !== null ? x : "",
+        Toughness: x => x !== null ? x : "",
+        DStat: x => x !== null ? x.toFixed(2) : "",
+        GStat: x => x !== null ? x.toFixed(2) : ""
       },
       sort: null,
       rows: Math.min(filteredStatsData.length, 50),
@@ -573,11 +583,11 @@ window.createPlayerStatsData = function(selectedPeriod) {
       Team: roster ? roster.ABBR : "N/A",
       Position: window.mapPosition(player.Pos),
       Reserve: roster ? roster.RESERVE : "N/A",
-      Goals: stats ? stats.goals : 0,
-      Assists: stats ? stats.assists : 0,
-      Toughness: stats ? stats.toughness : 0,
-      DStat: stats ? stats.dstat : 0,
-      GStat: stats ? stats.gstat : 0,
+      Goals: stats ? stats.goals : (window.mapPosition(player.Pos) === "G" ? null : 0),
+      Assists: stats ? stats.assists : (window.mapPosition(player.Pos) === "G" ? null : 0),
+      Toughness: stats ? stats.toughness : (window.mapPosition(player.Pos) === "G" ? null : 0),
+      DStat: stats ? stats.dstat : (window.mapPosition(player.Pos) === "G" ? null : 0),
+      GStat: stats ? (stats.gstat !== null ? stats.gstat : (window.mapPosition(player.Pos) === "G" ? 0 : null)) : (window.mapPosition(player.Pos) === "G" ? 0 : null),
       GamesPlayed: stats ? stats.games_played : 0,
       NHLTeam: player["NHL Team"]
     };
@@ -676,21 +686,21 @@ function updateTables() {
   const activeTotals = filteredStatsData
     .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
     .reduce((totals, player) => ({
-      goals: totals.goals + (player.Goals || 0),
-      assists: totals.assists + (player.Assists || 0),
-      toughness: totals.toughness + (player.Toughness || 0),
+      goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
+      assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
+      toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
       dstat: totals.dstat + (player.DStat || 0),
-      gstat: totals.gstat + (player.GStat || 0)
+      gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
     }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
 
   const reserveTotals = filteredStatsData
     .filter(player => player.Reserve === "R")
     .reduce((totals, player) => ({
-      goals: totals.goals + (player.Goals || 0),
-      assists: totals.assists + (player.Assists || 0),
-      toughness: totals.toughness + (player.Toughness || 0),
+      goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
+      assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
+      toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
       dstat: totals.dstat + (player.DStat || 0),
-      gstat: totals.gstat + (player.GStat || 0)
+      gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
     }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
   
   console.log('Filtered data lengths:', {
