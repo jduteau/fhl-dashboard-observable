@@ -671,6 +671,7 @@ divisionOrder.forEach(division => {
   
   <div id="standings-tab" class="tab-content active">
     <h3>Team Standings</h3>
+    <div>NOTE: The period does not apply to the Standings.  Standings are always the latest.</div>
     ${Inputs.table(teamStandings, {
       columns: [
         "NAME",

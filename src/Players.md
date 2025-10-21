@@ -15,7 +15,7 @@ const teams = Object.keys(teamInfo.teams).sort();
 const teamSelector = Inputs.select(teams, {label: "Select Team:", value: teams[0]});
 const selectedTeam = Generators.input(teamSelector);
 
-const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: "3"});
+const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods.length});
 const selectedPeriod = Generators.input(periodSelector);
 ```
 
