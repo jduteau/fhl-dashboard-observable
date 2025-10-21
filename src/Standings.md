@@ -267,6 +267,8 @@ function calculateGstatRanking(teams) {
   
   const rankings = new Map();
   
+  let lowestRankWithData = 0;
+  
   // Rank teams with gstat data normally (including negative scores)
   if (teamsWithGstatData.length > 0) {
     const sorted = [...teamsWithGstatData].sort((a, b) => b.gstat - a.gstat);
@@ -279,12 +281,18 @@ function calculateGstatRanking(teams) {
         currentRank = teams.length - i;
       }
       rankings.set(sorted[i].ABBR, currentRank);
+      
+      // Track the lowest rank assigned to teams with data
+      if (currentRank < lowestRankWithData || lowestRankWithData === 0) {
+        lowestRankWithData = currentRank;
+      }
     }
   }
   
-  // Assign rank 1 to all teams without any goalie stats
+  // Assign rank one less than the lowest rank for teams with data
+  const rankForNoData = Math.max(1, lowestRankWithData - 1);
   teamsWithoutGstatData.forEach(team => {
-    rankings.set(team.ABBR, 1);
+    rankings.set(team.ABBR, rankForNoData);
   });
   
   return rankings;
@@ -407,6 +415,7 @@ function calculateCumulativeGstatRanking(teams) {
   });
   
   const rankings = new Map();
+  let lowestRankWithData = 0;
   
   if (teamsWithGstatData.length > 0) {
     const sorted = [...teamsWithGstatData].sort((a, b) => b.gstat - a.gstat);
@@ -419,11 +428,18 @@ function calculateCumulativeGstatRanking(teams) {
         currentRank = teams.length - i;
       }
       rankings.set(sorted[i].ABBR, currentRank);
+      
+      // Track the lowest rank assigned to teams with data
+      if (currentRank < lowestRankWithData || lowestRankWithData === 0) {
+        lowestRankWithData = currentRank;
+      }
     }
   }
   
+  // Assign rank one less than the lowest rank for teams with data
+  const rankForNoData = Math.max(1, lowestRankWithData - 1);
   teamsWithoutGstatData.forEach(team => {
-    rankings.set(team.ABBR, 1);
+    rankings.set(team.ABBR, rankForNoData);
   });
   
   return rankings;
