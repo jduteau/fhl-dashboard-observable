@@ -150,8 +150,6 @@ function getStatsForPeriod(currentStats, previousStats) {
   };
 }
 
-
-    
 const teamData = teamInfo.map(team => {
   const cashInfo = teamCash.find(cash => cash.ABBR === team.ABBR);
   team['CASH'] = cashInfo.CASH;
@@ -199,6 +197,22 @@ const teamData = teamInfo.map(team => {
       return a.GamesPlayed - b.GamesPlayed;
     });
     team[periodInfo.period]['TOTAL_SALARY'] = team[periodInfo.period]['ROSTER'].reduce((sum, p) => sum + (p.Salary || 0), 0);
+
+    team[periodInfo.period]['TOTAL_COUNTS'] = team[periodInfo.period]['ROSTER']
+      .reduce((counts, player) => ({
+        G: counts.G + (player.Position === "G" ? 1 : 0),
+        D: counts.D + (player.Position === "D" ? 1 : 0),
+        F: counts.F + (player.Position !== "G" && player.Position !== "D" ? 1 : 0)
+      }), { F: 0, D: 0, G: 0 });
+
+    team[periodInfo.period]['ACTIVE_COUNTS'] = team[periodInfo.period]['ROSTER']
+      .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
+      .reduce((counts, player) => ({
+        G: counts.G + (player.Position === "G" ? 1 : 0),
+        D: counts.D + (player.Position === "D" ? 1 : 0),
+        F: counts.F + (player.Position !== "G" && player.Position !== "D" ? 1 : 0)
+      }), { F: 0, D: 0, G: 0 });
+
     team[periodInfo.period]['ACTIVE_TOTALS'] = team[periodInfo.period]['ROSTER']
       .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
       .reduce((totals, player) => ({
@@ -208,6 +222,7 @@ const teamData = teamInfo.map(team => {
         dstat: totals.dstat + (player.DStat || 0),
         gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
       }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
+
     team[periodInfo.period]['RESERVE_TOTALS'] = team[periodInfo.period]['ROSTER']
       .filter(player => player.Reserve === "R")
       .reduce((totals, player) => ({
@@ -220,12 +235,12 @@ const teamData = teamInfo.map(team => {
 
   });
 
+  team['LatestSalary'] = team[availablePeriods[availablePeriods.length -1]]['TOTAL_SALARY'];
+  team['SalaryPerPeriod'] = team['LatestSalary'] / 25;
+  team['TotalPlayerCount'] = `(${team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].F}-${team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].D}-${team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].F+team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].D+team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].G}`;
+  team['ActivePlayerCount'] = `(${team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].F}-${team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].D}-${team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].F+team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].D+team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].G}`;
+
   return team;
 });
 
-const teams = {};
-teamData.forEach(team => {
-  teams[team.ABBR] = team;
-});
-
-process.stdout.write(JSON.stringify({ teams: teams, availablePeriods: availablePeriods }));
+process.stdout.write(JSON.stringify({ teams: teamData, availablePeriods: availablePeriods }));
