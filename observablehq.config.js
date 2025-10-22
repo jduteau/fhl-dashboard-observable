@@ -15,6 +15,11 @@ export default {
   //     ]
   //   }
   // ],
+  pages: [
+    {name: "Team Standings", path: "/Standings"},
+    {name: "Player Stats", path: "/Players"},
+    {name: "Team Management", path: "/Teams"},
+  ],
 
   // Content to add to the head of the page, e.g. for a favicon:
   head: '<link rel="icon" href="observable.png" type="image/png" sizes="32x32">',
