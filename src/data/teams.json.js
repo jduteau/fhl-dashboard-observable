@@ -336,7 +336,72 @@ function createTeamRankings(teams, availablePeriods) {
     });
   });
   
-  return teamRankings;
+  // Calculate overall standings by summing across all periods
+  const overallStandings = [];
+  const teamAbbrs = teams.map(team => team.ABBR);
+  
+  teamAbbrs.forEach(teamAbbr => {
+    let totalGoals = 0;
+    let totalAssists = 0;
+    let totalToughness = 0;
+    let totalDstat = 0;
+    let totalGstat = 0;
+    let totalWins = 0;
+    let totalLosses = 0;
+    let totalTies = 0;
+    
+    // Get team info for full name
+    const teamInfo = teams.find(t => t.ABBR === teamAbbr);
+    
+    // Sum across all periods for this team
+    teamRankings.forEach(periodData => {
+      const teamData = periodData.find(t => t.team === teamAbbr);
+      if (teamData) {
+        totalGoals += teamData.goals || 0;
+        totalAssists += teamData.assists || 0;
+        totalToughness += teamData.toughness || 0;
+        totalDstat += teamData.dstat || 0;
+        totalGstat += teamData.gstat || 0;
+        totalWins += teamData.wins || 0;
+        totalLosses += teamData.losses || 0;
+        totalTies += teamData.ties || 0;
+      }
+    });
+    
+    overallStandings.push({
+      team: teamAbbr,
+      teamName: teamInfo.NAME,
+      division: teamInfo.DIVISION,
+      goals: totalGoals,
+      assists: totalAssists,
+      toughness: totalToughness,
+      dstat: totalDstat,
+      gstat: totalGstat,
+      wins: totalWins,
+      losses: totalLosses,
+      ties: totalTies,
+      points: totalWins * 2 + totalTies // Standard hockey points calculation
+    });
+  });
+  
+  // Sort overall standings by points (descending), then by wins (descending)
+  overallStandings.sort((a, b) => {
+    if (a.points !== b.points) return b.points - a.points;
+    if (a.wins !== b.wins) return b.wins - a.wins;
+    if (a.goals !== b.goals) return b.goals - a.goals;
+    return b.assists - a.assists;
+  });
+  
+  // Add overall ranking based on standings position
+  overallStandings.forEach((team, index) => {
+    team.overallRank = index + 1;
+  });
+  
+  // Return object with both period rankings and overall standings
+  return {
+    periods: teamRankings,
+    overallStandings: overallStandings
+  };
 }
 
 // Function to get stats for the selected period
@@ -488,10 +553,10 @@ const teamData = teamInfo.map(team => {
 
   });
 
-  team['LatestSalary'] = team[availablePeriods[availablePeriods.length -1]]['TOTAL_SALARY'];
+  team['LatestSalary'] = team[availablePeriods[availablePeriods.length-1]]['TOTAL_SALARY'];
   team['SalaryPerPeriod'] = team['LatestSalary'] / 25;
-  team['TotalPlayerCount'] = `(${team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].F}-${team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].D}-${team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].F+team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].D+team[availablePeriods[availablePeriods.length -1]]['TOTAL_COUNTS'].G}`;
-  team['ActivePlayerCount'] = `(${team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].F}-${team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].D}-${team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].F+team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].D+team[availablePeriods[availablePeriods.length -1]]['ACTIVE_COUNTS'].G}`;
+  team['TotalPlayerCount'] = `(${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].F}-${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].D}-${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].F+team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].D+team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].G}`;
+  team['ActivePlayerCount'] = `(${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].F}-${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].D}-${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].F+team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].D+team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].G}`;
 
   return team;
 });
@@ -500,3 +565,4 @@ const teamData = teamInfo.map(team => {
 const teamRankings = createTeamRankings(teamData, availablePeriods);
 
 process.stdout.write(JSON.stringify({ teams: teamData, rankings: teamRankings, availablePeriods: availablePeriods }));
+//process.stdout.write(JSON.stringify(teamRankings));

@@ -30,7 +30,6 @@ ${periodSelector}
   </div>
   
   <div id="contract-tab" class="tab-content">
-    <h3>Player Contract Information</h3>
     ${Inputs.table(teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
       columns: ["Name", "Position", "Salary", "Contract", "BirthDate", "Age"],
       header: {
@@ -57,7 +56,6 @@ ${periodSelector}
   </div>
   
   <div id="roster-tab" class="tab-content">
-    <h3>Player Roster Information</h3>
     ${Inputs.table(teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
       columns: ["Name", "Position", "Reserve", "NHLTeam"],
       header: {
@@ -81,7 +79,6 @@ ${periodSelector}
   </div>
   
   <div id="stats-tab" class="tab-content active">
-    <h3>Player Statistics</h3>
     <div class="stats-totals">
       <div class="totals-row active-totals">
         <strong>Active Totals:</strong>

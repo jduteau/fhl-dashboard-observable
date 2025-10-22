@@ -12,6 +12,30 @@ const teamInfo = await FileAttachment("./data/teams.json").json();
 const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods.length});
 const selectedPeriod = Generators.input(periodSelector);
 
+// Create division-grouped standings
+const divisionStandings = {};
+teamInfo.rankings.overallStandings.forEach(team => {
+  // Get team division from teams data
+  const teamData = teamInfo.teams.find(t => t.ABBR === team.team);
+  const division = teamData.DIVISION;
+  
+  if (!divisionStandings[division]) {
+    divisionStandings[division] = [];
+  }
+  
+  divisionStandings[division].push({
+    ...team,
+    division: division
+  });
+});
+
+// Sort teams within each division by points, wins, goals, assists
+Object.keys(divisionStandings).forEach(division => {
+  // Add division rank
+  divisionStandings[division].forEach((team, index) => {
+    team.divisionRank = index + 1;
+  });
+});
 ```
 <div class="tabs">
   <div class="tab-buttons">
@@ -20,13 +44,70 @@ const selectedPeriod = Generators.input(periodSelector);
   </div>
   
   <div id="standings-tab" class="tab-content active">
-    <h3>Team Standings</h3>
+    <div>
+      ${Object.keys(divisionStandings).sort().map(division => html`
+        <div>
+          <h4>${division} Division</h4>
+          ${Inputs.table(divisionStandings[division], {
+            columns: [
+              "divisionRank",
+              "teamName", 
+              "wins",
+              "losses",
+              "ties",
+              "points",
+              "overallRank",
+              "goals",
+              "assists",
+              "toughness", 
+              "dstat",
+              "gstat",
+            ],
+            header: {
+              divisionRank: "Div Rank",
+              teamName: "Team",
+              wins: "Wins",
+              losses: "Losses", 
+              ties: "Ties",
+              points: "Points",
+              overallRank: "Overall Rank",
+              goals: "Goals",
+              assists: "Assists",
+              toughness: "Toughness",
+              dstat: "D-Stat",
+              gstat: "G-Stat",
+            },
+            format: {
+              goals: x => x.toLocaleString("en-US"),
+              assists: x => x.toLocaleString("en-US"),
+              toughness: x => x.toLocaleString("en-US"),
+              dstat: x => x.toFixed(2),
+              gstat: x => x.toFixed(2),
+            },
+            width: {
+              divisionRank: 60,
+              teamName: 130,
+              wins: 30,
+              losses: 30,
+              ties: 30,
+              points: 30,
+              overallRank: 70,
+              goals: 50,
+              assists: 50,
+              toughness: 50,
+              dstat: 50,
+              gstat: 50,
+            },
+            select: false
+          })}
+        </div>
+      `)}
+    </div>
   </div>
   
   <div id="rankings-tab" class="tab-content">
    ${periodSelector}
-   <h3>Team Rankings by Category</h3>
-    ${Inputs.table(teamInfo.rankings[selectedPeriod-1], {
+    ${Inputs.table(teamInfo.rankings.periods[selectedPeriod-1], {
       columns: [
         "overallRank",
         "team",

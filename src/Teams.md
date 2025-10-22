@@ -16,7 +16,6 @@ const teamInfo = await FileAttachment("./data/teams.json").json();
   </div>
   
   <div id="cash-tab" class="tab-content active">
-    <h3>Team Cash Balances</h3>
     ${Inputs.table(teamInfo.teams, {
       columns: [
         "ABBR",
@@ -54,7 +53,6 @@ const teamInfo = await FileAttachment("./data/teams.json").json();
   </div>
   
   <div id="owner-tab" class="tab-content">
-    <h3>Team Ownership Information</h3>
     ${Inputs.table(teamInfo.teams, {
       columns: [
         "ABBR",
