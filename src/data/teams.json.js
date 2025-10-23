@@ -102,11 +102,15 @@ function calculateRankings(teams, period, statKey) {
     multiplier = 1;
   }
   
+  const isFloatStat = statKey === 'dstat';
+  
   // Get all values for this stat in this period
   const teamStats = teams.map(team => {
     let value = team[period]?.ACTIVE_TOTALS?.[statKey] || 0;
     // Round float values to avoid precision issues
-    value = Math.round(value * multiplier) / multiplier;
+    if (isFloatStat) {
+      value = Math.round(value * multiplier) / multiplier;
+    }
     return {
       team: team,
       value: value
@@ -124,7 +128,9 @@ function calculateRankings(teams, period, statKey) {
   
   teamStats.forEach((teamStat, index) => {
     // For float comparison, check if values are approximately equal
-    const valuesEqual = Math.abs(teamStat.value - (previousValue || 0)) < precision;
+    const valuesEqual = isFloatStat ? 
+      Math.abs(teamStat.value - (previousValue || 0)) < precision :
+      previousValue === teamStat.value;
     
     if (previousValue === null || !valuesEqual) {
       // New value, so rank changes
