@@ -8,6 +8,7 @@ toc: false
 ```js
 // Load the data files
 const teamInfo = await FileAttachment("./data/teams.json").json();
+const currentPeriod = teamInfo.availablePeriods.length;
 ```
 <div class="tabs">
   <div class="tab-buttons">
@@ -16,6 +17,7 @@ const teamInfo = await FileAttachment("./data/teams.json").json();
   </div>
   
   <div id="cash-tab" class="tab-content active">
+    <h3>CASH AS OF END OF PERIOD: ${currentPeriod-1}</h3>
     ${Inputs.table(teamInfo.teams, {
       columns: [
         "ABBR",
@@ -23,15 +25,19 @@ const teamInfo = await FileAttachment("./data/teams.json").json();
         "CASH",
         "LatestSalary",
         "SalaryPerPeriod",
+        "Budget",
+        "AddSalary",
         "TotalPlayerCount",
         "ActivePlayerCount"
       ],
       header: {
         ABBR: "Team",
         NAME: "Team Name",
-        CASH: "Cash Balance ($)",
-        LatestSalary: "Total Salaries ($)",
-        SalaryPerPeriod: "Salary per Period ($)",
+        CASH: "Cash",
+        LatestSalary: "Salaries",
+        SalaryPerPeriod: "Salary/Period",
+        Budget: "Budget",
+        AddSalary: "Salary to Add",
         TotalPlayerCount: "Players (F/D/G)",
         ActivePlayerCount: "Active (F/D/G)"
       },
@@ -41,12 +47,21 @@ const teamInfo = await FileAttachment("./data/teams.json").json();
         SalaryPerPeriod: (x, i, data) => {
           const value = x.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
           return x < 13 ? html`<span style="background-color: yellow;">13.00</span>` : value;
-        }
+        },
+        Budget: (x, i, data) => {
+          const value = x.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          return x < 0 ? html`<span style="background-color: red;">${value}</span>` : value;
+        },
+        AddSalary: x => x.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}),
       },
       sort: "ABBR",
       rows: 32,
       width: {
-        ABBR: 60
+        ABBR: 60,
+        CASH: 60,
+        LatestSalary: 60,
+        Budget: 60,
+        AddSalary: 100
       },
       select: false
     })}

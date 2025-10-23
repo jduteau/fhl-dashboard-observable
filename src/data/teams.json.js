@@ -592,6 +592,8 @@ const teamData = teamInfo.map(team => {
 
   team['LatestSalary'] = team[availablePeriods[availablePeriods.length-1]]['TOTAL_SALARY'];
   team['SalaryPerPeriod'] = team['LatestSalary'] / 25;
+  team['Budget'] = team.CASH - team['SalaryPerPeriod'] * (26 - availablePeriods.length);
+  team['AddSalary'] = availablePeriods.length < 22 ? team['Budget']*25 / (25 - availablePeriods.length) : '---';
   team['TotalPlayerCount'] = `(${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].F}-${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].D}-${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].F+team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].D+team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].G}`;
   team['ActivePlayerCount'] = `(${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].F}-${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].D}-${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].F+team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].D+team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].G}`;
 
