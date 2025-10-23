@@ -29,7 +29,6 @@ teamInfo.rankings.overallStandings.forEach(team => {
   });
 });
 
-// Sort teams within each division by points, wins, goals, assists
 Object.keys(divisionStandings).forEach(division => {
   // Add division rank
   divisionStandings[division].forEach((team, index) => {
@@ -81,7 +80,7 @@ Object.keys(divisionStandings).forEach(division => {
               goals: x => x.toLocaleString("en-US"),
               assists: x => x.toLocaleString("en-US"),
               toughness: x => x.toLocaleString("en-US"),
-              dstat: x => x.toFixed(2),
+              dstat: x => x.toFixed(4),
               gstat: x => x.toFixed(2),
             },
             width: {
@@ -144,7 +143,7 @@ Object.keys(divisionStandings).forEach(division => {
         goals: x => x.toLocaleString("en-US"),
         assists: x => x.toLocaleString("en-US"),
         toughness: x => x.toLocaleString("en-US"),
-        dstat: x => x.toFixed(2),
+        dstat: x => x.toFixed(4),
         gstat: x => x.toFixed(2)
       },
       sort: "overallRank",

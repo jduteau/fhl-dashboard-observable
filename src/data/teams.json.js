@@ -92,11 +92,26 @@ function calculateRankings(teams, period, statKey) {
     return calculateGstatRankings(teams, period);
   }
   
+  // Determine precision based on stat type
+  let precision, multiplier;
+  if (statKey === 'dstat') {
+    precision = 0.0001; // 4 decimal places
+    multiplier = 10000;
+  } else {
+    precision = 0; // Integer stats
+    multiplier = 1;
+  }
+  
   // Get all values for this stat in this period
-  const teamStats = teams.map(team => ({
-    team: team,
-    value: team[period]?.ACTIVE_TOTALS?.[statKey] || 0
-  }));
+  const teamStats = teams.map(team => {
+    let value = team[period]?.ACTIVE_TOTALS?.[statKey] || 0;
+    // Round float values to avoid precision issues
+    value = Math.round(value * multiplier) / multiplier;
+    return {
+      team: team,
+      value: value
+    };
+  });
   
   // Sort by value (descending - highest gets rank 32)
   teamStats.sort((a, b) => b.value - a.value);
@@ -108,7 +123,10 @@ function calculateRankings(teams, period, statKey) {
   let teamsAtCurrentRank = 0;
   
   teamStats.forEach((teamStat, index) => {
-    if (previousValue !== teamStat.value) {
+    // For float comparison, check if values are approximately equal
+    const valuesEqual = Math.abs(teamStat.value - (previousValue || 0)) < precision;
+    
+    if (previousValue === null || !valuesEqual) {
       // New value, so rank changes
       currentRank = teams.length - index;
       teamsAtCurrentRank = 1;
@@ -136,9 +154,13 @@ function calculateGstatRankings(teams, period) {
       .filter(player => player.Position === "G" && player.Reserve !== "R")
       .reduce((total, goalie) => total + (goalie.GamesPlayed || 0), 0);
     
+    // Round gstat value to 2 decimal places for consistent comparison
+    let gstatValue = team[period]?.ACTIVE_TOTALS?.gstat || 0;
+    gstatValue = Math.round(gstatValue * 100) / 100;
+    
     const teamStat = {
       team: team,
-      value: team[period]?.ACTIVE_TOTALS?.gstat || 0,
+      value: gstatValue,
       hasGoalieGames: goalieGamesPlayed > 0
     };
     
@@ -156,13 +178,18 @@ function calculateGstatRankings(teams, period) {
   teamsWithoutGoalieGames.sort((a, b) => b.value - a.value);
   
   const rankings = {};
+  const gstatPrecision = 0.01; // 2 decimal places precision
   
   // Assign rankings to teams with goalie games first (highest ranks)
   let currentRank = teams.length;
   let previousValue = null;
   
   teamsWithGoalieGames.forEach((teamStat, index) => {
-    if (previousValue !== teamStat.value) {
+    // Use precision comparison for gstat values
+    const valuesEqual = previousValue !== null && 
+      Math.abs(teamStat.value - previousValue) < gstatPrecision;
+    
+    if (!valuesEqual) {
       currentRank = teams.length - index;
     }
     rankings[teamStat.team.ABBR] = currentRank;
@@ -178,7 +205,11 @@ function calculateGstatRankings(teams, period) {
   previousValue = null;
   
   teamsWithoutGoalieGames.forEach((teamStat, index) => {
-    if (previousValue !== teamStat.value) {
+    // Use precision comparison for gstat values (teams without goalie games)
+    const valuesEqual = previousValue !== null && 
+      Math.abs(teamStat.value - previousValue) < gstatPrecision;
+    
+    if (!valuesEqual) {
       rankForNoGames = lowestRankWithGames - 1 - index;
     }
     rankings[teamStat.team.ABBR] = rankForNoGames;
