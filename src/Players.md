@@ -25,6 +25,7 @@ ${periodSelector}
 <div class="tabs">
   <div class="tab-buttons">
     <button class="tab-button active" onclick="showTab('stats-tab', this)">Player Stats</button>
+    <button class="tab-button" onclick="showTab('ext-stats-tab', this)">Player Extended Stats</button>
     <button class="tab-button" onclick="showTab('roster-tab', this)">Player Roster</button>
     <button class="tab-button" onclick="showTab('contract-tab', this)">Player Contracts</button>
   </div>
@@ -120,6 +121,83 @@ ${periodSelector}
         GStat: x => x !== null ? x.toFixed(2) : ""
       },
       sort: null,
+      width: {
+        Position: 40,
+        Reserve: 35,
+        Goals: 60,
+        Assists: 60,
+        Toughness: 80,
+        DStat: 70,
+        GStat: 70,
+        GamesPlayed: 80,
+        NHLTeam: 60
+      },
+      rows: 50,
+      select: false
+    })}
+  </div>
+
+  <div id="ext-stats-tab" class="tab-content">
+    <div class="stats-totals">
+      <div class="totals-row active-totals">
+        <strong>Active Totals:</strong>
+        <span>Goals: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.goals}</span>
+        <span>Assists: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.assists}</span>
+        <span>Toughness: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.toughness}</span>
+        <span>D-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.dstat.toFixed(2)}</span>
+        <span>G-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.gstat.toFixed(2)}</span>
+      </div>
+      <div class="totals-row reserve-totals">
+        <strong>Reserve Totals:</strong>
+        <span>Goals: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.goals}</span>
+        <span>Assists: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.assists}</span>
+        <span>Toughness: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.toughness}</span>
+        <span>D-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.dstat.toFixed(2)}</span>
+        <span>G-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.gstat.toFixed(2)}</span>
+      </div>
+    </div>
+    ${Inputs.table(teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
+      columns: ["Name", "Position", "Reserve", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "GStat", "GamesPlayed", "NHLTeam"],
+      header: {
+        Name: "Player Name",
+        Position: "Pos",
+        Reserve: "R",
+        Goals: "G",
+        Assists: "A",
+        PIM: "PIM",
+        Hits: "Hits",
+        Toughness: "TGH",
+        Blocks: "Blks",
+        Take: "Take",
+        Give: "Give",
+        TOI: "TOI",
+        DStat: "DStat",
+        Record: "Record",
+        SO: "SO",
+        GA: "GA",
+        SA: "SA",
+        GStat: "GStat", 
+        GamesPlayed: "GP",
+        NHLTeam: "NHL"
+      },
+      format: {
+        Reserve: x => x === "R" ? "✓" : "",
+        Goals: x => x !== null ? x : "",
+        Assists: x => x !== null ? x : "",
+        Toughness: x => x !== null ? x : "",
+        PIM: x => x !== null ? x : "",
+        Hits:  x => x !== null ? x : "",
+        Blocks:  x => x !== null ? x : "",
+        Take:  x => x !== null ? x : "",
+        Give:  x => x !== null ? x : "",
+        TOI:  x => x !== null ? x : "",
+        Record:   x => x !== null ? x : "",
+        SO:  x => x !== null ? x : "",
+        GA:  x => x !== null ? x : "",
+        SA:  x => x !== null ? x : "",
+        DStat: x => x !== null ? x.toFixed(2) : "",
+        GStat: x => x !== null ? x.toFixed(2) : ""
+      },
       width: {
         Position: 40,
         Reserve: 35,
@@ -272,5 +350,19 @@ window.showTab = function(tabId, buttonElement) {
   border-radius: 4px;
   border: 1px solid #ddd;
   font-size: 14px;
+}
+
+/* Bold specific columns in ext-stats-tab */
+#ext-stats-tab table th:nth-child(5), /* Goals */
+#ext-stats-tab table td:nth-child(5),
+#ext-stats-tab table th:nth-child(6), /* Assists */
+#ext-stats-tab table td:nth-child(6),
+#ext-stats-tab table th:nth-child(9), /* Toughness */
+#ext-stats-tab table td:nth-child(9),
+#ext-stats-tab table th:nth-child(14), /* DStat */
+#ext-stats-tab table td:nth-child(14),
+#ext-stats-tab table th:nth-child(19), /* GStat */
+#ext-stats-tab table td:nth-child(19) {
+  font-weight: bold;
 }
 </style>
