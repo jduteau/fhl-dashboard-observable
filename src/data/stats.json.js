@@ -21,9 +21,10 @@ const goalDistribution = {};
 const assistDistribution = {};
 const toughnessDistribution = {};
 const dstatDistribution = {};
+const gstatDistribution = {};
 
 stats.forEach(player => {
-  if (player.position === "G") return; // Skip goalies
+  if (player.pos === "G") return; // Skip goalies for skater stats
   
   // Count goals
   const goals = player["stats/goals"] || 0;
@@ -55,13 +56,32 @@ stats.forEach(player => {
                 (player["stats/take"] || 0) - 
                 (player["stats/give"] || 0) + 
                 ((player["stats/toi"] || 0) / toiDivisor);
-  
-  // Round DStat to 2 decimal places for grouping
-  const roundedDstat = Math.round(dstat * 100) / 100;
+
+  const roundedDstat = Math.round(dstat * 1000) / 1000;
   if (dstatDistribution[roundedDstat]) {
     dstatDistribution[roundedDstat]++;
   } else {
     dstatDistribution[roundedDstat] = 1;
+  }
+});
+
+// Process goalies separately for GStat
+stats.forEach(player => {
+  if (player.pos !== "G") return; // Only process goalies
+  
+  // Calculate GStat: 2 * wins + ties + 2 * shutouts + 0.15 * shots_against - goals_against
+  const gstat = 2 * (player["stats/wins"] || 0) + 
+                (player["stats/ties"] || 0) + 
+                2 * (player["stats/so"] || 0) + 
+                0.15 * (player["stats/sa"] || 0) - 
+                (player["stats/ga"] || 0);
+  
+  // Round GStat to 2 decimal places for grouping
+  const roundedGstat = Math.round(gstat * 100) / 100;
+  if (gstatDistribution[roundedGstat]) {
+    gstatDistribution[roundedGstat]++;
+  } else {
+    gstatDistribution[roundedGstat] = 1;
   }
 });
 
@@ -97,4 +117,12 @@ const dstatRanges = Object.keys(dstatDistribution)
   }))
   .sort((a, b) => a.dstat - b.dstat);
 
-process.stdout.write(JSON.stringify({ goalRanges, assistRanges, toughnessRanges, dstatRanges }));
+// Convert to array format sorted by gstat value
+const gstatRanges = Object.keys(gstatDistribution)
+  .map(gstat => ({
+    gstat: parseFloat(gstat),
+    playerCount: gstatDistribution[gstat]
+  }))
+  .sort((a, b) => a.gstat - b.gstat);
+
+process.stdout.write(JSON.stringify({ goalRanges, assistRanges, toughnessRanges, dstatRanges, gstatRanges }));
