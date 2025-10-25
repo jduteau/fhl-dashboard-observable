@@ -7,12 +7,9 @@ toc: false
 
 ```js
 // Load the data files
-const teamInfo = await FileAttachment("./data/teams.json").json();
+const teamInfo = await FileAttachment("./data/players.json").json();
 
-// Get unique teams for the selector
-const teams = teamInfo.teams.map(team=>team.ABBR).sort();
-
-const teamSelector = Inputs.select(teams, {label: "Select Team:", value: teams[0]});
+const teamSelector = Inputs.select(teamInfo.teams, {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
 
 const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods.length});
@@ -31,7 +28,7 @@ ${periodSelector}
   </div>
   
   <div id="contract-tab" class="tab-content">
-    ${Inputs.table(teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
+    ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
       columns: ["Name", "Position", "Salary", "Contract", "BirthDate", "Age"],
       header: {
         Name: "Player Name",
@@ -57,7 +54,7 @@ ${periodSelector}
   </div>
   
   <div id="roster-tab" class="tab-content">
-    ${Inputs.table(teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
+    ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
       columns: ["Name", "Position", "Reserve", "NHLTeam"],
       header: {
         Name: "Player Name",
@@ -83,22 +80,22 @@ ${periodSelector}
     <div class="stats-totals">
       <div class="totals-row active-totals">
         <strong>Active Totals:</strong>
-        <span>Goals: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.goals}</span>
-        <span>Assists: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.assists}</span>
-        <span>Toughness: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.toughness}</span>
-        <span>D-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.dstat.toFixed(2)}</span>
-        <span>G-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.gstat.toFixed(2)}</span>
+        <span>Goals: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.goals}</span>
+        <span>Assists: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.assists}</span>
+        <span>Toughness: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.toughness}</span>
+        <span>D-Stat: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.dstat.toFixed(2)}</span>
+        <span>G-Stat: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.gstat.toFixed(2)}</span>
       </div>
       <div class="totals-row reserve-totals">
         <strong>Reserve Totals:</strong>
-        <span>Goals: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.goals}</span>
-        <span>Assists: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.assists}</span>
-        <span>Toughness: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.toughness}</span>
-        <span>D-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.dstat.toFixed(2)}</span>
-        <span>G-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.gstat.toFixed(2)}</span>
+        <span>Goals: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.goals}</span>
+        <span>Assists: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.assists}</span>
+        <span>Toughness: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.toughness}</span>
+        <span>D-Stat: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.dstat.toFixed(2)}</span>
+        <span>G-Stat: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.gstat.toFixed(2)}</span>
       </div>
     </div>
-    ${Inputs.table(teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
+    ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
       columns: ["Name", "Position", "Reserve", "Goals", "Assists", "Toughness", "DStat", "GStat", "GamesPlayed", "NHLTeam"],
       header: {
         Name: "Player Name",
@@ -141,22 +138,22 @@ ${periodSelector}
     <div class="stats-totals">
       <div class="totals-row active-totals">
         <strong>Active Totals:</strong>
-        <span>Goals: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.goals}</span>
-        <span>Assists: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.assists}</span>
-        <span>Toughness: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.toughness}</span>
-        <span>D-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.dstat.toFixed(2)}</span>
-        <span>G-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.gstat.toFixed(2)}</span>
+        <span>Goals: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.goals}</span>
+        <span>Assists: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.assists}</span>
+        <span>Toughness: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.toughness}</span>
+        <span>D-Stat: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.dstat.toFixed(2)}</span>
+        <span>G-Stat: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ACTIVE_TOTALS.gstat.toFixed(2)}</span>
       </div>
       <div class="totals-row reserve-totals">
         <strong>Reserve Totals:</strong>
-        <span>Goals: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.goals}</span>
-        <span>Assists: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.assists}</span>
-        <span>Toughness: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.toughness}</span>
-        <span>D-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.dstat.toFixed(2)}</span>
-        <span>G-Stat: ${teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.gstat.toFixed(2)}</span>
+        <span>Goals: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.goals}</span>
+        <span>Assists: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.assists}</span>
+        <span>Toughness: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.toughness}</span>
+        <span>D-Stat: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.dstat.toFixed(2)}</span>
+        <span>G-Stat: ${teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].RESERVE_TOTALS.gstat.toFixed(2)}</span>
       </div>
     </div>
-    ${Inputs.table(teamInfo.teams.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
+    ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
       columns: ["Name", "Position", "Reserve", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "GStat", "GamesPlayed", "NHLTeam"],
       header: {
         Name: "Player Name",

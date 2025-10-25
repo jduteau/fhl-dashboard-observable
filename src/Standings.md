@@ -7,7 +7,7 @@ toc: false
 
 ```js
 // Load the data files
-const teamInfo = await FileAttachment("./data/teams.json").json();
+const teamInfo = await FileAttachment("./data/standings.json").json();
 
 const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods.length});
 const selectedPeriod = Generators.input(periodSelector);
