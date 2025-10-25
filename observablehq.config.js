@@ -19,6 +19,7 @@ export default {
     {name: "Team Standings", path: "/Standings"},
     {name: "Player Stats", path: "/Players"},
     {name: "Team Management", path: "/Teams"},
+    {name: "Stats Visualizations", path: "/StatViz"},
   ],
 
   // Content to add to the head of the page, e.g. for a favicon:
