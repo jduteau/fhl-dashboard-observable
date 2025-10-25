@@ -84,13 +84,13 @@ function calculateAge(birthDateStr) {
 }
 
 // Function to get stats for the selected period
-function getStatsForPeriod(currentStats, previousStats) {
+function getStatsForPeriod(position, currentStats, previousStats) {
 
   // Calculate current period dstat
   let currentDstat = 0;
-  if (currentStats.pos === "G") {
+  if (position === "G") {
     currentDstat = 0;
-  } else if (currentStats.pos === "D") {
+  } else if (position === "D") {
     currentDstat = (currentStats["stats/toi"] || 0) / 20 + (currentStats["stats/blocks"] || 0) + (currentStats["stats/take"] || 0) - (currentStats["stats/give"] || 0);
   } else { // Forward positions
     currentDstat = (currentStats["stats/toi"] || 0) / 30 + (currentStats["stats/blocks"] || 0) + (currentStats["stats/take"] || 0) - (currentStats["stats/give"] || 0);
@@ -99,9 +99,9 @@ function getStatsForPeriod(currentStats, previousStats) {
   // Calculate previous period dstat
   let prevDstat = 0;
   if (previousStats) {
-    if (previousStats.pos === "G") {
+    if (position === "G") {
       prevDstat = 0;
-    } else if (previousStats.pos === "D") {
+    } else if (position === "D") {
       prevDstat = (previousStats["stats/toi"] || 0) / 20 + (previousStats["stats/blocks"] || 0) + (previousStats["stats/take"] || 0) - (previousStats["stats/give"] || 0);
     } else { // Forward positions
       prevDstat = (previousStats["stats/toi"] || 0) / 30 + (previousStats["stats/blocks"] || 0) + (previousStats["stats/take"] || 0) - (previousStats["stats/give"] || 0);
@@ -110,50 +110,50 @@ function getStatsForPeriod(currentStats, previousStats) {
   
   // Calculate current period gstat
   let currentGstat = null;
-  if (currentStats.pos === "G") {
+  if (position === "G") {
     currentGstat = 2 * (currentStats["stats/wins"] || 0) + (currentStats["stats/ties"] || 0) + 2 * (currentStats["stats/so"] || 0) + 0.15 * (currentStats["stats/sa"] || 0) - (currentStats["stats/ga"] || 0);
   }
   
   // Calculate previous period gstat
   let prevGstat = null;
-  if (previousStats && previousStats.pos === "G") {
+  if (previousStats && position === "G") {
     prevGstat = 2 * (previousStats["stats/wins"] || 0) + (previousStats["stats/ties"] || 0) + 2 * (previousStats["stats/so"] || 0) + 0.15 * (previousStats["stats/sa"] || 0) - (previousStats["stats/ga"] || 0);
   }
   
   // Calculate gstat difference (only for goalies)
   let gstatDiff = null;
-  if (currentStats.pos === "G") {
+  if (position === "G") {
     gstatDiff = (currentGstat || 0) - (prevGstat || 0);
   }
   
   // Calculate current period toughness
-  let currentToughness = (currentStats.pos === "G") ? 0 : ((currentStats["stats/pim"] || 0) + (currentStats["stats/hits"] || 0));
+  let currentToughness = (position === "G") ? 0 : ((currentStats["stats/pim"] || 0) + (currentStats["stats/hits"] || 0));
   
   // Calculate previous period toughness
   let prevToughness = 0;
-  if (previousStats && previousStats.pos !== "G") {
+  if (previousStats && position !== "G") {
     prevToughness = (previousStats["stats/pim"] || 0) + (previousStats["stats/hits"] || 0);
   }
   
   return {
     hockeyRef: currentStats.hockeyRef,
     team: currentStats.team,
-    goals: (currentStats.pos === "G") ? null : ((currentStats["stats/goals"] || 0) - (previousStats?.["stats/goals"] || 0)),
-    assists: (currentStats.pos === "G") ? null : ((currentStats["stats/assists"] || 0) - (previousStats?.["stats/assists"] || 0)),
-    pim: (currentStats.pos === "G") ? null : ((currentStats["stats/pim"] || 0) - (previousStats?.["stats/pim"] || 0)),
-    hits: (currentStats.pos === "G") ? null : ((currentStats["stats/hits"] || 0) - (previousStats?.["stats/hits"] || 0)),
-    toughness: (currentStats.pos === "G") ? null : (currentToughness - prevToughness),
-    blocks: (currentStats.pos === "G") ? null : ((currentStats["stats/blocks"] || 0) - (previousStats?.["stats/blocks"] || 0)),
-    take: (currentStats.pos === "G") ? null : ((currentStats["stats/take"] || 0) - (previousStats?.["stats/take"] || 0)),
-    give: (currentStats.pos === "G") ? null : ((currentStats["stats/give"] || 0) - (previousStats?.["stats/give"] || 0)),
-    toi:  (currentStats.pos === "G") ? null : ((currentStats["stats/toi"] || 0) - (previousStats?.["stats/toi"] || 0)),
-    dstat: (currentStats.pos === "G") ? null : (currentDstat - prevDstat),
-    wins: (currentStats.pos === "G") ? ((currentStats["stats/wins"] || 0) - (previousStats?.["stats/wins"] || 0)) : null,
-    losses: (currentStats.pos === "G") ? ((currentStats["stats/losses"] || 0) - (previousStats?.["stats/losses"] || 0)) : null,
-    ties: (currentStats.pos === "G") ? ((currentStats["stats/ties"] || 0) - (previousStats?.["stats/ties"] || 0)) : null,
-    so: (currentStats.pos === "G") ? ((currentStats["stats/so"] || 0) - (previousStats?.["stats/so"] || 0)) : null,
-    sa: (currentStats.pos === "G") ? ((currentStats["stats/sa"] || 0) - (previousStats?.["stats/sa"] || 0)) : null,
-    ga: (currentStats.pos === "G") ? ((currentStats["stats/ga"] || 0) - (previousStats?.["stats/ga"] || 0)) : null,
+    goals: (position === "G") ? null : ((currentStats["stats/goals"] || 0) - (previousStats?.["stats/goals"] || 0)),
+    assists: (position === "G") ? null : ((currentStats["stats/assists"] || 0) - (previousStats?.["stats/assists"] || 0)),
+    pim: (position === "G") ? null : ((currentStats["stats/pim"] || 0) - (previousStats?.["stats/pim"] || 0)),
+    hits: (position === "G") ? null : ((currentStats["stats/hits"] || 0) - (previousStats?.["stats/hits"] || 0)),
+    toughness: (position === "G") ? null : (currentToughness - prevToughness),
+    blocks: (position === "G") ? null : ((currentStats["stats/blocks"] || 0) - (previousStats?.["stats/blocks"] || 0)),
+    take: (position === "G") ? null : ((currentStats["stats/take"] || 0) - (previousStats?.["stats/take"] || 0)),
+    give: (position === "G") ? null : ((currentStats["stats/give"] || 0) - (previousStats?.["stats/give"] || 0)),
+    toi:  (position === "G") ? null : ((currentStats["stats/toi"] || 0) - (previousStats?.["stats/toi"] || 0)),
+    dstat: (position === "G") ? null : (currentDstat - prevDstat),
+    wins: (position === "G") ? ((currentStats["stats/wins"] || 0) - (previousStats?.["stats/wins"] || 0)) : null,
+    losses: (position === "G") ? ((currentStats["stats/losses"] || 0) - (previousStats?.["stats/losses"] || 0)) : null,
+    ties: (position === "G") ? ((currentStats["stats/ties"] || 0) - (previousStats?.["stats/ties"] || 0)) : null,
+    so: (position === "G") ? ((currentStats["stats/so"] || 0) - (previousStats?.["stats/so"] || 0)) : null,
+    sa: (position === "G") ? ((currentStats["stats/sa"] || 0) - (previousStats?.["stats/sa"] || 0)) : null,
+    ga: (position === "G") ? ((currentStats["stats/ga"] || 0) - (previousStats?.["stats/ga"] || 0)) : null,
     gstat: currentGstat,
     gstat: gstatDiff,
     games_played: (currentStats["stats/gp"] || 0) - (previousStats?.["stats/gp"] || 0)
@@ -170,32 +170,33 @@ const teamData = teamInfo.map(team => {
     team[periodInfo.period]['ROSTER'] = roster.map(player => {
       const info = playerInfo.find(p => p.ID === player.ID);
       const contract = contracts.find(c => c.ID === player.ID);
-      const playerStats = getStatsForPeriod(currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {}); 
+      const position = mapPosition(info.Pos);
+      const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {}); 
       return {
         PLAYER_ID: player.PLAYER_ID,
         Name: info.Name,
         BirthDate: info.BirthDate,
         Age: calculateAge(info.BirthDate),
-        Position: mapPosition(info.Pos),
+        Position: position,
         NHLTeam: info.NHL,
         Salary: contract.Salary,
         Contract: contract.Contract,
         Reserve: player.RESERVE,
-        Goals: info.Pos === "G" ? null : playerStats.goals,
-        Assists: info.Pos === "G" ? null : playerStats.assists,
-        PIM: info.Pos === "G" ? null : playerStats.pim,
-        Hits: info.Pos === "G" ? null : playerStats.hits,
-        Blocks: info.Pos === "G" ? null : playerStats.blocks,
-        Take: info.Pos === "G" ? null : playerStats.take,
-        Give: info.Pos === "G" ? null : playerStats.give,
-        TOI: info.Pos === "G" ? null : playerStats.toi,
-        Record: info.Pos === "G" ? playerStats.wins !== null ? `${playerStats.wins}-${playerStats.losses}-${playerStats.ties}` : '0-0-0' : null,
-        SO: info.Pos === "G" ? (playerStats.so || 0) : null,
-        SA: info.Pos === "G" ? (playerStats.sa || 0) : null,
-        GA: info.Pos === "G" ? (playerStats.ga || 0) : null,
-        Toughness: info.Pos === "G" ? null : playerStats.toughness,
-        DStat: info.Pos === "G" ? null : playerStats.dstat,
-        GStat: info.Pos === "G" ? (playerStats.gstat || 0) : null,
+        Goals: position === "G" ? null : playerStats.goals,
+        Assists: position === "G" ? null : playerStats.assists,
+        PIM: position === "G" ? null : playerStats.pim,
+        Hits: position === "G" ? null : playerStats.hits,
+        Blocks: position === "G" ? null : playerStats.blocks,
+        Take: position === "G" ? null : playerStats.take,
+        Give: position === "G" ? null : playerStats.give,
+        TOI: position === "G" ? null : playerStats.toi,
+        Record: position === "G" ? playerStats.wins !== null ? `${playerStats.wins}-${playerStats.losses}-${playerStats.ties}` : '0-0-0' : null,
+        SO: position === "G" ? (playerStats.so || 0) : null,
+        SA: position === "G" ? (playerStats.sa || 0) : null,
+        GA: position === "G" ? (playerStats.ga || 0) : null,
+        Toughness: position === "G" ? null : playerStats.toughness,
+        DStat: position === "G" ? null : playerStats.dstat,
+        GStat: position === "G" ? (playerStats.gstat || 0) : null,
         GamesPlayed: playerStats.games_played,
       };
     });
