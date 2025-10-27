@@ -365,16 +365,16 @@ window.showTab = function(tabId, buttonElement) {
 }
 
 /* Bold specific columns in ext-stats-tab */
-#ext-stats-tab table th:nth-child(5), /* Goals */
-#ext-stats-tab table td:nth-child(5),
-#ext-stats-tab table th:nth-child(6), /* Assists */
+#ext-stats-tab table th:nth-child(6), /* Goals */
 #ext-stats-tab table td:nth-child(6),
-#ext-stats-tab table th:nth-child(9), /* Toughness */
-#ext-stats-tab table td:nth-child(9),
-#ext-stats-tab table th:nth-child(14), /* DStat */
-#ext-stats-tab table td:nth-child(14),
-#ext-stats-tab table th:nth-child(19), /* GStat */
-#ext-stats-tab table td:nth-child(19) {
+#ext-stats-tab table th:nth-child(7), /* Assists */
+#ext-stats-tab table td:nth-child(7),
+#ext-stats-tab table th:nth-child(10), /* Toughness */
+#ext-stats-tab table td:nth-child(10),
+#ext-stats-tab table th:nth-child(15), /* DStat */
+#ext-stats-tab table td:nth-child(15),
+#ext-stats-tab table th:nth-child(20), /* GStat */
+#ext-stats-tab table td:nth-child(20) {
   font-weight: bold;
 }
 </style>
