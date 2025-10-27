@@ -20,6 +20,7 @@ const rosterPeriods = [
   { period: 1, data: await csvParse(stripBom(readFileSync("src/data/rosters_p01.csv", "utf-8"))) },
   { period: 2, data: await csvParse(stripBom(readFileSync("src/data/rosters_p02.csv", "utf-8"))) },
   { period: 3, data: await csvParse(stripBom(readFileSync("src/data/rosters_p03.csv", "utf-8"))) },
+  { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
   // Add more periods here as files become available:
   // { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
   // etc...
@@ -76,14 +77,14 @@ const teams = teamInfo.map(team => {
       const info = playerInfo.find(p => p.ID === player.ID);
       const contract = contracts.find(c => c.ID === player.ID);
       return {
-        PLAYER_ID: player.PLAYER_ID,
+        PLAYER_ID: player.ID,
         Name: info.Name,
         BirthDate: info.BirthDate,
         Age: calculateAge(info.BirthDate),
         Position: mapPosition(info.Pos),
         NHLTeam: info.NHL,
-        Salary: contract.Salary,
-        Contract: contract.Contract,
+        Salary: contract?.Salary || 0,
+        Contract: contract?.Contract || '---',
         Reserve: player.RESERVE,
       };
     });

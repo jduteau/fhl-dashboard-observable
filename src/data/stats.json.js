@@ -14,7 +14,7 @@ function readStatsFile(fileName) {
 }
 
 // Only include FileAttachment calls for files that actually exist
-const stats = await readStatsFile("src/data/stats_p03.csv");
+const stats = await readStatsFile("src/data/stats_p04.csv");
 
 // Extract goal distribution - count players by goal totals
 const goalDistribution = {};

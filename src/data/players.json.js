@@ -28,6 +28,7 @@ const statsPeriods = [
   { period: 1, data: await readStatsFile("src/data/stats_p01.csv") },
   { period: 2, data: await readStatsFile("src/data/stats_p02.csv") },
   { period: 3, data: await readStatsFile("src/data/stats_p03.csv") },
+  { period: 4, data: await readStatsFile("src/data/stats_p04.csv") },
   // Add more periods here as files become available:
   // { period: 4, data: await readStatsFile("src/data/stats_p04.csv") },
   // etc...
@@ -38,6 +39,7 @@ const rosterPeriods = [
   { period: 1, data: await csvParse(stripBom(readFileSync("src/data/rosters_p01.csv", "utf-8"))) },
   { period: 2, data: await csvParse(stripBom(readFileSync("src/data/rosters_p02.csv", "utf-8"))) },
   { period: 3, data: await csvParse(stripBom(readFileSync("src/data/rosters_p03.csv", "utf-8"))) },
+  { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
   // Add more periods here as files become available:
   // { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
   // etc...
@@ -332,7 +334,7 @@ const teamData = teamInfo.map(team => {
 
   team["OVERALL"] = {};
   const roster = rosterPeriods[rosterPeriods.length - 1].data.filter(player => player.ABBR === team.ABBR);
-  const currentStats = statsPeriods[rosterPeriods.length - 1].data;
+  const currentStats = statsPeriods[statsPeriods.length - 1].data;
   team["OVERALL"]['ROSTER'] = roster.map(player => {
     const info = playerInfo.find(p => p.ID === player.ID);
     const contract = contracts.find(c => c.ID === player.ID);
@@ -345,8 +347,8 @@ const teamData = teamInfo.map(team => {
       Age: calculateAge(info.BirthDate),
       Position: position,
       NHLTeam: info.NHL,
-      Salary: contract.Salary,
-      Contract: contract.Contract,
+      Salary: contract?.Salary || 0,
+      Contract: contract?.Contract || '---',
       Reserve: "",
       Goals: position === "G" ? null : playerStats.goals,
       Assists: position === "G" ? null : playerStats.assists,
@@ -410,8 +412,8 @@ const teamData = teamInfo.map(team => {
         Age: calculateAge(info.BirthDate),
         Position: position,
         NHLTeam: info.NHL,
-        Salary: contract.Salary,
-        Contract: contract.Contract,
+        Salary: contract?.Salary || 0,
+        Contract: contract?.Contract || '---',
         Reserve: player.RESERVE,
         Goals: position === "G" ? null : playerStats.goals,
         Assists: position === "G" ? null : playerStats.assists,
