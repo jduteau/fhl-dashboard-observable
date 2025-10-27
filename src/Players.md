@@ -1,5 +1,4 @@
 ---
-theme: dashboard
 toc: false
 ---
 
@@ -96,17 +95,18 @@ ${periodSelector}
       </div>
     </div>
     ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "Goals", "Assists", "Toughness", "DStat", "GStat", "GamesPlayed", "NHLTeam"],
+      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "GStat", "Rating", "NHLTeam"],
       header: {
         Name: "Player Name",
         Position: "Pos",
         Reserve: "R",
+        GamesPlayed: "GP",
         Goals: "Goals",
         Assists: "Assists",
         Toughness: "Toughness",
         DStat: "D-Stat",
         GStat: "G-Stat", 
-        GamesPlayed: "GP",
+        Rating: "Rate",
         NHLTeam: "NHL"
       },
       format: {
@@ -115,19 +115,21 @@ ${periodSelector}
         Assists: x => x !== null ? x : "",
         Toughness: x => x !== null ? x : "",
         DStat: x => x !== null ? x.toFixed(2) : "",
-        GStat: x => x !== null ? x.toFixed(2) : ""
+        GStat: x => x !== null ? x.toFixed(2) : "",
+        Rating: x => x.toFixed(0)
       },
       sort: null,
       width: {
         Position: 40,
-        Reserve: 35,
-        Goals: 60,
-        Assists: 60,
-        Toughness: 80,
+        Reserve: 20,
+        Goals: 40,
+        Assists: 40,
+        Toughness: 40,
         DStat: 70,
         GStat: 70,
-        GamesPlayed: 80,
-        NHLTeam: 60
+        GamesPlayed: 40,
+        NHLTeam: 40,
+        Rating: 40
       },
       rows: 50,
       select: false
@@ -154,7 +156,7 @@ ${periodSelector}
       </div>
     </div>
     ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "GStat", "GamesPlayed", "NHLTeam"],
+      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "GStat", "Rating", "NHLTeam"],
       header: {
         Name: "Player Name",
         Position: "Pos",
@@ -175,7 +177,8 @@ ${periodSelector}
         SA: "SA",
         GStat: "GStat", 
         GamesPlayed: "GP",
-        NHLTeam: "NHL"
+        NHLTeam: "NHL",
+        Rating: "Rate"
       },
       format: {
         Reserve: x => x === "R" ? "✓" : "",
@@ -193,19 +196,31 @@ ${periodSelector}
         GA:  x => x !== null ? x : "",
         SA:  x => x !== null ? x : "",
         DStat: x => x !== null ? x.toFixed(2) : "",
-        GStat: x => x !== null ? x.toFixed(2) : ""
+        GStat: x => x !== null ? x.toFixed(2) : "",
+        Rating: x => x.toFixed(0)
       },
       width: {
         Position: 40,
-        Reserve: 35,
-        Goals: 60,
-        Assists: 60,
-        Toughness: 80,
+        Reserve: 20,
+        Goals: 40,
+        Assists: 40,
+        PIM: 40,
+        Hits: 40,
+        Toughness: 40,
+        Blocks: 40,
+        Take: 40,
+        Give: 40,
+        TOI: 70,
         DStat: 70,
+        Record: 70,
+        SO: 40,
+        GA: 50,
+        SA: 60,
         GStat: 70,
-        GamesPlayed: 80,
-        NHLTeam: 60
-      },
+        GamesPlayed: 40,
+        NHLTeam: 40,
+        Rating: 40
+     },
       rows: 50,
       select: false
     })}

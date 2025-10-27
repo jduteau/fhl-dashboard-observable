@@ -507,7 +507,7 @@ const teamData = teamInfo.map(team => {
       const position = mapPosition(info.Pos);
       const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {}); 
       return {
-        PLAYER_ID: player.PLAYER_ID,
+        PLAYER_ID: player.ID,
         Name: info.Name,
         Position: position,
         NHLTeam: info.NHL,

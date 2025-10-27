@@ -57,66 +57,128 @@ rosterPeriods.forEach(periodInfo => {
 
 const availablePeriods = [...Object.keys(statsData),"OVERALL"];
 
-const rankingCategories = {
-  "Goals": { min: 0, max: 0 },
-  "Assists": { min: 0, max: 0 },
-  "Toughness": { min: 0, max: 0 },
-  "DStat": { min: 0, max: 0 }, 
-  "GStat": { min: 0, max: 0 }
-}
+// Extract goal distribution - count players by goal totals
+const goalDistribution = {};
+const assistDistribution = {};
+const toughnessDistribution = {};
+const dstatDistribution = {};
+const gstatDistribution = {};
 
-statsPeriods[statsPeriods.length - 1].data.forEach(player => {
-  const info = playerInfo.find(p => p.ID === player.ID);
-  if (!info) return;
-  // Determine max for each category
-  if (info.Pos !== "G") {
-    if (player['stats/goals'] > rankingCategories.Goals.max) {
-      rankingCategories.Goals.max = player['stats/goals'];
-    }
-    if (player['stats/assists'] > rankingCategories.Assists.max) {
-      rankingCategories.Assists.max = player['stats/assists'];
-    }
-    const toughness = (player["stats/pim"] || 0) + (player["stats/hits"] || 0);
-    if (toughness > rankingCategories.Toughness.max) {
-      rankingCategories.Toughness.max = toughness;
-    }
-    const toiDivisor = info.Pos === "D" ? 20 : 30;
-    const dstat = (player["stats/blocks"] || 0) + 
-                  (player["stats/take"] || 0) - 
-                  (player["stats/give"] || 0) + 
-                  ((player["stats/toi"] || 0) / toiDivisor);
-    if (dstat > rankingCategories.DStat.max) {
-      rankingCategories.DStat.max = dstat;
-    }
-    // Determine min for each category 
-    if (player['stats/goals'] < rankingCategories.Goals.min) {
-      rankingCategories.Goals.min = player['stats/goals'];
-    }
-    if (player['stats/assists'] < rankingCategories.Assists.min) {
-      rankingCategories.Assists.min = player['stats/assists'];
-    }
-    if (toughness < rankingCategories.Toughness.min) {
-      rankingCategories.Toughness.min = toughness;
-    }
-    if (dstat < rankingCategories.DStat.min) {
-      rankingCategories.DStat.min = dstat;
-    }
-  } else {
+statsData[statsPeriods.length-1].forEach(player => {
+  if (player.pos === "G") {
     // Calculate GStat: 2 * wins + ties + 2 * shutouts + 0.15 * shots_against - goals_against
     const gstat = 2 * (player["stats/wins"] || 0) + 
                   (player["stats/ties"] || 0) + 
                   2 * (player["stats/so"] || 0) + 
                   0.15 * (player["stats/sa"] || 0) - 
                   (player["stats/ga"] || 0);
-    if (gstat > rankingCategories.GStat.max) {
-      rankingCategories.GStat.max = gstat;
+    
+    // Round GStat to 2 decimal places for grouping
+    const roundedGstat = Math.round(gstat * 100) / 100;
+    if (gstatDistribution[roundedGstat]) {
+      gstatDistribution[roundedGstat]++;
+    } else {
+      gstatDistribution[roundedGstat] = 1;
     }
-    if (gstat < rankingCategories.GStat.min) {
-      rankingCategories.GStat.min = gstat;
+  } else {  
+    // Count goals
+    const goals = player["stats/goals"] || 0;
+    if (goalDistribution[goals]) {
+      goalDistribution[goals]++;
+    } else {
+      goalDistribution[goals] = 1;
+    }
+    
+    // Count assists
+    const assists = player["stats/assists"] || 0;
+    if (assistDistribution[assists]) {
+      assistDistribution[assists]++;
+    } else {
+      assistDistribution[assists] = 1;
+    }
+    
+    // Count toughness (PIM + Hits)
+    const toughness = (player["stats/pim"] || 0) + (player["stats/hits"] || 0);
+    if (toughnessDistribution[toughness]) {
+      toughnessDistribution[toughness]++;
+    } else {
+      toughnessDistribution[toughness] = 1;
+    }
+    
+    // Calculate DStat: blocks + take - give + toi / (20 if D else 30)
+    const toiDivisor = player.pos === "D" ? 20 : 30;
+    const dstat = (player["stats/blocks"] || 0) + 
+                  (player["stats/take"] || 0) - 
+                  (player["stats/give"] || 0) + 
+                  ((player["stats/toi"] || 0) / toiDivisor);
+
+    const roundedDstat = Math.round(dstat * 1000) / 1000;
+    if (dstatDistribution[roundedDstat]) {
+      dstatDistribution[roundedDstat]++;
+    } else {
+      dstatDistribution[roundedDstat] = 1;
     }
   }
 });
 
+// Convert to array format sorted by goal count
+const goalRanges = Object.keys(goalDistribution)
+  .map(goals => ({
+    stat: parseInt(goals),
+    playerCount: goalDistribution[goals]
+  }))
+  .sort((a, b) => a.stat - b.stat);
+
+// Convert to array format sorted by assist count
+const assistRanges = Object.keys(assistDistribution)
+  .map(assists => ({
+    stat: parseInt(assists),
+    playerCount: assistDistribution[assists]
+  }))
+  .sort((a, b) => a.stat - b.stat);
+
+// Convert to array format sorted by toughness count
+const toughnessRanges = Object.keys(toughnessDistribution)
+  .map(toughness => ({
+    stat: parseInt(toughness),
+    playerCount: toughnessDistribution[toughness]
+  }))
+  .sort((a, b) => a.stat - b.stat);
+
+// Convert to array format sorted by dstat value
+const dstatRanges = Object.keys(dstatDistribution)
+  .map(dstat => ({
+    stat: parseFloat(dstat),
+    playerCount: dstatDistribution[dstat]
+  }))
+  .sort((a, b) => a.stat - b.stat);
+
+// Convert to array format sorted by gstat value
+const gstatRanges = Object.keys(gstatDistribution)
+  .map(gstat => ({
+    stat: parseFloat(gstat),
+    playerCount: gstatDistribution[gstat]
+  }))
+  .sort((a, b) => a.stat - b.stat);
+
+
+function getStatRating(stat, statRanges) {
+  // Calculate stat ranking 
+  const total = statRanges.map(entry => entry.playerCount).reduce((a, b) => a + b, 0);
+  const below = statRanges.filter(entry => entry.stat < stat).map(entry => entry.playerCount).reduce((a, b) => a + b, 0);
+  const at_stat = statRanges.find(entry => entry.stat === stat)?.playerCount || 0;
+  return 100 * (below + 0.5 * at_stat) / total
+}
+
+function getOverallRanking(position, goals, assists, toughness, dstat, gstat) {
+  // Calculate overall ranking
+  return position === "G" ? getStatRating(gstat, gstatRanges) :
+    (getStatRating(goals, goalRanges) +
+    getStatRating(assists, assistRanges) +
+    getStatRating(toughness, toughnessRanges) +
+    getStatRating(dstat, dstatRanges))/4;
+}
+  
 // Function to map positions to G, D, or F
 function mapPosition(pos) {
   if (!pos) return "F";
@@ -241,8 +303,6 @@ function getOverallStats(position, currentStats) {
   // Calculate current period toughness
   let toughness = (position === "G") ? 0 : ((currentStats["stats/pim"] || 0) + (currentStats["stats/hits"] || 0));
   
-  // Calculate overall ranking
-
   return {
     hockeyRef: currentStats.hockeyRef,
     team: currentStats.team,
@@ -264,6 +324,7 @@ function getOverallStats(position, currentStats) {
     ga: (position === "G") ? (currentStats["stats/ga"] || 0) : null,
     gstat: gstat,
     games_played: (currentStats["stats/gp"] || 0),
+    rating: getOverallRanking(position, (currentStats["stats/goals"] || 0), (currentStats["stats/assists"] || 0), toughness, dstat, gstat),
   };
 }
 
@@ -278,7 +339,7 @@ const teamData = teamInfo.map(team => {
     const position = mapPosition(info.Pos);
     const playerStats = getOverallStats(position, currentStats.find(s => s.hockeyRef === player.ID) || {}); 
     return {
-      PLAYER_ID: player.PLAYER_ID,
+      PLAYER_ID: player.ID,
       Name: info.Name,
       BirthDate: info.BirthDate,
       Age: calculateAge(info.BirthDate),
@@ -303,8 +364,20 @@ const teamData = teamInfo.map(team => {
       DStat: position === "G" ? null : playerStats.dstat,
       GStat: position === "G" ? (playerStats.gstat || 0) : null,
       GamesPlayed: playerStats.games_played,
+      Rating: playerStats.games_played ? playerStats.rating : 0,
     };
   });
+  team["OVERALL"]['ROSTER'].sort((a, b) => {
+      const posOrder = { 'G': 3, 'D': 1, 'F': 2 };
+      if (posOrder[a.Position] !== posOrder[b.Position]) {
+        return posOrder[a.Position] - posOrder[b.Position];
+      }
+      if (a.Reserve !== b.Reserve) {
+        return (a.Reserve === "R" ? 1 : 0) - (b.Reserve === "R" ? 1 : 0);
+      }
+      return b.Rating - a.Rating;
+    });
+
   team["OVERALL"]['ACTIVE_TOTALS'] = team["OVERALL"]['ROSTER']
     .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
     .reduce((totals, player) => ({
@@ -323,13 +396,15 @@ const teamData = teamInfo.map(team => {
     const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
     const currentStats = statsData[periodInfo.period];
     const previousStats = (periodInfo.period > 1) ? statsData[periodInfo.period - 1] : [];
+    const overallTeamStats = team["OVERALL"]['ROSTER'];
     team[periodInfo.period]['ROSTER'] = roster.map(player => {
       const info = playerInfo.find(p => p.ID === player.ID);
       const contract = contracts.find(c => c.ID === player.ID);
       const position = mapPosition(info.Pos);
-      const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {}); 
+      const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {});
+      const rating = overallTeamStats.find(p => p.PLAYER_ID === player.ID)?.Rating || 0;
       return {
-        PLAYER_ID: player.PLAYER_ID,
+        PLAYER_ID: player.ID,
         Name: info.Name,
         BirthDate: info.BirthDate,
         Age: calculateAge(info.BirthDate),
@@ -354,6 +429,7 @@ const teamData = teamInfo.map(team => {
         DStat: position === "G" ? null : playerStats.dstat,
         GStat: position === "G" ? (playerStats.gstat || 0) : null,
         GamesPlayed: playerStats.games_played,
+        Rating: rating,
       };
     });
 
@@ -365,7 +441,7 @@ const teamData = teamInfo.map(team => {
       if (a.Reserve !== b.Reserve) {
         return (a.Reserve === "R" ? 1 : 0) - (b.Reserve === "R" ? 1 : 0);
       }
-      return a.GamesPlayed - b.GamesPlayed;
+      return b.Rating - a.Rating;
     });
 
     team[periodInfo.period]['ACTIVE_TOTALS'] = team[periodInfo.period]['ROSTER']
