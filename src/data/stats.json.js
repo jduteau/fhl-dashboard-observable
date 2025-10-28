@@ -1,17 +1,4 @@
-import {readFileSync} from "fs";
-import stripBom from "strip-bom";
-import {csvParse} from "d3-dsv";
-
-function readStatsFile(fileName) {
-  return csvParse(stripBom(readFileSync(fileName, "utf-8")), (row) => {
-    // Convert numeric fields
-    const numericFields = ["stats/gp", "stats/goals", "stats/assists", "stats/pim", "stats/hits", "stats/toi", "stats/blocks", "stats/take", "stats/give", "stats/wins", "stats/ties", "stats/so", "stats/sa", "stats/ga"];
-    numericFields.forEach(field => {
-      row[field] = row[field] ? +row[field] : 0;
-    });
-    return row;
-  });
-}
+import { readStatsFile } from "../components/loadfiles.js";
 
 // Only include FileAttachment calls for files that actually exist
 const stats = await readStatsFile("src/data/stats_p04.csv");

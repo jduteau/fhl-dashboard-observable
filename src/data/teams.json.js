@@ -1,65 +1,12 @@
-import {readFileSync} from "fs";
-import stripBom from "strip-bom";
-import {csvParse} from "d3-dsv";
+import {readCsvFile, rosterPeriods, mapPosition, calculateAge, availablePeriods } from "../components/loadfiles.js";
 
-const teamInfo = await csvParse(stripBom(readFileSync("src/data/team_info.csv", "utf-8")));
-const teamCash = await csvParse(stripBom(readFileSync("src/data/team_cash.csv", "utf-8")), (row) => {
-  return {  ABBR: row.ABBR, CASH: +row.CASH };
-});
-const owners = await csvParse(stripBom(readFileSync("src/data/owners.csv", "utf-8")));
+const teamInfo = await readCsvFile("src/data/team_info.csv");
+const teamCash = await readCsvFile("src/data/team_cash.csv");
+const owners = await readCsvFile("src/data/owners.csv");
+const playerInfo = await readCsvFile("src/data/player_info.csv");
+const contracts = await readCsvFile("src/data/contracts.csv");
 
-const contracts = await csvParse(stripBom(readFileSync("src/data/contracts.csv", "utf-8")), (row) => {
-  return { ID: row.ID, Salary: +row.Salary, Contract: row.Contract };
-});
-const playerInfo = await csvParse(stripBom(readFileSync("src/data/player_info.csv", "utf-8")), (row) => {
-  return { ID: row.ID, Name: row.Name, BirthDate: new Date(row.BirthDate), Pos: row.Pos, NHL: row.NHL };
-});
-
-//  Load period-specific roster files (add more as files become available)
-const rosterPeriods = [
-  { period: 1, data: await csvParse(stripBom(readFileSync("src/data/rosters_p01.csv", "utf-8"))) },
-  { period: 2, data: await csvParse(stripBom(readFileSync("src/data/rosters_p02.csv", "utf-8"))) },
-  { period: 3, data: await csvParse(stripBom(readFileSync("src/data/rosters_p03.csv", "utf-8"))) },
-  { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
-  // Add more periods here as files become available:
-  // { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
-  // etc...
-];
-
-const rosterData = {};
-
-// Populate rosterData
-rosterPeriods.forEach(periodInfo => {
-  rosterData[periodInfo.period] = periodInfo.data;
-});
-
-const availablePeriods = Object.keys(rosterData).map(Number).sort((a, b) => a - b);
-
-// Function to calculate age as of September 15 of current year
-function calculateAge(birthDateStr) {
-  if (!birthDateStr) return "N/A";
-  
-  const birthDate = new Date(birthDateStr);
-  const cutoffDate = new Date(2025, 8, 15); // September 15, 2025 (month is 0-indexed)
-  
-  let age = cutoffDate.getFullYear() - birthDate.getFullYear();
-  const monthDiff = cutoffDate.getMonth() - birthDate.getMonth();
-  
-  if (monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  
-  return age;
-}
-
-// Function to map positions to G, D, or F
-function mapPosition(pos) {
-  if (!pos) return "F";
-  const position = pos.toUpperCase();
-  if (position === "G") return "G";
-  if (position === "D") return "D";
-  return "F"; // All other positions (C, LW, RW, F, etc.) become F
-}
+const lastPeriodNum = availablePeriods.length - 1;
 
 const teams = teamInfo.map(team => {
   const cashInfo = teamCash.find(cash => cash.ABBR === team.ABBR);
@@ -117,15 +64,15 @@ const teams = teamInfo.map(team => {
 
   });
 
-  team['LatestSalary'] = team[availablePeriods[availablePeriods.length-1]]['TOTAL_SALARY'];
+  team['LatestSalary'] = team[availablePeriods[lastPeriodNum]]['TOTAL_SALARY'];
   team['SalaryPerPeriod'] = team['LatestSalary'] / 25;
   team['Budget'] = team.CASH - team['SalaryPerPeriod'] * (26 - availablePeriods.length);
   team['AddSalary'] = availablePeriods.length < 22 ? team['Budget']*25 / (25 - availablePeriods.length) : '---';
-  team['TotalPlayerCount'] = `(${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].F}-${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].D}-${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].F+team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].D+team[availablePeriods[availablePeriods.length-1]]['TOTAL_COUNTS'].G}`;
-  team['ActivePlayerCount'] = `(${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].F}-${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].D}-${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].G}) ${team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].F+team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].D+team[availablePeriods[availablePeriods.length-1]]['ACTIVE_COUNTS'].G}`;
+  team['TotalPlayerCount'] = `(${team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].F}-${team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].D}-${team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].G}) ${team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].F+team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].D+team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].G}`;
+  team['ActivePlayerCount'] = `(${team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].F}-${team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].D}-${team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].G}) ${team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].F+team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].D+team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].G}`;
 
   return team;
 });
 
 process.stdout.write(JSON.stringify({ teams, availablePeriods }));
-//process.stdout.write(JSON.stringify(teamRankings));
+//process.stdout.write(JSON.stringify(teamCash));
