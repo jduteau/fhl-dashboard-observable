@@ -1,4 +1,5 @@
 ---
+theme: dashboard
 toc: false
 ---
 
@@ -11,7 +12,7 @@ const teamInfo = await FileAttachment("./data/players.json").json();
 const teamSelector = Inputs.select(teamInfo.teams, {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
 
-const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods.length});
+const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods[teamInfo.availablePeriods.length-2]});
 const selectedPeriod = Generators.input(periodSelector);
 ```
 

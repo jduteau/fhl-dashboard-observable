@@ -1,3 +1,8 @@
+---
+theme: dashboard
+toc: false
+---
+
 
 ```js
 // Load the data files

@@ -9,7 +9,7 @@ toc: false
 // Load the data files
 const teamInfo = await FileAttachment("./data/standings.json").json();
 
-const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods.length});
+const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods[teamInfo.availablePeriods.length-1]});
 const selectedPeriod = Generators.input(periodSelector);
 
 // Create division-grouped standings
