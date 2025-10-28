@@ -60,20 +60,26 @@ ${Plot.plot({
 })}
 
 <h3>Forwards Salary vs Rating</h3>
-${Plot.dot(
-    stats.contractRanking.filter(s => s.Position === "F"),
-    { x: "Salary", y: "Rating"}).plot({grid:true})
-}
+${Plot.plot({
+  marks: [
+    Plot.dot(stats.contractRanking.filter(s => s.Position === "F"), { x: "Salary", y: "Rating"}),
+    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"})
+  ]
+})}
 
 <h3>Defencemen Salary vs Rating</h3>
-${Plot.dot(
-    stats.contractRanking.filter(s => s.Position === "D"),
-    { x: "Salary", y: "Rating"}).plot({grid:true})
-}
+${Plot.plot({
+  marks: [
+    Plot.dot(stats.contractRanking.filter(s => s.Position === "D"), { x: "Salary", y: "Rating"}),
+    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"})
+  ]
+})}
 
 <h3>Goalies Salary vs Rating</h3>
-${Plot.dot(
-    stats.contractRanking.filter(s => s.Position === "G"),
-    { x: "Salary", y: "Rating"}).plot({grid:true})
-}
+${Plot.plot({
+  marks: [
+    Plot.dot(stats.contractRanking.filter(s => s.Position === "G"), { x: "Salary", y: "Rating"}),
+    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"})
+  ]
+})}
 
