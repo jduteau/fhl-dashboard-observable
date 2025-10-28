@@ -9,6 +9,7 @@ toc: false
 const stats = await FileAttachment("./data/stats.json").json();
 ```
 
+<h3>Goal Distribution</h3>
 ${Plot.plot({
     y: {grid:true}, 
     x: {interval: 1},
@@ -18,6 +19,7 @@ ${Plot.plot({
     ]
 })}
 
+<h3>Assist Distribution</h3>
 ${Plot.plot({
     y: {grid:true}, 
     x: {interval: 1},
@@ -27,6 +29,7 @@ ${Plot.plot({
     ]
 })}
 
+<h3>Toughness Distribution</h3>
 ${Plot.plot({
     y: {grid:true}, 
     x: {interval: 1},
@@ -36,6 +39,7 @@ ${Plot.plot({
     ]
 })}
 
+<h3>DStat Distribution</h3>
 ${Plot.plot({
     y: {grid:true}, 
     x: {interval: 1},
@@ -45,6 +49,7 @@ ${Plot.plot({
     ]
 })}
 
+<h3>GStat Distribution</h3>
 ${Plot.plot({
     y: {grid:true, interval: 1}, 
     x: {interval: 1},
@@ -54,8 +59,21 @@ ${Plot.plot({
     ]
 })}
 
-
+<h3>Forwards Salary vs Rating</h3>
 ${Plot.dot(
-    stats.contractRanking,
+    stats.contractRanking.filter(s => s.Position === "F"),
     { x: "Salary", y: "Rating"}).plot({grid:true})
 }
+
+<h3>Defencemen Salary vs Rating</h3>
+${Plot.dot(
+    stats.contractRanking.filter(s => s.Position === "D"),
+    { x: "Salary", y: "Rating"}).plot({grid:true})
+}
+
+<h3>Goalies Salary vs Rating</h3>
+${Plot.dot(
+    stats.contractRanking.filter(s => s.Position === "G"),
+    { x: "Salary", y: "Rating"}).plot({grid:true})
+}
+

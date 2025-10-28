@@ -1,13 +1,14 @@
-import { readCsvFile, getOverallStats, latestStatsFile } from "../components/loadfiles.js";
+import { readCsvFile, getOverallStats, latestStatsFile, mapPosition } from "../components/loadfiles.js";
 
 const contracts = await readCsvFile("src/data/contracts.csv");
 
 const contractRanking = contracts.map(info => {
 
   const stats = latestStatsFile.find(s => s.hockeyRef === info.ID) || {};
-  const position = stats.pos || 'F'; // Default to Forward if position not found
+  const position = mapPosition(stats.pos);
   const playerStats = getOverallStats(position, stats);
   return {
+      Position: position,
       Salary: info.Salary || 0,
       Rating: playerStats.games_played ? playerStats.rating : 0,
     };
