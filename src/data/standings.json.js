@@ -350,7 +350,98 @@ function createTeamRankings(teams, availablePeriods) {
   overallStandings.forEach((team, index) => {
     team.overallRank = index + 1;
   });
+
+  // Calculate individual stat rankings for overall standings
+  const statCategories = ['goals', 'assists', 'toughness', 'dstat', 'gstat'];
   
+  statCategories.forEach(statKey => {
+    // Create array of teams with their stat values
+    const teamStats = overallStandings.map(team => ({
+      team: team.team,
+      value: team[statKey] || 0
+    }));
+    
+    // Handle gstat special ranking (teams with 0 goalie games ranked lower)
+    if (statKey === 'gstat') {
+      // Separate teams with and without goalie games (assuming 0 gstat means no goalie games)
+      const teamsWithGoalieGames = teamStats.filter(t => t.value > 0);
+      const teamsWithoutGoalieGames = teamStats.filter(t => t.value === 0);
+      
+      // Sort teams with goalie games by gstat (descending)
+      teamsWithGoalieGames.sort((a, b) => b.value - a.value);
+      
+      // Sort teams without goalie games by team name for consistency
+      teamsWithoutGoalieGames.sort((a, b) => a.team.localeCompare(b.team));
+      
+      const gstatRankings = {};
+      const gstatPrecision = 0.01;
+      
+      // Assign rankings to teams with goalie games first (highest ranks)
+      let currentRank = overallStandings.length;
+      let previousValue = null;
+      
+      teamsWithGoalieGames.forEach((teamStat, index) => {
+        const valuesEqual = previousValue !== null && 
+          Math.abs(teamStat.value - previousValue) < gstatPrecision;
+        
+        if (!valuesEqual) {
+          currentRank = overallStandings.length - index;
+        }
+        gstatRankings[teamStat.team] = currentRank;
+        previousValue = teamStat.value;
+      });
+      
+      // Find the lowest rank assigned to teams with goalie games
+      const lowestRankWithGames = teamsWithGoalieGames.length > 0 ? 
+        Math.min(...teamsWithGoalieGames.map(t => gstatRankings[t.team])) : overallStandings.length + 1;
+      
+      // Assign rankings to teams without goalie games (lower than all teams with games)
+      let rankForNoGames = lowestRankWithGames - 1;
+      
+      teamsWithoutGoalieGames.forEach((teamStat, index) => {
+        gstatRankings[teamStat.team] = rankForNoGames - index;
+      });
+      
+      // Apply gstat rankings to overallStandings
+      overallStandings.forEach(team => {
+        team[`${statKey}Rank`] = gstatRankings[team.team];
+      });
+      
+    } else {
+      // Standard ranking for other stats (goals, assists, toughness, dstat)
+      // Sort by value (descending - highest gets rank 1)
+      teamStats.sort((a, b) => b.value - a.value);
+      
+      // Determine precision based on stat type
+      let precision = statKey === 'dstat' ? 0.0001 : 0;
+      const isFloatStat = statKey === 'dstat';
+      
+      // Assign rankings with ties handled properly
+      const statRankings = {};
+      let currentRank = 1;
+      let previousValue = null;
+      
+      teamStats.forEach((teamStat, index) => {
+        // For float comparison, check if values are approximately equal
+        const valuesEqual = isFloatStat ? 
+          Math.abs(teamStat.value - (previousValue || 0)) < precision :
+          previousValue === teamStat.value;
+        
+        if (index > 0 && !valuesEqual) {
+          currentRank = index + 1;
+        }
+        
+        statRankings[teamStat.team] = currentRank;
+        previousValue = teamStat.value;
+      });
+      
+      // Apply rankings to overallStandings
+      overallStandings.forEach(team => {
+        team[`${statKey}Rank`] = statRankings[team.team];
+      });
+    }
+  });
+
   // Return object with both period rankings and overall standings
   return {
     periods: teamRankings,
