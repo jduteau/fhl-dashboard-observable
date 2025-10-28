@@ -53,3 +53,9 @@ ${Plot.plot({
         Plot.barY(stats.gstatRanges, {x: "gstat", y: "playerCount"})
     ]
 })}
+
+
+${Plot.dot(
+    stats.contractRanking,
+    { x: "Salary", y: "Rating"}).plot({grid:true})
+}

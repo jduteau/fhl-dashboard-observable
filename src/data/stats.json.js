@@ -1,4 +1,18 @@
-import { readStatsFile, latestStatsFile } from "../components/loadfiles.js";
+import { readCsvFile, getOverallStats, latestStatsFile } from "../components/loadfiles.js";
+
+const contracts = await readCsvFile("src/data/contracts.csv");
+
+const contractRanking = contracts.map(info => {
+
+  const stats = latestStatsFile.find(s => s.hockeyRef === info.ID) || {};
+  const position = stats.pos || 'F'; // Default to Forward if position not found
+  const playerStats = getOverallStats(position, stats);
+  return {
+      Salary: info.Salary || 0,
+      Rating: playerStats.games_played ? playerStats.rating : 0,
+    };
+  });
+
 
 // Extract goal distribution - count players by goal totals
 const goalDistribution = {};
@@ -109,4 +123,4 @@ const gstatRanges = Object.keys(gstatDistribution)
   }))
   .sort((a, b) => a.gstat - b.gstat);
 
-process.stdout.write(JSON.stringify({ goalRanges, assistRanges, toughnessRanges, dstatRanges, gstatRanges }));
+process.stdout.write(JSON.stringify({ goalRanges, assistRanges, toughnessRanges, dstatRanges, gstatRanges, contractRanking }));

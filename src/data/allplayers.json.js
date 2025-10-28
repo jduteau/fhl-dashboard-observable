@@ -6,8 +6,6 @@ const contracts = await readCsvFile("src/data/contracts.csv");
 
 const teams = ["All",...teamInfo.map(team=>team.ABBR).sort(), "FA"];
 
-const lastPeriodNum = availablePeriods.length-1;
-
 const playerData = playerInfo.map(info => {
 
   const roster = latestRosterFile.find(player => player.ID === info.ID);
