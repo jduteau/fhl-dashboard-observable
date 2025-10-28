@@ -13,6 +13,7 @@ const currentPeriod = teamInfo.availablePeriods.length;
 <div class="tabs">
   <div class="tab-buttons">
     <button class="tab-button active" onclick="showTab('cash-tab', this)">Team Cash Balances</button>
+    <button class="tab-button" onclick="showTab('picks-tab', this)">Team Draft Picks</button>
     <button class="tab-button" onclick="showTab('owner-tab', this)">Team Owners</button>
   </div>
   
@@ -66,7 +67,30 @@ const currentPeriod = teamInfo.availablePeriods.length;
       select: false
     })}
   </div>
-  
+
+  <div id="picks-tab" class="tab-content">
+    ${Inputs.table(teamInfo.teams, {
+      columns: [
+        "ABBR",
+        "NAME",
+        "CURRENT_PICKS",
+        "NEXT_PICKS"
+      ],
+      header: {
+        ABBR: "Team",
+        NAME: "Team Name",
+        CURRENT_PICKS: "Current Year",
+        NEXT_PICKS: "Next Year",
+      },
+      width: {
+        ABBR: 60,
+      },
+      sort: "ABBR",
+      rows: 32,
+      select: false
+    })}
+  </div>
+
   <div id="owner-tab" class="tab-content">
     ${Inputs.table(teamInfo.teams, {
       columns: [
@@ -83,7 +107,7 @@ const currentPeriod = teamInfo.availablePeriods.length;
         EMAIL: "Email",
         LOCATION: "Location"
       },
-      sort: "NAME",
+      sort: "ABBR",
       rows: 32,
       width: {
         ABBR: 60

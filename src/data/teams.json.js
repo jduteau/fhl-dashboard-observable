@@ -5,6 +5,8 @@ const teamCash = await readCsvFile("src/data/team_cash.csv");
 const owners = await readCsvFile("src/data/owners.csv");
 const playerInfo = await readCsvFile("src/data/player_info.csv");
 const contracts = await readCsvFile("src/data/contracts.csv");
+const currentPicks = await readCsvFile("src/data/current_picks.csv");
+const nextPicks = await readCsvFile("src/data/next_picks.csv");
 
 const lastPeriodNum = availablePeriods.length - 1;
 
@@ -15,6 +17,14 @@ const teams = teamInfo.map(team => {
   team['OWNER'] = ownerInfo.OWNER;
   team['EMAIL'] = ownerInfo.EMAIL;
   team['LOCATION'] = ownerInfo.LOCATION;
+  team['CURRENT_PICKS'] = currentPicks.filter(pick => pick.OWNER === team.ABBR).reduce((acc, pick) => {
+    acc += `${pick.PICK} `;
+    return acc;
+  }, "");
+  team['NEXT_PICKS'] = nextPicks.filter(pick => pick.OWNER === team.ABBR).reduce((acc, pick) => {
+    acc += `${pick.PICK} `;
+    return acc;
+  }, "");
 
   // Add period-specific rosters with salaries  
   rosterPeriods.forEach(periodInfo => {
