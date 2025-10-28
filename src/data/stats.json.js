@@ -1,7 +1,4 @@
-import { readStatsFile } from "../components/loadfiles.js";
-
-// Only include FileAttachment calls for files that actually exist
-const stats = await readStatsFile("src/data/stats_p04.csv");
+import { readStatsFile, latestStatsFile } from "../components/loadfiles.js";
 
 // Extract goal distribution - count players by goal totals
 const goalDistribution = {};
@@ -10,7 +7,7 @@ const toughnessDistribution = {};
 const dstatDistribution = {};
 const gstatDistribution = {};
 
-stats.forEach(player => {
+latestStatsFile.forEach(player => {
   if (player.pos === "G") return; // Skip goalies for skater stats
   
   // Count goals
@@ -53,7 +50,7 @@ stats.forEach(player => {
 });
 
 // Process goalies separately for GStat
-stats.forEach(player => {
+latestStatsFile.forEach(player => {
   if (player.pos !== "G") return; // Only process goalies
   
   // Calculate GStat: 2 * wins + ties + 2 * shutouts + 0.15 * shots_against - goals_against
