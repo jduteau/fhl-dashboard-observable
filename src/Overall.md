@@ -8,6 +8,7 @@ toc: false
 ```js
 // Load the data files
 const playerInfo = await FileAttachment("./data/allplayers.json").json();
+const playerCsv = await FileAttachment("./data/allplayers.csv").csv();
 
 const teamSelector = Inputs.select(playerInfo.teams, {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
@@ -87,3 +88,4 @@ ${Inputs.table(playerInfo.playerData.filter((p) => selectedTeam === "All" || p.F
 })}
 </div>
 
+<a href="./_file/data/allplayers.csv">Download CSV stats</a>
