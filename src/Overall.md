@@ -97,4 +97,4 @@ ${Inputs.table(playerInfo.playerData.filter((p) => selectedTeam === "All" || p.F
 })}
 </div>
 
-<a href="./_file/data/allplayers.csv">Download CSV stats</a>
+<a href="./data/allplayers.csv" download>Download CSV stats</a>
