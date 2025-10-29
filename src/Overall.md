@@ -18,10 +18,12 @@ ${teamSelector}
 
 <div class="tab-content">
 ${Inputs.table(playerInfo.playerData.filter((p) => selectedTeam === "All" || p.FHL === selectedTeam), {
-    columns: ["Name", "Position", "FHL", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "GStat", "Rating", "NHLTeam"],
+    columns: ["Name", "Position", "FHL", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Wins", "Losses", "Ties", "SO", "GA", "SA", "GStat", "Rating", "NHLTeam", "Salary", "Contract"],
     header: {
     Name: "Player Name",
     Position: "Pos",
+    Salary: "Salary",
+    Contract: "Contract",
     Goals: "G",
     Assists: "A",
     PIM: "PIM",
@@ -32,7 +34,9 @@ ${Inputs.table(playerInfo.playerData.filter((p) => selectedTeam === "All" || p.F
     Give: "Give",
     TOI: "TOI",
     DStat: "DStat",
-    Record: "Record",
+    Wins: "W",
+    Losses: "L",
+    Ties: "T",
     SO: "SO",
     GA: "GA",
     SA: "SA",
@@ -79,7 +83,12 @@ ${Inputs.table(playerInfo.playerData.filter((p) => selectedTeam === "All" || p.F
     GStat: 70,
     GamesPlayed: 40,
     NHLTeam: 40,
-    Rating: 40
+    Rating: 40,
+    Wins: 40,
+    Losses: 40,
+    Ties: 40,
+    Salary: 40,
+    Contract: 40,
     },
     rows: 50,
     sort: "Rating",
