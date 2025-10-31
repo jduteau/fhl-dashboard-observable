@@ -418,7 +418,7 @@ function createTeamRankings(teams, availablePeriods) {
       
       // Assign rankings with ties handled properly
       const statRankings = {};
-      let currentRank = 1;
+      let currentRank = overallStandings.length;
       let previousValue = null;
       
       teamStats.forEach((teamStat, index) => {
@@ -428,7 +428,7 @@ function createTeamRankings(teams, availablePeriods) {
           previousValue === teamStat.value;
         
         if (index > 0 && !valuesEqual) {
-          currentRank = index + 1;
+          currentRank = overallStandings.length - index;
         }
         
         statRankings[teamStat.team] = currentRank;
