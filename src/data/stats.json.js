@@ -1,6 +1,7 @@
 import { readCsvFile, getOverallStats, latestStatsFile, mapPosition } from "../components/loadfiles.js";
 
 const contracts = await readCsvFile("src/data/contracts.csv");
+const players = await readCsvFile("src/data/player_info.csv");
 
 const contractRanking = contracts.map(info => {
 
@@ -8,6 +9,7 @@ const contractRanking = contracts.map(info => {
   const position = mapPosition(stats.pos);
   const playerStats = getOverallStats(position, stats);
   return {
+      Name: players.find(p => p.ID === info.ID)?.Name || "Unknown",
       Position: position,
       Salary: info.Salary || 0,
       Rating: playerStats.games_played ? playerStats.rating : 0,

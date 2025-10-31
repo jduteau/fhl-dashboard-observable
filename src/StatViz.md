@@ -63,7 +63,8 @@ ${Plot.plot({
 ${Plot.plot({
   marks: [
     Plot.dot(stats.contractRanking.filter(s => s.Position === "F"), { x: "Salary", y: "Rating"}),
-    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"})
+    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"}),
+    Plot.tip(stats.contractRanking.filter(s => s.Position === "F"), Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
   ]
 })}
 
@@ -71,7 +72,8 @@ ${Plot.plot({
 ${Plot.plot({
   marks: [
     Plot.dot(stats.contractRanking.filter(s => s.Position === "D"), { x: "Salary", y: "Rating"}),
-    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"})
+    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"}),
+    Plot.tip(stats.contractRanking.filter(s => s.Position === "D"), Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
   ]
 })}
 
@@ -79,7 +81,8 @@ ${Plot.plot({
 ${Plot.plot({
   marks: [
     Plot.dot(stats.contractRanking.filter(s => s.Position === "G"), { x: "Salary", y: "Rating"}),
-    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"})
+    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"}),
+    Plot.tip(stats.contractRanking.filter(s => s.Position === "G"), Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
   ]
 })}
 
