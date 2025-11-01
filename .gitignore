@@ -4,4 +4,5 @@ node_modules/
 yarn-error.log
 fhl_stats_overall.csv
 fhl_stats_overall.json
+fhl_stats_overall_bak.json
 fhlgetstats.sh
