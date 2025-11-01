@@ -46,3 +46,4 @@ const playerData = playerInfo.map(info => {
   });
 
 process.stdout.write(JSON.stringify({ playerData, teams }));
+//process.stdout.write(JSON.stringify(playerData.filter(p => p.FHL === "MTL")));

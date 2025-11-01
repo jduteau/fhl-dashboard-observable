@@ -8,16 +8,22 @@ toc: false
 ```js
 // Load the data files
 const playerInfo = await FileAttachment("./data/allplayers.json").json();
-const playerCsv = await FileAttachment("./data/allplayers.csv").csv();
 
 const teamSelector = Inputs.select(playerInfo.teams, {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
+
+```
+${teamSelector}
+${searchInput}
+
+```js
+const playersToSearch = playerInfo.playerData.filter((p) => selectedTeam === "All" || p.FHL === selectedTeam);
+const searchInput = Inputs.search(playersToSearch);
+const searchPlayers = Generators.input(searchInput);
 ```
 
-${teamSelector}
-
 <div class="tab-content">
-${Inputs.table(playerInfo.playerData.filter((p) => selectedTeam === "All" || p.FHL === selectedTeam), {
+${Inputs.table(searchPlayers, {
     columns: ["Name", "Position", "FHL", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Wins", "Losses", "Ties", "SO", "GA", "SA", "GStat", "Rating", "NHLTeam", "Salary", "Contract"],
     header: {
     Name: "Player Name",

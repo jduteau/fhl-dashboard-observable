@@ -2,3 +2,6 @@
 /dist/
 node_modules/
 yarn-error.log
+fhl_stats_overall.csv
+fhl_stats_overall.json
+fhlgetstats.sh
