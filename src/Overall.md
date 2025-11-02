@@ -9,15 +9,20 @@ toc: false
 // Load the data files
 const playerInfo = await FileAttachment("./data/allplayers.json").json();
 
+const periodSelector = Inputs.select(playerInfo.availablePeriods, {label: "Select Period:", value: playerInfo.availablePeriods[playerInfo.availablePeriods.length-1]});
+const selectedPeriod = Generators.input(periodSelector);
+
 const teamSelector = Inputs.select(playerInfo.teams, {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
 
 ```
+${periodSelector}
 ${teamSelector}
 ${searchInput}
 
 ```js
-const playersToSearch = playerInfo.playerData.filter((p) => selectedTeam === "All" || p.FHL === selectedTeam);
+const playersToSearch = playerInfo.playerData.map(p => p[selectedPeriod]).filter((p) => (selectedTeam === "All") || (p.FHL === selectedTeam));
+console.log(playersToSearch);
 const searchInput = Inputs.search(playersToSearch);
 const searchPlayers = Generators.input(searchInput);
 ```
@@ -61,7 +66,9 @@ ${Inputs.table(searchPlayers, {
     Take:  x => x !== null ? x : "",
     Give:  x => x !== null ? x : "",
     TOI:  x => x !== null ? x : "",
-    Record:   x => x !== null ? x : "",
+    Wins:  x => x !== null ? x : "",
+    Losses:  x => x !== null ? x : "",
+    Ties:  x => x !== null ? x : "",
     SO:  x => x !== null ? x : "",
     GA:  x => x !== null ? x : "",
     SA:  x => x !== null ? x : "",
