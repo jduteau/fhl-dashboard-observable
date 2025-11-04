@@ -511,8 +511,26 @@ const teamData = teamInfo.map(team => {
   return team;
 });
 
-// Create team rankings object
-const rankings = createTeamRankings(teamData, availablePeriods);
+// Filter periods to only include those where some team has non-zero stats
+function periodHasTeamStats(teams, period) {
+  return teams.some(team => {
+    const activeTotals = team[period]?.ACTIVE_TOTALS;
+    if (!activeTotals) return false;
+    
+    return (activeTotals.goals || 0) > 0 ||
+           (activeTotals.assists || 0) > 0 ||
+           (activeTotals.toughness || 0) > 0 ||
+           (activeTotals.dstat || 0) > 0 ||
+           (activeTotals.gstat || 0) > 0;
+  });
+}
 
-process.stdout.write(JSON.stringify({ teams: teamInfo, rankings, availablePeriods }));
+const periodsWithStats = availablePeriods.filter(period => 
+  periodHasTeamStats(teamData, period)
+);
+
+// Create team rankings object - only for periods with team stats
+const rankings = createTeamRankings(teamData, periodsWithStats);
+
+process.stdout.write(JSON.stringify({ teams: teamInfo, rankings, availablePeriods: periodsWithStats }));
 //process.stdout.write(JSON.stringify(teamRankings));
