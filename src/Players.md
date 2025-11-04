@@ -23,7 +23,6 @@ ${periodSelector}
   <div class="tab-buttons">
     <button class="tab-button active" onclick="showTab('stats-tab', this)">Player Stats</button>
     <button class="tab-button" onclick="showTab('ext-stats-tab', this)">Player Extended Stats</button>
-    <button class="tab-button" onclick="showTab('roster-tab', this)">Player Roster</button>
     <button class="tab-button" onclick="showTab('contract-tab', this)">Player Contracts</button>
   </div>
   
@@ -48,29 +47,6 @@ ${periodSelector}
         Position: 40,
         Salary: 80,
         Age: 50
-      },
-      select: false
-    })}
-  </div>
-  
-  <div id="roster-tab" class="tab-content">
-    ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "NHLTeam"],
-      header: {
-        Name: "Player Name",
-        Position: "Pos",
-        Reserve: "R",
-        NHLTeam: "NHL"
-      },
-      format: {
-        Reserve: x => x === "R" ? "✓" : ""
-      },
-      sort: null,
-      rows: 50,
-      width: {
-        NHL: 60,
-        Position: 40,
-        Reserve: 35
       },
       select: false
     })}

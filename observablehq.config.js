@@ -18,7 +18,8 @@ export default {
   pages: [
     {name: "Team Standings", path: "/Standings"},
     {name: "Team Information", path: "/Teams"},
-    {name: "Team Management", path: "/Players"},
+    {name: "Team Statistics", path: "/Players"},
+    {name: "Team Roster", path: "/Roster"},
     {name: "Overall Stats", path: "/Overall"},
     {name: "Compare Teams", path: "/CompareTeams"},
     {name: "Stats Visualizations", path: "/StatViz"},
