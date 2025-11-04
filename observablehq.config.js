@@ -17,10 +17,10 @@ export default {
   // ],
   pages: [
     {name: "Team Standings", path: "/Standings"},
-    {name: "Player Stats", path: "/Players"},
-    {name: "Team Management", path: "/Teams"},
-    {name: "Compare Teams", path: "/CompareTeams"},
+    {name: "Team Information", path: "/Teams"},
+    {name: "Team Management", path: "/Players"},
     {name: "Overall Stats", path: "/Overall"},
+    {name: "Compare Teams", path: "/CompareTeams"},
     {name: "Stats Visualizations", path: "/StatViz"},
   ],
 
