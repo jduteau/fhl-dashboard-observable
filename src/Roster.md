@@ -57,8 +57,9 @@ const demotions = selection.filter((p)=>p.Reserve !== "R").map((player) => `${pl
 display(html`<input type="hidden" name="name" value="${selectedTeam}"/>`);
 display(html`<input type="hidden" name="promote" value="${promotions}"/>`);
 display(html`<input type="hidden" name="demote" value="${demotions}"/>`);
+display(html`<input type="hidden" name="realpass" value="${team.PW}"/>`);
 ```
-
+<input type="label" readonly value="Password:"/><input type="password" name="password" required/>
 <input type="submit" value="Send Email"/>
 </form>
 
@@ -94,13 +95,16 @@ Active Goalies: ${numGoalies}
     window.onload = function() {
         document.getElementById('contact-form').addEventListener('submit', function(event) {
             event.preventDefault();
-            // these IDs from the previous steps
-            emailjs.sendForm('service_ladx4fa', 'template_spwr299', this)
-                .then(() => {
-                    document.getElementById("email-confirmation").innerHTML = 'SUCCESS!';
-                }, (error) => {
-                    document.getElementById("email-confirmation").innerHTML = `FAILED...${error}`;
-                });
+            (this.realpass.value === this.password.value) ?
+              // these IDs from the previous steps
+              emailjs.sendForm('service_ladx4fa', 'template_spwr299', this)
+                  .then(() => {
+                      document.getElementById("email-confirmation").innerHTML = 'SUCCESS!';
+                  }, (error) => {
+                      document.getElementById("email-confirmation").innerHTML = `FAILED...${error}`;
+                  })
+            :
+              document.getElementById("email-confirmation").innerHTML = 'WRONG PASSWORD'
         });
     }
 </script>

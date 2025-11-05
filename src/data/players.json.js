@@ -1,6 +1,7 @@
 import { readCsvFile, statsData, rosterPeriods, availablePeriods, mapPosition, calculateAge, getStatsForPeriod, latestStatsFile, getOverallStats } from "../components/loadfiles.js";
 
 const teamInfo = await readCsvFile("src/data/team_info.csv");
+const owners = await readCsvFile("src/data/owners.csv");
 const playerInfo = await readCsvFile("src/data/player_info.csv");
 const contracts = await readCsvFile("src/data/contracts.csv");
 
@@ -10,6 +11,9 @@ const lastPeriodNum = availablePeriods.length-1;
 
 const teamData = teamInfo.map(team => {
 
+  const ownerInfo = owners.find(owner => owner.ABBR === team.ABBR);
+  team['EMAIL'] = ownerInfo.EMAIL;
+  team['PW'] = ownerInfo.PW;
   team["OVERALL"] = {};
   const roster = rosterPeriods[lastPeriodNum].data.filter(player => player.ABBR === team.ABBR);
   team["OVERALL"]['ROSTER'] = roster.map(player => {
