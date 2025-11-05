@@ -62,6 +62,8 @@ display(html`<input type="hidden" name="demote" value="${demotions}"/>`);
 <input type="submit" value="Send Email"/>
 </form>
 
+<div id="email-confirmation"></div>
+
 ```js
 const numForwards = roster.filter((p)=>(p.Position === "F") && !selection.some((s)=>s.Name === p.Name)).length;
 const numDefence = roster.filter((p)=>(p.Position === "D") && !selection.some((s)=>s.Name === p.Name)).length;
@@ -95,9 +97,9 @@ Active Goalies: ${numGoalies}
             // these IDs from the previous steps
             emailjs.sendForm('service_ladx4fa', 'template_spwr299', this)
                 .then(() => {
-                    console.log('SUCCESS!');
+                    document.getElementById("email-confirmation").innerHTML = 'SUCCESS!';
                 }, (error) => {
-                    console.log('FAILED...', error);
+                    document.getElementById("email-confirmation").innerHTML = `FAILED...${error}`;
                 });
         });
     }
