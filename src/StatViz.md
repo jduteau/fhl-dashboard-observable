@@ -7,6 +7,10 @@ toc: false
 ```js
 // Load the data files
 const stats = await FileAttachment("./data/stats.json").json();
+
+const teamSelector = Inputs.select(["All", ...stats.teams], {label: "Select Team:"});
+const selectedTeam = Generators.input(teamSelector);
+
 ```
 
 <h3>Goal Distribution</h3>
@@ -59,30 +63,47 @@ ${Plot.plot({
     ]
 })}
 
+${teamSelector}
+
+```js
+const forwards = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "F"));
+const defencemen = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "D"));
+const goalies = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "G"));
+```
+
 <h3>Forwards Salary vs Rating</h3>
 ${Plot.plot({
   marks: [
-    Plot.dot(stats.contractRanking.filter(s => s.Position === "F"), { x: "Salary", y: "Rating"}),
-    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"}),
-    Plot.tip(stats.contractRanking.filter(s => s.Position === "F"), Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
+    Plot.dot(forwards, { x: "Salary", y: "Rating"}),
+    Plot.linearRegressionY(forwards, {x: "Salary", y: "Rating", stroke: "red"}),
+    Plot.tip(forwards, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
   ]
 })}
 
 <h3>Defencemen Salary vs Rating</h3>
 ${Plot.plot({
   marks: [
-    Plot.dot(stats.contractRanking.filter(s => s.Position === "D"), { x: "Salary", y: "Rating"}),
-    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"}),
-    Plot.tip(stats.contractRanking.filter(s => s.Position === "D"), Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
+    Plot.dot(defencemen, { x: "Salary", y: "Rating"}),
+    Plot.linearRegressionY(defencemen, {x: "Salary", y: "Rating", stroke: "red"}),
+    Plot.tip(defencemen, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
   ]
 })}
 
 <h3>Goalies Salary vs Rating</h3>
-${Plot.plot({
-  marks: [
-    Plot.dot(stats.contractRanking.filter(s => s.Position === "G"), { x: "Salary", y: "Rating"}),
-    Plot.linearRegressionY(stats.contractRanking.filter(s => s.Position === "F"), {x: "Salary", y: "Rating", stroke: "red"}),
-    Plot.tip(stats.contractRanking.filter(s => s.Position === "G"), Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
-  ]
-})}
+${
+  (selectedTeam === "All") ?
+    Plot.plot({
+    marks: [
+      Plot.dot(goalies, { x: "Salary", y: "Rating"}),
+      Plot.linearRegressionY(goalies, {x: "Salary", y: "Rating", stroke: "red"}),
+      Plot.tip(goalies, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
+    ]
+  }) :
+    Plot.plot({
+    marks: [
+      Plot.dot(goalies, { x: "Salary", y: "Rating"}),
+      Plot.tip(goalies, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
+    ]
+  })
+}
 

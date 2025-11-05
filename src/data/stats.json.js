@@ -1,20 +1,23 @@
-import { readCsvFile, getOverallStats, latestStatsFile, mapPosition } from "../components/loadfiles.js";
+import { readCsvFile, getOverallStats, latestStatsFile, latestRosterFile, mapPosition } from "../components/loadfiles.js";
 
 const contracts = await readCsvFile("src/data/contracts.csv");
 const players = await readCsvFile("src/data/player_info.csv");
+const teamInfo = await readCsvFile("src/data/team_info.csv");
 
 const contractRanking = contracts.map(info => {
 
   const stats = latestStatsFile.find(s => s.hockeyRef === info.ID) || {};
+  const roster = latestRosterFile.find(r => r.ID === info.ID) || {};
   const position = mapPosition(stats.pos);
   const playerStats = getOverallStats(position, stats);
   return {
       Name: players.find(p => p.ID === info.ID)?.Name || "Unknown",
+      Team: roster.ABBR,
       Position: position,
       Salary: info.Salary || 0,
       Rating: playerStats.games_played ? playerStats.rating : 0,
-    };
-  });
+  };
+});
 
 
 // Extract goal distribution - count players by goal totals
@@ -126,4 +129,4 @@ const gstatRanges = Object.keys(gstatDistribution)
   }))
   .sort((a, b) => a.gstat - b.gstat);
 
-process.stdout.write(JSON.stringify({ goalRanges, assistRanges, toughnessRanges, dstatRanges, gstatRanges, contractRanking }));
+process.stdout.write(JSON.stringify({ goalRanges, assistRanges, toughnessRanges, dstatRanges, gstatRanges, contractRanking, teams: teamInfo.map(team => team.ABBR) }));
