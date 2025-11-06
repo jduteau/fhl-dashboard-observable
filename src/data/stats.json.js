@@ -6,9 +6,10 @@ const teamInfo = await readCsvFile("src/data/team_info.csv");
 
 const contractRanking = contracts.map(info => {
 
+  const player = players.find(p => p.ID === info.ID);
   const stats = latestStatsFile.find(s => s.hockeyRef === info.ID) || {};
-  const roster = latestRosterFile.find(r => r.ID === info.ID) || {};
-  const position = mapPosition(stats.pos);
+  const roster = latestRosterFile.find(r => r.ID === info.ID);
+  const position = mapPosition(player.Pos);
   const playerStats = getOverallStats(position, stats);
   return {
       Name: players.find(p => p.ID === info.ID)?.Name || "Unknown",
