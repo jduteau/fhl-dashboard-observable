@@ -74,6 +74,7 @@ const goalies = stats.contractRanking.filter(s => ((selectedTeam === "All") || (
 <h3>Forwards Salary vs Rating</h3>
 ${Plot.plot({
   marks: [
+    Plot.ruleY([0,50,100]),
     Plot.dot(forwards, { x: "Salary", y: "Rating"}),
     Plot.linearRegressionY(forwards, {x: "Salary", y: "Rating", stroke: "red"}),
     Plot.tip(forwards, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
@@ -83,6 +84,7 @@ ${Plot.plot({
 <h3>Defencemen Salary vs Rating</h3>
 ${Plot.plot({
   marks: [
+    Plot.ruleY([0,50,100]),
     Plot.dot(defencemen, { x: "Salary", y: "Rating"}),
     Plot.linearRegressionY(defencemen, {x: "Salary", y: "Rating", stroke: "red"}),
     Plot.tip(defencemen, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
@@ -94,6 +96,7 @@ ${
   (selectedTeam === "All") ?
     Plot.plot({
     marks: [
+      Plot.ruleY([0,50,100]),
       Plot.dot(goalies, { x: "Salary", y: "Rating"}),
       Plot.linearRegressionY(goalies, {x: "Salary", y: "Rating", stroke: "red"}),
       Plot.tip(goalies, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
@@ -101,6 +104,7 @@ ${
   }) :
     Plot.plot({
     marks: [
+      Plot.ruleY([0,50,100]),
       Plot.dot(goalies, { x: "Salary", y: "Rating"}),
       Plot.tip(goalies, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
     ]
