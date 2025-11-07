@@ -66,6 +66,9 @@ ${Plot.plot({
 ${teamSelector}
 
 ```js
+const allForwards = stats.contractRanking.filter(s => s.Position ==="F");
+const allDefencemen = stats.contractRanking.filter(s => s.Position ==="D");
+const allGoalies = stats.contractRanking.filter(s => s.Position ==="G");
 const forwards = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "F"));
 const defencemen = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "D"));
 const goalies = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "G"));
@@ -77,6 +80,7 @@ ${Plot.plot({
     Plot.ruleY([0,50,100]),
     Plot.dot(forwards, { x: "Salary", y: "Rating"}),
     Plot.linearRegressionY(forwards, {x: "Salary", y: "Rating", stroke: "red"}),
+    Plot.linearRegressionY(allForwards, {x: "Salary", y: "Rating", stroke: "blue"}),
     Plot.tip(forwards, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
   ]
 })}
@@ -87,6 +91,7 @@ ${Plot.plot({
     Plot.ruleY([0,50,100]),
     Plot.dot(defencemen, { x: "Salary", y: "Rating"}),
     Plot.linearRegressionY(defencemen, {x: "Salary", y: "Rating", stroke: "red"}),
+    Plot.linearRegressionY(allDefencemen, {x: "Salary", y: "Rating", stroke: "blue"}),
     Plot.tip(defencemen, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
   ]
 })}
@@ -99,6 +104,7 @@ ${
       Plot.ruleY([0,50,100]),
       Plot.dot(goalies, { x: "Salary", y: "Rating"}),
       Plot.linearRegressionY(goalies, {x: "Salary", y: "Rating", stroke: "red"}),
+      Plot.linearRegressionY(allGoalies, {x: "Salary", y: "Rating", stroke: "blue"}),
       Plot.tip(goalies, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
     ]
   }) :
@@ -106,6 +112,7 @@ ${
     marks: [
       Plot.ruleY([0,50,100]),
       Plot.dot(goalies, { x: "Salary", y: "Rating"}),
+      Plot.linearRegressionY(allGoalies, {x: "Salary", y: "Rating", stroke: "blue"}),
       Plot.tip(goalies, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
     ]
   })
