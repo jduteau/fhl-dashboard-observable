@@ -23,7 +23,6 @@ ${periodSelector}
   <div class="tab-buttons">
     <button class="tab-button active" onclick="showTab('stats-tab', this)">Player Stats</button>
     <button class="tab-button" onclick="showTab('ext-stats-tab', this)">Player Extended Stats</button>
-    <button class="tab-button" onclick="showTab('contract-tab', this)">Player Contracts</button>
   </div>
   
   <div id="contract-tab" class="tab-content">
@@ -72,7 +71,7 @@ ${periodSelector}
       </div>
     </div>
     ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "GStat", "Rating", "NHLTeam"],
+      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "GStat", "Rating", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
       header: {
         Name: "Player Name",
         Position: "Pos",
@@ -84,7 +83,11 @@ ${periodSelector}
         DStat: "D-Stat",
         GStat: "G-Stat", 
         Rating: "Rate",
-        NHLTeam: "NHL"
+        NHLTeam: "NHL",
+        Salary: "Salary ($)",
+        Contract: "Contract",
+        BirthDate: "Birth Date",
+        Age: "Age"
       },
       format: {
         Reserve: x => x === "R" ? "✓" : "",
@@ -93,7 +96,9 @@ ${periodSelector}
         Toughness: x => x !== null ? x : "",
         DStat: x => x !== null ? x.toFixed(2) : "",
         GStat: x => x !== null ? x.toFixed(2) : "",
-        Rating: x => x.toFixed(0)
+        Rating: x => x.toFixed(0),
+        Salary: x => x ? x.toLocaleString("en-US") : "0",
+        BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
       },
       sort: null,
       width: {
@@ -106,7 +111,11 @@ ${periodSelector}
         GStat: 70,
         GamesPlayed: 40,
         NHLTeam: 40,
-        Rating: 40
+        Rating: 40,
+        Salary: 40,
+        Contract: 40,
+        BirthDate: 70,
+        Age: 40
       },
       rows: 50,
       select: false
