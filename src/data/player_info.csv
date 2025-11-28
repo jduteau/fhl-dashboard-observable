@@ -85,7 +85,7 @@ blakeja02,Jackson Blake,2003-08-03,RW,CAR
 blankni01,Nick Blankenburg,1998-05-12,D,NSH
 blomqjo01,Joel Blomqvist,2002-01-10,G,PIT
 bluegte01,Teddy Blueger,1994-08-15,C,VAN
-blumema01,Matěj Blümel,2000-05-31,RW,EDM
+blumema01,Matěj Blümel,2000-05-31,RW,BOS
 bobrose01,Sergei Bobrovsky,1988-09-20,G,FLA
 boesebr01,Brock Boeser,1997-02-25,RW,VAN
 bogosza01,Zach Bogosian,1990-07-15,D,MIN
@@ -372,7 +372,7 @@ guentdy01,Dylan Guenther,2003-04-10,RW,UTA
 guentja01,Jake Guentzel,1994-10-06,C,TBL
 guhleka01,Kaiden Guhle,2002-01-18,D,MTL
 gulyami01,Mikhail Gulyayev,2005-04-26,D,COL
-gustaer02,Erik Gustafsson,1992-03-14,D,EDM
+gustaer02,Erik Gustafsson,1992-03-14,D,DET
 gustafi01,Filip Gustavsson,1998-06-07,G,MIN
 hagelbr01,Brandon Hagel,1998-08-27,LW,TBL
 hagemi01,Michael Hage,2006-04-14,F,MTL
@@ -482,7 +482,7 @@ kahkoka01,Kaapo Kähkönen,1996-08-16,G,MIN
 kaisewy01,Wyatt Kaiser,2002-07-31,D,CHI
 kakkoka01,Kaapo Kakko,2001-02-13,RW,SEA
 kaliyar01,Arthur Kaliyev,2001-06-26,RW,OTT
-kampfda01,David Kämpf,1995-01-12,C,TOR
+kampfda01,David Kämpf,1995-01-12,C,VAN
 kaneev01,Evander Kane,1991-08-02,LW,VAN
 kanepa01,Patrick Kane,1988-11-19,RW,DET
 kantsro01,Roman Kantserov,2004-09-20,RW,CHI
@@ -523,7 +523,7 @@ koivuvi01,Ville Koivunen,2003-06-13,RW,PIT
 kokkoni01,Niklas Kokko,2004-03-14,G,SEA
 koleske01,Keegan Kolesar,1997-04-08,RW,VEG
 kolosal01,Aleksei Kolosov,2002-01-04,G,PHI
-kolyavl01,Vladislav Kolyachonok,2001-05-26,D,FLA
+kolyavl01,Vladislav Kolyachonok,2001-05-26,D,DAL
 konectr01,Travis Konecny,1997-03-11,C,PHI
 konyubo01,Bogdan Konyushkov,2002-12-20,D,MTL
 kopitan01,Anže Kopitar,1987-08-24,C,LAK
@@ -700,7 +700,7 @@ mooretr01,Trevor Moore,1995-03-31,LW,LAK
 moorewi01,William Moore,2007-03-24,C,BOS
 morinet01,Etienne Morin,2005-03-09,D,CGY
 morrijo04,Josh Morrissey,1995-03-28,D,WPG
-morrosc02,Scott Morrow,2002-11-01,D,CAR
+morrosc02,Scott Morrow,2002-11-01,D,NYR
 moserja01,J.J. Moser,2000-06-06,D,TBL
 mrazepe01,Petr Mrázek,1992-02-14,G,ANA
 mrtkara01,Radim Mrtka,2007-06-09,D,BUF
@@ -777,7 +777,7 @@ paupaha01,Hayden Paupanekis,2007-02-04,C,MTL
 pearsta01,Tanner Pearson,1992-08-10,LW,WPG
 peekean01,Andrew Peeke,1998-03-17,D,BOS
 pelecad01,Adam Pelech,1994-08-16,D,NYI
-pelleja01,Jakob Pelletier,2001-03-07,LW,CGY
+pelleja01,Jakob Pelletier,2001-03-07,LW,TBL
 perbini01,Nicklaus Perbix,1998-06-15,D,NSH
 perfeco01,Cole Perfetti,2002-01-01,C,WPG
 perrega01,Gabriel Perreault,2005-05-07,RW,NYR
@@ -788,8 +788,8 @@ perunsc01,Scott Perunovich,1998-08-18,D,STL
 pescebr01,Brett Pesce,1994-11-15,D,NJD
 peterjo01,John-Jason Peterka,2002-01-14,RW,UTA
 petryje01,Jeff Petry,1987-12-09,D,FLA
-petteel01,Elias Pettersson,1998-11-12,C,VAN
-petteel02,Elias Pettersson,2004-02-16,D,VAN
+petteel01,Elias (C) Pettersson,1998-11-12,C,VAN
+petteel02,Elias (D) Pettersson,2004-02-16,D,VAN
 pettelu01,Lucas Pettersson,2006-04-17,F,ANA
 pettema01,Marcus Pettersson,1996-05-08,D,VAN
 philpno01,Noah Philp,1998-08-31,C,EDM
@@ -832,7 +832,7 @@ raymolu01,Lucas Raymond,2002-03-28,LW,DET
 reavery01,Ryan Reaves,1987-01-20,RW,SJS
 regulal01,Alex Regula,2000-08-06,D,EDM
 rehkoca01,Carson Rehkopf,2005-01-07,LW,SEA
-reichlu01,Lukas Reichel,2002-05-17,LW,2TM
+reichlu01,Lukas Reichel,2002-05-17,LW,VAN
 reidca01,Cameron Reid,2007-04-08,D,NSH
 reillmi01,Mike Reilly,1993-07-13,D,CAR
 reinbda01,David Reinbacher,2004-10-25,D,MTL
@@ -917,7 +917,7 @@ slafkju01,Juraj Slafkovsky,2004-03-30,LW,MTL
 slaggla01,Landon Slaggert,2002-06-25,LW,CHI
 slavija01,Jaccob Slavin,1994-05-01,D,CAR
 slukyha01,Hampton Slukynsky,2005-07-02,G,LAK
-smithbr05,Brendan Smith,1989-02-08,D,DET
+smithbr05,Brendan Smith,1989-02-08,D,CBJ
 smithco02,Cole Smith,1995-10-28,F,NSH
 smithja04,Jackson Smith,2007-05-13,D,CBJ
 smithre01,Reilly Smith,1991-04-01,RW,VEG
@@ -940,7 +940,7 @@ staaljo01,Jordan Staal,1988-09-10,C,CAR
 stamkst01,Steven Stamkos,1990-02-07,C,NSH
 stanklo01,Logan Stankoven,2003-02-26,C,CAR
 stanllo01,Logan Stanley,1998-05-26,D,WPG
-stechtr01,Troy Stecher,1994-04-07,D,EDM
+stechtr01,Troy Stecher,1994-04-07,D,TOR
 steelsa01,Sam Steel,1998-02-03,C,DAL
 stenbot01,Otto Stenberg,2005-05-29,C,STL
 stenlke01,Kevin Stenlund,1996-09-20,C,UTA
@@ -1076,7 +1076,7 @@ zuccama01,Mats Zuccarello,1987-09-01,LW,MIN
 zuckeja01,Jason Zucker,1992-01-16,LW,BUF
 agozzan01,Andrew Agozzino,1991-01-03,LW,UTA
 astonza01,Zach Aston-Reese,1994-08-10,C,CBJ
-beechjo01,John Beecher,2001-04-05,C,BOS
+beechjo01,John Beecher,2001-04-05,C,CGY
 bussibr01,Brandon Bussi,1998-06-25,G,CAR
 coolede01,Devin Cooley,1997-05-25,G,CGY
 douglcu01,Curtis Douglas,2000-03-06,C,TBL
@@ -1104,7 +1104,7 @@ petroal01,Alexander Petrovic,1992-03-03,D,DAL
 pitlity01,Tyler Pitlick,1991-11-01,C,MIN
 reinhco01,Cole Reinhardt,2000-02-01,LW,VEG
 sassoma01,Max Sasson,2000-09-05,F,VAN
-sebrado01,Donovan Sebrango,2002-01-12,D,2TM
+sebrado01,Donovan Sebrango,2002-01-12,D,FLA
 solovil01,Ilya Solovyov,2000-07-20,D,COL
 stastsp01,Spencer Stastney,2000-01-04,D,NSH
 vielje01,Jeffrey Viel,1997-01-28,F,BOS
@@ -1154,3 +1154,17 @@ kerinro01,Rory Kerins,2002-04-12,C,CGY
 skinnhu01,Hunter Skinner,2001-04-29,D,STL
 whiteco03,Colton White,1997-05-03,D,NJD
 davidja01,Jared Davidson,2002-07-07,C,MTL
+carlide01,Declan Carlile,2000-05-18,D,TBL
+clattco01,Connor Clattenburg,2005-05-02,F,EDM
+gauncbr01,Brendan Gaunce,1994-03-25,C,CBJ
+fiskeos01,Oscar Fisker Molgaard,2005-02-18,C,SEA
+santist01,Steven Stantini,1995-03-07,D,TBL
+tufteri01,Riley Tufte,1998-04-10,LW,BOS
+legarna01,Nathan Legare,2001-01-11,RW,NJD
+mortosa01,Sam Morton,1999-07-28,F,CGY
+paterji01,Jiří Patera,1999-02-24,G,VAN
+pinellu01,Luca Pinelli,2005-04-05,C,CBJ
+polinja01,Jason Polin,1999-06-17,F,COL
+quillja01,Jacob Quillan,2002-02-02,TOR
+robidju01,Justin Robidas,2003-03-13,C,CAR
+tolopni01,Nikita Tolopilo,2000-04-06,G,VAN
