@@ -3,6 +3,7 @@ import { readCsvFile, latestStatsFile, statsPeriods, statsData, latestRosterFile
 const teamInfo = await readCsvFile("src/data/team_info.csv");
 const playerInfo = await readCsvFile("src/data/player_info.csv");
 const contracts = await readCsvFile("src/data/contracts.csv");
+const drafted = await readCsvFile("src/data/drafted_players.csv");
 
 const teams = ["All",...teamInfo.map(team=>team.ABBR).sort(), "FA"];
 
@@ -17,6 +18,7 @@ const playerData = playerInfo.map(info => {
   player.OVERALL = {
     PLAYER_ID: info.ID,
     FHL: roster?.ABBR || 'FA',
+    Drafted: drafted.find(d => d.fhl === info.Name) ? true : false,
     Name: info.Name,
     BirthDate: info.BirthDate,
     Age: calculateAge(info.BirthDate),
@@ -54,6 +56,7 @@ const playerData = playerInfo.map(info => {
     player[periodInfo.period] = {
       PLAYER_ID: info.ID,
       FHL: roster?.ABBR || 'FA',
+      Drafted: drafted.find(d => d.fhl === info.Name) ? true : false,
       Name: info.Name,
       BirthDate: info.BirthDate,
       Age: calculateAge(info.BirthDate),

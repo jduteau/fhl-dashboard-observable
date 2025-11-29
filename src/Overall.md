@@ -57,6 +57,10 @@ ${Inputs.table(searchPlayers, {
     Rating: "Rate"
     },
     format: {
+    Name: (x, i, data) => {
+        console.log(data[i]);
+        return data[i].Drafted ? x : html`<span style="background-color: yellow;">${x}</span>`;
+    },
     Goals: x => x !== null ? x : "",
     Assists: x => x !== null ? x : "",
     Toughness: x => x !== null ? x : "",
@@ -77,8 +81,7 @@ ${Inputs.table(searchPlayers, {
     Rating: x => x.toFixed(0)
     },
     width: {
-    Position: 40,
-    Reserve: 20,
+    Position: 20,
     Goals: 40,
     Assists: 40,
     PIM: 40,
