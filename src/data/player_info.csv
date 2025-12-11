@@ -1,4 +1,4 @@
-﻿ID,Name,BirthDate,Pos,NHL
+﻿us,Name,BirthDate,Pos,NHL
 fedotiv01,Ivan Fedotov,1996-11-28,G,PHI
 heinovi01,Ville Heinola,2001-03-02,D,WPG
 hussovi01,Ville Husso,1995-02-06,G,ANA
@@ -116,7 +116,7 @@ broztr01,Tristan Broz,2002-10-10,C,PIT
 bruniha01,Harrison Brunicke,2006-05-08,D,PIT
 brysoja01,Jacob Bryson,1997-11-18,D,BUF
 brzushe01,Henry Brzustewicz,2007-02-09,D,LAK
-brzushu01,Hunter Brzustewicz,2004-11-29,D,VAN
+brzushu01,Hunter Brzustewicz,2004-11-29,D,CGY
 buchedm01,Dmitri Buchelnikov,2003-09-06,LW,DET
 buchnpa01,Pavel Buchnevich,1995-04-17,LW,STL
 buiumsh01,Shai Buium,2003-03-26,D,DET
