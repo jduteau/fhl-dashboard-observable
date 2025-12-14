@@ -31,7 +31,7 @@ armiajo01,Joel Armia,1993-05-31,RW,LAK
 artamni01,Nikita Artamonov,2005-11-17,LW,CAR
 arvidvi01,Viktor Arvidsson,1993-04-08,LW,BOS
 askarya01,Yaroslav Askarov,2002-06-16,G,SJS
-aubekni01,Nicolas Aubé-Kubel,1996-05-10,RW,PHI
+aubekni01,Nicolas Aubé-Kubel,1996-05-10,RW,MIN
 audymjo01,Jonathan Marchessault,1990-12-27,C,NSH
 augustr01,Trey Augustine,2005-02-23,G,DET
 backlmi01,Mikael Backlund,1989-03-17,C,CGY
@@ -976,7 +976,7 @@ tarasvl01,Vladimir Tarasenko,1991-12-13,RW,MIN
 tavarjo01,John Tavares,1990-09-20,C,TOR
 teravte01,Teuvo Teräväinen,1994-09-11,F,CHI
 terrytr01,Troy Terry,1997-09-10,C/RW,ANA
-texieal01,Alexandre Texier,1999-09-13,C,STL
+texieal01,Alexandre Texier,1999-09-13,C,MTL
 theodsh01,Shea Theodore,1995-08-03,D,VEG
 thomaro01,Robert Thomas,1999-07-02,C,STL
 thompai01,Aidan Thompson,2002-02-18,C,CHI
@@ -1092,7 +1092,7 @@ haighhu01,Hunter Haight,2004-04-04,C,MIN
 halonbr01,Brian Halonen,1999-01-11,F,NJD
 harrijo01,Jordan Harris,2000-07-07,D,BOS
 haydejo01,John Hayden,1995-02-14,C,SEA
-jarrytr01,Tristan Jarry,1995-04-29,G,PIT
+jarrytr01,Tristan Jarry,1995-04-29,G,EDM
 jonesza01,Zachary Jones,2000-10-18,D,NYR
 jostty01,Tyson Jost,1998-03-14,C,NSH
 kozakty01,Tyson Kozak,2002-12-29,C,BUF
@@ -1106,7 +1106,7 @@ reinhco01,Cole Reinhardt,2000-02-01,LW,VEG
 sassoma01,Max Sasson,2000-09-05,F,VAN
 sebrado01,Donovan Sebrango,2002-01-12,D,FLA
 solovil01,Ilya Solovyov,2000-07-20,D,COL
-stastsp01,Spencer Stastney,2000-01-04,D,NSH
+stastsp01,Spencer Stastney,2000-01-04,D,EDM
 vielje01,Jeffrey Viel,1997-01-28,F,BOS
 wiesboz01,Ozzy Wiesblatt,2002-03-09,RW,NSH
 wintery01,Ryan Winterton,2003-09-04,C,SEA
@@ -1183,4 +1183,7 @@ murchty01,Ty Murchison,2003-02-02,D,PHI
 mcginhu01,Hugh McGing,1998-07-11,LW,STL
 kuntatr01,Trevor Kuntar,2001-06-20,C,BUF
 parenxa01,Xavier Parent,2001-03-23,F,NJD
-
+halvebr01,Brandon Halverson,1996-03-29,G,TBL
+kiersma01,Matt Kiersted,1998-04-14,D,MIN
+tonindo01,Dominic Toninato,1994-03-09,C,CHI
+trinebo01,Bogdan Trineyev,2002-03-04,RW,WSH
