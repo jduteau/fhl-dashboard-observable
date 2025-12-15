@@ -120,7 +120,7 @@ brzushu01,Hunter Brzustewicz,2004-11-29,D,CGY
 buchedm01,Dmitri Buchelnikov,2003-09-06,LW,DET
 buchnpa01,Pavel Buchnevich,1995-04-17,LW,STL
 buiumsh01,Shai Buium,2003-03-26,D,DET
-buiumze01,Zeev Buium,2005-12-07,D,MIN
+buiumze01,Zeev Buium,2005-12-07,D,VAN
 bumpal01,Alex Bump,2003-11-20,LW,PHI
 buntimi01,Michael Bunting,1995-09-17,LW,NSH
 burakan01,André Burakovsky,1995-02-09,LW,CHI
@@ -433,7 +433,7 @@ hryckju01,Justin Hryckowian,2001-02-23,F,DAL
 huberjo01,Jonathan Huberdeau,1993-06-04,LW,CGY
 hugheja03,Jack Hughes,2001-05-14,C,NJD
 hughelu01,Luke Hughes,2003-09-09,D,NJD
-hughequ01,Quinn Hughes,1999-10-14,D,VAN
+hughequ01,Quinn Hughes,1999-10-14,D,MIN
 hutsoco01,Cole Hutson,2006-06-28,D,WSH
 hutsola01,Lane Hutson,2004-02-14,D,MTL
 hutsoqu01,Quinn Hutson,2002-01-01,F,EDM
@@ -469,7 +469,7 @@ johnsry03,Ryan Johnson,2001-07-24,D,BUF
 johnswy01,Wyatt Johnston,2003-05-14,C,DAL
 jokihhe01,Henri Jokiharju,1999-06-17,D,BOS
 jonesca01,Caleb Jones,1997-06-06,D,PIT
-jonesma03,Max Jones,1998-02-17,LW,ANA
+jonesma03,Max Jones,1998-02-17,LW,EDM
 jonesse01,Seth Jones,1994-10-03,D,FLA
 jonsssa01,Samuel Jonsson,2003-12-15,G,EDM
 josepma01,Mathieu Joseph,1997-02-09,RW,STL
@@ -746,7 +746,7 @@ obrieli01,Liam O'Brien,1994-07-29,C,UTA
 oconndr01,Drew O'Connor,1998-06-09,F,VAN
 oconnlo01,Logan O'Connor,1996-08-14,RW,COL
 oettija01,Jake Oettinger,1998-12-18,G,DAL
-ohgreli01,Liam Ohgren,2004-01-28,LW,MIN
+ohgreli01,Liam Ohgren,2004-01-28,LW,VAN
 oleksja01,Jamie Oleksiak,1992-12-21,D,SEA
 olivima01,Mathieu Olivier,1997-02-11,F,CBJ
 olofsvi01,Victor Olofsson,1995-07-18,RW,COL
@@ -855,7 +855,7 @@ romanal01,Alexander Romanov,2000-01-06,D,NYI
 rombaja01,Jacob Rombach,2007-04-01,D,NSH
 rosenis01,Isak Rosen,2003-03-15,RW,BUF
 rosloja01,Jack Roslovic,1997-01-29,C,EDM
-rossima01,Marco Rossi,2001-09-23,C,MIN
+rossima01,Marco Rossi,2001-09-23,C,VAN
 royjo01,Joshua Roy,2003-08-06,RW,MTL
 royma04,Matt Roy,1995-03-01,D,WSH
 royni01,Nicolas Roy,1997-02-05,C,TOR
@@ -1187,3 +1187,4 @@ halvebr01,Brandon Halverson,1996-03-29,G,TBL
 kiersma01,Matt Kiersted,1998-04-14,D,MIN
 tonindo01,Dominic Toninato,1994-03-09,C,CHI
 trinebo01,Bogdan Trineyev,2002-03-04,RW,WSH
+melanja01,Jacob Melanson,2003-04-22,RW,SEA
