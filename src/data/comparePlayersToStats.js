@@ -1,6 +1,7 @@
 import { readCsvFile, latestStatsFile } from "../components/loadfiles.js";
 
 const playerInfo = await readCsvFile("src/data/player_info.csv");
+const playerMultipleTeams = await readCsvFile("src/data/player_multiple_teams.csv");
 
 // Find players who are not in the rosters file
 const compareStatsToRoster = async () => {
@@ -23,7 +24,7 @@ const compareTeamsBetweenInfoAndStats = async () => {
     latestStatsFile.forEach((player) => {
         const expectedTeam = playerTeamMap[player.hockeyRef];
         if (expectedTeam && expectedTeam !== player.team) {
-            console.log(`${player.hockeyRef}: Info Team = ${expectedTeam}, Stats Team = ${player.team}`);
+            console.log(`${player.hockeyRef}: Info Team = ${expectedTeam}, Stats Team = ${player.team} ${playerMultipleTeams.find(p => p.PLAYERS === player.hockeyRef)?.TEAM == player.team ? "Handled" : ''}`);
         }
     });
 }
