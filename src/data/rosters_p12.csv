@@ -305,14 +305,14 @@ greenli01,DET,R
 kuninlu01,DET,R
 martibr02,DET,R
 mooreia01,DET,R
-mukhash01,DET,R
-ostapza01,DET,R
+mukhash01,DET,
+ostapza01,DET,
 protail01,DET,R
 solbest01,DET,R
 benoisi01,DET,
 celebma01,DET,
 coutuse01,DET,
-cowanea01,DET,
+cowanea01,DET,R
 daccojo01,DET,
 doanjo01,DET,
 faberbr01,DET,
@@ -324,7 +324,7 @@ ovechal01,DET,
 podkova01,DET,
 savoima01,DET,
 seidemo01,DET,
-sissoco01,DET,
+sissoco01,DET,R
 terrytr01,DET,
 theodsh01,DET,
 vlasial01,DET,
