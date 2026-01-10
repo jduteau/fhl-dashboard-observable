@@ -167,7 +167,7 @@ cizikca01,Casey Cizikas,1991-02-27,C,NYI
 clarada01,Damian Clara,2005-01-13,G,ANA
 clarkbr02,Brandt Clarke,2003-02-09,D,LAK
 cliftco01,Connor Clifton,1995-04-28,D,PIT
-coghldy01,Dylan Coghlan,1998-02-19,D,---
+coghldy01,Dylan Coghlan,1998-02-19,D,VEG
 colansa01,Sam Colangelo,2001-12-26,RW,ANA
 coleia01,Ian Cole,1989-02-21,D,UTA
 colembl01,Blake Coleman,1991-11-28,C,CGY
@@ -1060,7 +1060,7 @@ yorkca01,Cameron York,2001-01-05,D,PHI
 yurovda01,Danila Yurov,2003-12-22,RW,MIN
 zachapa01,Pavel Zacha,1997-04-06,C,BOS
 zadorni01,Nikita Zadorov,1995-04-16,D,BOS
-zamulye01,Yegor Zamula,2000-03-30,D,PHI
+zamulye01,Egor Zamula,2000-03-30,D,CBJ
 zaryco01,Connor Zary,2001-09-25,C,CGY
 zavraeg01,Egor Zavragin,2005-08-23,G,PHI
 zegratr01,Trevor Zegras,2001-03-20,C,PHI
@@ -1203,3 +1203,6 @@ blidhan01,Anton Blidh,1995-03-14,LW,NYR
 leean02,Andre Lee,2000-07-26,LW,LAK
 stromwi01,William Stromgren,2003-06-07,LW,CGY
 wardta01,Taylor Ward,1998-03-31,F,LAK
+pyyhtmi01,Mikael Pyythia,2001-12-17,LW,CBJ
+washeti01,Tim Washe,2001-08-25,F,ANA
+zhilkda01,Danil Zhilkin,2003-12-19,C,WPG
