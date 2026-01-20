@@ -8,12 +8,12 @@ const contractRanking = contracts.map(info => {
 
   const player = players.find(p => p.ID === info.ID);
   const stats = latestStatsFile.find(s => s.hockeyRef === info.ID) || {};
-  const roster = latestRosterFile.find(r => r.ID === info.ID);
+  const roster = latestRosterFile.find(r => r.ID === info.ID) || {};
   const position = mapPosition(player.Pos);
   const playerStats = getOverallStats(position, stats);
   return {
       Name: players.find(p => p.ID === info.ID)?.Name || "Unknown",
-      Team: roster.ABBR,
+      Team: roster.ABBR || "FA",
       Position: position,
       Salary: info.Salary || 0,
       Rating: playerStats.games_played ? playerStats.rating : 0,
