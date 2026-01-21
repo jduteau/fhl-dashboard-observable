@@ -454,7 +454,7 @@ smithwi01,MIN,
 stephch02,MIN,
 timmico01,MIN,
 vasilan02,MIN,
-dachki01,MTL,R
+dachki01,MTL,
 eliasga01,MTL,R
 eriksfi01,MTL,R
 gregono01,MTL,R
@@ -476,7 +476,7 @@ comrier01,MTL,
 coppan01,MTL,
 danauph01,MTL,
 fleurha01,MTL,
-foegewa01,MTL,
+foegewa01,MTL,R
 girgeze01,MTL,
 grebeni01,MTL,
 grzelma01,MTL,
@@ -1051,7 +1051,7 @@ merzlel01,WSH,R
 mirosiv01,WSH,R
 reidca01,WSH,R
 zellewi01,WSH,R
-carrisa01,WSH,R
+carrisa01,WSH,
 cizikca01,WSH,
 comphj.01,WSH,
 forsban01,WSH,
@@ -1066,7 +1066,7 @@ mcavoch01,WSH,
 mcleory01,WSH,
 monahse01,WSH,
 nurseda01,WSH,
-perryco01,WSH,
+perryco01,WSH,R
 rantami01,WSH,
 sanhetr01,WSH,
 smithre01,WSH,
