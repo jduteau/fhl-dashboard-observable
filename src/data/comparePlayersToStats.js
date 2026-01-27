@@ -24,7 +24,10 @@ const compareTeamsBetweenInfoAndStats = async () => {
     latestStatsFile.forEach((player) => {
         const expectedTeam = playerTeamMap[player.hockeyRef];
         if (expectedTeam && expectedTeam !== player.team) {
-            console.log(`${player.hockeyRef}: Info Team = ${expectedTeam}, Stats Team = ${player.team} ${playerMultipleTeams.find(p => p.PLAYERS === player.hockeyRef)?.TEAM == player.team ? "Handled" : ''}`);
+            const multiplePlayers = playerMultipleTeams.find(p => p.PLAYERS === player.hockeyRef);
+            if (!multiplePlayers || multiplePlayers.TEAM !== player.team) {
+                console.log(`${player.hockeyRef}: Info Team = ${expectedTeam}, Stats Team = ${player.team}`);
+            }
         }
     });
 }
