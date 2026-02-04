@@ -45,6 +45,7 @@ export const statsPeriods = [
   { period: 15, data: await readStatsFile("src/data/stats_p15.csv") },
   { period: 16, data: await readStatsFile("src/data/stats_p16.csv") },
   { period: 17, data: await readStatsFile("src/data/stats_p17.csv") },
+  { period: 18, data: await readStatsFile("src/data/stats_p18.csv") },
   // Add more periods here as files become available:
   // { period: 4, data: await readStatsFile("src/data/stats_p04.csv") },
   // etc...
@@ -71,6 +72,7 @@ export const rosterPeriods = [
   { period: 15, data: await csvParse(stripBom(readFileSync("src/data/rosters_p15.csv", "utf-8"))) },
   { period: 16, data: await csvParse(stripBom(readFileSync("src/data/rosters_p16.csv", "utf-8"))) },
   { period: 17, data: await csvParse(stripBom(readFileSync("src/data/rosters_p17.csv", "utf-8"))) },
+  { period: 18, data: await csvParse(stripBom(readFileSync("src/data/rosters_p18.csv", "utf-8"))) },
   // Add more periods here as files become available:
   // { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
   // etc...
