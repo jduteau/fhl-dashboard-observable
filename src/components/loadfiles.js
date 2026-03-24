@@ -49,6 +49,7 @@ export const statsPeriods = [
   { period: 19, data: await readStatsFile("src/data/stats_p19.csv") },
   { period: 20, data: await readStatsFile("src/data/stats_p20.csv") },
   { period: 21, data: await readStatsFile("src/data/stats_p21.csv") },
+  { period: 22, data: await readStatsFile("src/data/stats_p22.csv") },
   // Add more periods here as files become available:
   // { period: 4, data: await readStatsFile("src/data/stats_p04.csv") },
   // etc...
@@ -79,7 +80,7 @@ export const rosterPeriods = [
   { period: 19, data: await csvParse(stripBom(readFileSync("src/data/rosters_p19.csv", "utf-8"))) },
   { period: 20, data: await csvParse(stripBom(readFileSync("src/data/rosters_p20.csv", "utf-8"))) },
   { period: 21, data: await csvParse(stripBom(readFileSync("src/data/rosters_p21.csv", "utf-8"))) },
-//  { period: 22, data: await csvParse(stripBom(readFileSync("src/data/rosters_p22.csv", "utf-8"))) },
+  { period: 22, data: await csvParse(stripBom(readFileSync("src/data/rosters_p22.csv", "utf-8"))) },
 //  { period: 23, data: await csvParse(stripBom(readFileSync("src/data/rosters_p23.csv", "utf-8"))) },
 //  { period: 24, data: await csvParse(stripBom(readFileSync("src/data/rosters_p24.csv", "utf-8"))) },
 //  { period: 25, data: await csvParse(stripBom(readFileSync("src/data/rosters_p25.csv", "utf-8"))) },
