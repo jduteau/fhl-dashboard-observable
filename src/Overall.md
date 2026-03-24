@@ -58,7 +58,6 @@ ${Inputs.table(searchPlayers, {
     },
     format: {
     Name: (x, i, data) => {
-        console.log(data[i]);
         return data[i].Drafted ? x : html`<span style="background-color: yellow;">${x}</span>`;
     },
     Goals: x => x !== null ? x : "",

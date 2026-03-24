@@ -1,4 +1,4 @@
-import {readCsvFile, rosterPeriods, mapPosition, calculateAge, availablePeriods } from "../components/loadfiles.js";
+import {readCsvFile, rosterPeriods, mapPosition, calculateAge, availablePeriods, lastPeriodNum } from "../components/loadfiles.js";
 
 const teamInfo = await readCsvFile("src/data/team_info.csv");
 const teamCash = await readCsvFile("src/data/team_cash.csv");
@@ -7,8 +7,6 @@ const playerInfo = await readCsvFile("src/data/player_info.csv");
 const contracts = await readCsvFile("src/data/contracts.csv");
 const currentPicks = await readCsvFile("src/data/current_picks.csv");
 const nextPicks = await readCsvFile("src/data/next_picks.csv");
-
-const lastPeriodNum = availablePeriods.length - 1;
 
 const teams = teamInfo.map(team => {
   const cashInfo = teamCash.find(cash => cash.ABBR === team.ABBR);
@@ -84,5 +82,5 @@ const teams = teamInfo.map(team => {
   return team;
 });
 
-process.stdout.write(JSON.stringify({ teams, availablePeriods }));
+process.stdout.write(JSON.stringify({ teams, availablePeriods, lastPeriodNum }));
 //process.stdout.write(JSON.stringify(teamCash));
