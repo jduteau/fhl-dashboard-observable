@@ -128,9 +128,9 @@ const team2NewBudget = team2.CASH - (team2NewSalaryPerPeriod < 13 ? 13 : team2Ne
 <pre>
 TRADE DETAILS
 To ${selectedTeam1}
-${team1Trades}
-To ${selectedTeam2}
 ${team2Trades}
+To ${selectedTeam2}
+${team1Trades}
 
 New ${selectedTeam1} Budget: ${team1NewBudget.toFixed(2)}
 New ${selectedTeam2} Budget: ${team2NewBudget.toFixed(2)}
