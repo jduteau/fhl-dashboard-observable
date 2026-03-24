@@ -1,4 +1,4 @@
-import { readCsvFile, statsData, rosterPeriods, availablePeriods, mapPosition, getStatsForPeriod } from "../components/loadfiles.js";
+import { readCsvFile, statsData, rosterPeriods, availablePeriods, mapPosition, getStatsForPeriod, lastPeriodNum } from "../components/loadfiles.js";
 
 const teamInfo = await readCsvFile("src/data/team_info.csv");
 const playerInfo = await readCsvFile("src/data/player_info.csv");
@@ -455,8 +455,9 @@ const teamData = teamInfo.map(team => {
   rosterPeriods.forEach(periodInfo => {
     team[periodInfo.period] = {};
     const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
-    const currentStats = statsData[periodInfo.period];
-    const previousStats = (periodInfo.period > 1) ? statsData[periodInfo.period - 1] : [];
+    const currentStats = statsData[periodInfo.period > lastPeriodNum ? lastPeriodNum : periodInfo.period];
+    const previousStats = (periodInfo.period > 1) ?  
+      (periodInfo.period > lastPeriodNum ? statsData[lastPeriodNum - 1] : statsData[periodInfo.period - 1]) : [];
     team[periodInfo.period]['ROSTER'] = roster.map(player => {
       const info = playerInfo.find(p => p.ID === player.ID);
       const position = mapPosition(info.Pos);
