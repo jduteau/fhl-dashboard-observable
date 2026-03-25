@@ -1,9 +1,9 @@
 import { readCsvFile, statsData, lastPeriodNum, rosterPeriods, availablePeriods, mapPosition, calculateAge, getStatsForPeriod, latestStatsFile, getOverallStats } from "../components/loadfiles.js";
 
-const teamInfo = await readCsvFile("src/data/team_info.csv");
-const owners = await readCsvFile("src/data/owners.csv");
-const playerInfo = await readCsvFile("src/data/player_info.csv");
-const contracts = await readCsvFile("src/data/contracts.csv");
+const teamInfo = await readCsvFile("src/data/static/team_info.csv");
+const owners = await readCsvFile("src/data/static/owners.csv");
+const playerInfo = await readCsvFile("src/data/static/player_info.csv");
+const contracts = await readCsvFile("src/data/static/contracts.csv");
 
 const teams = teamInfo.map(team=>team.ABBR).sort();
 
@@ -42,8 +42,7 @@ const teamData = teamInfo.map(team => {
       SA: position === "G" ? (playerStats.sa || 0) : null,
       GA: position === "G" ? (playerStats.ga || 0) : null,
       Toughness: position === "G" ? null : playerStats.toughness,
-      DStat: position === "G" ? null : playerStats.dstat,
-      GStat: position === "G" ? (playerStats.gstat || 0) : null,
+      DStat: position === "G" ? (playerStats.gstat || 0) : playerStats.dstat,
       GamesPlayed: playerStats.games_played,
       Rating: playerStats.games_played ? playerStats.rating : 0,
     };
@@ -65,8 +64,8 @@ const teamData = teamInfo.map(team => {
       goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
       assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
       toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
-      dstat: totals.dstat + (player.DStat || 0),
-      gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
+      dstat: totals.dstat + (player.Position !== "G" ? (player.DStat || 0) : 0),
+      gstat: totals.gstat + (player.Position === "G" ? (player.DStat || 0) : 0)
     }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
 
   team["OVERALL"]['RESERVE_TOTALS'] = { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 };
@@ -107,8 +106,7 @@ const teamData = teamInfo.map(team => {
         SA: position === "G" ? (playerStats.sa || 0) : null,
         GA: position === "G" ? (playerStats.ga || 0) : null,
         Toughness: position === "G" ? null : playerStats.toughness,
-        DStat: position === "G" ? null : playerStats.dstat,
-        GStat: position === "G" ? (playerStats.gstat || 0) : null,
+        DStat: position === "G" ? (playerStats.gstat || 0) : playerStats.dstat,
         GamesPlayed: playerStats.games_played,
         Rating: rating,
       };
@@ -131,8 +129,8 @@ const teamData = teamInfo.map(team => {
         goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
         assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
         toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
-        dstat: totals.dstat + (player.DStat || 0),
-        gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
+        dstat: totals.dstat + (player.Position !== "G" ? (player.DStat || 0) : 0),
+        gstat: totals.gstat + (player.Position === "G" ? (player.DStat || 0) : 0)
       }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
 
     team[periodInfo.period]['RESERVE_TOTALS'] = team[periodInfo.period]['ROSTER']
@@ -141,8 +139,8 @@ const teamData = teamInfo.map(team => {
         goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
         assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
         toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
-        dstat: totals.dstat + (player.DStat || 0),
-        gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
+        dstat: totals.dstat + (player.Position !== "G" ? (player.DStat || 0) : 0),
+        gstat: totals.gstat + (player.Position === "G" ? (player.DStat || 0) : 0)
       }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
 
   });

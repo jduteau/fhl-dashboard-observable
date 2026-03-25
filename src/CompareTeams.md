@@ -26,7 +26,7 @@ const team2Roster = teamPlayers.teamData.find((t) => t.ABBR === selectedTeam2)["
 
 ```js
 const team1Table = Inputs.table(team1Roster, {
-      columns: ["Name", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "GStat", "Rating", "NHLTeam"],
+      columns: ["Name", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
       header: {
         Name: "Player Name",
         Position: "Pos",
@@ -36,8 +36,7 @@ const team1Table = Inputs.table(team1Roster, {
         Goals: "G",
         Assists: "A",
         Toughness: "T",
-        DStat: "DS",
-        GStat: "GS", 
+        DStat: "D/GS",
         Rating: "Rate",
         NHLTeam: "NHL"
       },
@@ -46,7 +45,6 @@ const team1Table = Inputs.table(team1Roster, {
         Assists: x => x !== null ? x : "",
         Toughness: x => x !== null ? x : "",
         DStat: x => x !== null ? x.toFixed(2) : "",
-        GStat: x => x !== null ? x.toFixed(2) : "",
         Rating: x => x.toFixed(0)
       },
       sort: null,
@@ -56,9 +54,8 @@ const team1Table = Inputs.table(team1Roster, {
         Contract: 40,
         Goals: 20,
         Assists: 20,
-        Toughness: 20,
-        DStat: 40,
-        GStat: 40,
+        Toughness: 25,
+        DStat: 45,
         GamesPlayed: 20,
         NHLTeam: 35,
         Rating: 30
@@ -68,7 +65,7 @@ const team1Table = Inputs.table(team1Roster, {
     });
 
 const team2Table = Inputs.table(team2Roster, {
-      columns: ["Name", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "GStat", "Rating", "NHLTeam"],
+      columns: ["Name", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
       header: {
         Name: "Player Name",
         Position: "Pos",
@@ -78,8 +75,7 @@ const team2Table = Inputs.table(team2Roster, {
         Goals: "G",
         Assists: "A",
         Toughness: "T",
-        DStat: "DS",
-        GStat: "GS", 
+        DStat: "D/GS",
         Rating: "Rate",
         NHLTeam: "NHL"
       },
@@ -88,7 +84,6 @@ const team2Table = Inputs.table(team2Roster, {
         Assists: x => x !== null ? x : "",
         Toughness: x => x !== null ? x : "",
         DStat: x => x !== null ? x.toFixed(2) : "",
-        GStat: x => x !== null ? x.toFixed(2) : "",
         Rating: x => x.toFixed(0)
       },
       sort: null,
@@ -98,9 +93,8 @@ const team2Table = Inputs.table(team2Roster, {
         Contract: 40,
         Goals: 20,
         Assists: 20,
-        Toughness: 20,
-        DStat: 40,
-        GStat: 40,
+        Toughness: 25,
+        DStat: 45,
         GamesPlayed: 20,
         NHLTeam: 35,
         Rating: 30

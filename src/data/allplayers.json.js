@@ -1,9 +1,9 @@
 import { readCsvFile, latestStatsFile, statsPeriods, statsData, latestRosterFile, mapPosition, calculateAge, availablePeriods, getStatsForPeriod, getOverallStats } from "../components/loadfiles.js";
 
-const teamInfo = await readCsvFile("src/data/team_info.csv");
-const playerInfo = await readCsvFile("src/data/player_info.csv");
-const contracts = await readCsvFile("src/data/contracts.csv");
-const drafted = await readCsvFile("src/data/drafted_players.csv");
+const teamInfo = await readCsvFile("src/data/static/team_info.csv");
+const playerInfo = await readCsvFile("src/data/static/player_info.csv");
+const contracts = await readCsvFile("src/data/static/contracts.csv");
+const drafted = await readCsvFile("src/data/static/drafted_players.csv");
 
 const teams = ["All",...teamInfo.map(team=>team.ABBR).sort(), "FA"];
 
@@ -42,8 +42,7 @@ const playerData = playerInfo.map(info => {
     SA: position === "G" ? (playerStats.sa || 0) : null,
     GA: position === "G" ? (playerStats.ga || 0) : null,
     Toughness: position === "G" ? null : playerStats.toughness,
-    DStat: position === "G" ? null : playerStats.dstat,
-    GStat: position === "G" ? (playerStats.gstat || 0) : null,
+    DStat: position === "G" ? (playerStats.gstat || 0) : playerStats.dstat,
     GamesPlayed: playerStats.games_played,
     Rating: overallRating
   };
@@ -80,8 +79,7 @@ const playerData = playerInfo.map(info => {
       SA: position === "G" ? (playerStats.sa || 0) : null,
       GA: position === "G" ? (playerStats.ga || 0) : null,
       Toughness: position === "G" ? null : playerStats.toughness,
-      DStat: position === "G" ? null : playerStats.dstat,
-      GStat: position === "G" ? (playerStats.gstat || 0) : null,
+      DStat: position === "G" ? (playerStats.gstat || 0) : playerStats.dstat,
       GamesPlayed: playerStats.games_played,
       Rating: overallRating,
     };

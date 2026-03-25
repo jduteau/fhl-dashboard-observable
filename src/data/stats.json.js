@@ -1,8 +1,8 @@
 import { readCsvFile, getOverallStats, latestStatsFile, latestRosterFile, mapPosition } from "../components/loadfiles.js";
 
-const contracts = await readCsvFile("src/data/contracts.csv");
-const players = await readCsvFile("src/data/player_info.csv");
-const teamInfo = await readCsvFile("src/data/team_info.csv");
+const contracts = await readCsvFile("src/data/static/contracts.csv");
+const players = await readCsvFile("src/data/static/player_info.csv");
+const teamInfo = await readCsvFile("src/data/static/team_info.csv");
 
 const contractRanking = contracts.map(info => {
 

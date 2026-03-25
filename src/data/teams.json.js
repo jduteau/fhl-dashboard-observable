@@ -1,12 +1,12 @@
 import {readCsvFile, rosterPeriods, mapPosition, calculateAge, availablePeriods, lastPeriodNum } from "../components/loadfiles.js";
 
-const teamInfo = await readCsvFile("src/data/team_info.csv");
-const teamCash = await readCsvFile("src/data/team_cash.csv");
-const owners = await readCsvFile("src/data/owners.csv");
-const playerInfo = await readCsvFile("src/data/player_info.csv");
-const contracts = await readCsvFile("src/data/contracts.csv");
-const currentPicks = await readCsvFile("src/data/current_picks.csv");
-const nextPicks = await readCsvFile("src/data/next_picks.csv");
+const teamInfo = await readCsvFile("src/data/static/team_info.csv");
+const teamCash = await readCsvFile("src/data/static/team_cash.csv");
+const owners = await readCsvFile("src/data/static/owners.csv");
+const playerInfo = await readCsvFile("src/data/static/player_info.csv");
+const contracts = await readCsvFile("src/data/static/contracts.csv");
+const currentPicks = await readCsvFile("src/data/static/current_picks.csv");
+const nextPicks = await readCsvFile("src/data/static/next_picks.csv");
 
 const teams = teamInfo.map(team => {
   const cashInfo = teamCash.find(cash => cash.ABBR === team.ABBR);

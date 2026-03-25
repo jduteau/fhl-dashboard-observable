@@ -29,7 +29,7 @@ const searchPlayers = Generators.input(searchInput);
 
 <div class="tab-content">
 ${Inputs.table(searchPlayers, {
-    columns: ["Name", "Position", "FHL", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Wins", "Losses", "Ties", "SO", "GA", "SA", "GStat", "Rating", "NHLTeam", "Salary", "Contract"],
+    columns: ["Name", "Position", "FHL", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Wins", "Losses", "Ties", "SO", "GA", "SA", "Rating", "NHLTeam", "Salary", "Contract"],
     header: {
     Name: "Player Name",
     Position: "Pos",
@@ -44,14 +44,13 @@ ${Inputs.table(searchPlayers, {
     Take: "Take",
     Give: "Give",
     TOI: "TOI",
-    DStat: "DStat",
+    DStat: "D-GStat",
     Wins: "W",
     Losses: "L",
     Ties: "T",
     SO: "SO",
     GA: "GA",
     SA: "SA",
-    GStat: "GStat", 
     GamesPlayed: "GP",
     NHLTeam: "NHL",
     Rating: "Rate"
@@ -76,7 +75,6 @@ ${Inputs.table(searchPlayers, {
     GA:  x => x !== null ? x : "",
     SA:  x => x !== null ? x : "",
     DStat: x => x !== null ? x.toFixed(2) : "",
-    GStat: x => x !== null ? x.toFixed(2) : "",
     Rating: x => x.toFixed(0)
     },
     width: {
@@ -95,7 +93,6 @@ ${Inputs.table(searchPlayers, {
     SO: 40,
     GA: 50,
     SA: 60,
-    GStat: 70,
     GamesPlayed: 40,
     NHLTeam: 40,
     Rating: 40,

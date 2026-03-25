@@ -71,7 +71,7 @@ ${periodSelector}
       </div>
     </div>
     ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "GStat", "Rating", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
+      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
       header: {
         Name: "Player Name",
         Position: "Pos",
@@ -80,8 +80,7 @@ ${periodSelector}
         Goals: "Goals",
         Assists: "Assists",
         Toughness: "Toughness",
-        DStat: "D-Stat",
-        GStat: "G-Stat", 
+        DStat: "D/G-Stat",
         Rating: "Rate",
         NHLTeam: "NHL",
         Salary: "Salary ($)",
@@ -95,7 +94,6 @@ ${periodSelector}
         Assists: x => x !== null ? x : "",
         Toughness: x => x !== null ? x : "",
         DStat: x => x !== null ? x.toFixed(2) : "",
-        GStat: x => x !== null ? x.toFixed(2) : "",
         Rating: x => x.toFixed(0),
         Salary: x => x ? x.toLocaleString("en-US") : "0",
         BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
@@ -108,7 +106,6 @@ ${periodSelector}
         Assists: 40,
         Toughness: 40,
         DStat: 70,
-        GStat: 70,
         GamesPlayed: 40,
         NHLTeam: 40,
         Rating: 40,
@@ -142,7 +139,7 @@ ${periodSelector}
       </div>
     </div>
     ${Inputs.table(teamInfo.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "GStat", "Rating", "NHLTeam"],
+      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "Rating", "NHLTeam"],
       header: {
         Name: "Player Name",
         Position: "Pos",
@@ -156,12 +153,11 @@ ${periodSelector}
         Take: "Take",
         Give: "Give",
         TOI: "TOI",
-        DStat: "DStat",
+        DStat: "D-GStat",
         Record: "Record",
         SO: "SO",
         GA: "GA",
         SA: "SA",
-        GStat: "GStat", 
         GamesPlayed: "GP",
         NHLTeam: "NHL",
         Rating: "Rate"
@@ -182,7 +178,6 @@ ${periodSelector}
         GA:  x => x !== null ? x : "",
         SA:  x => x !== null ? x : "",
         DStat: x => x !== null ? x.toFixed(2) : "",
-        GStat: x => x !== null ? x.toFixed(2) : "",
         Rating: x => x.toFixed(0)
       },
       width: {
@@ -202,7 +197,6 @@ ${periodSelector}
         SO: 40,
         GA: 50,
         SA: 60,
-        GStat: 70,
         GamesPlayed: 40,
         NHLTeam: 40,
         Rating: 40

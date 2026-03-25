@@ -1,7 +1,7 @@
 import { readCsvFile, latestStatsFile } from "../components/loadfiles.js";
 
-const playerInfo = await readCsvFile("src/data/player_info.csv");
-const playerMultipleTeams = await readCsvFile("src/data/player_multiple_teams.csv");
+const playerInfo = await readCsvFile("src/data/static/player_info.csv");
+const playerMultipleTeams = await readCsvFile("src/data/static/player_multiple_teams.csv");
 
 // Find players who are not in the rosters file
 const compareStatsToRoster = async () => {

@@ -28,65 +28,60 @@ export function readStatsFile(fileName) {
 
 // Only include FileAttachment calls for files that actually exist
 export const statsPeriods = [
-  { period: 1, data: await readStatsFile("src/data/stats_p01.csv") },
-  { period: 2, data: await readStatsFile("src/data/stats_p02.csv") },
-  { period: 3, data: await readStatsFile("src/data/stats_p03.csv") },
-  { period: 4, data: await readStatsFile("src/data/stats_p04.csv") },
-  { period: 5, data: await readStatsFile("src/data/stats_p05.csv") },
-  { period: 6, data: await readStatsFile("src/data/stats_p06.csv") },
-  { period: 7, data: await readStatsFile("src/data/stats_p07.csv") },
-  { period: 8, data: await readStatsFile("src/data/stats_p08.csv") },
-  { period: 9, data: await readStatsFile("src/data/stats_p09.csv") },
-  { period: 10, data: await readStatsFile("src/data/stats_p10.csv") },
-  { period: 11, data: await readStatsFile("src/data/stats_p11.csv") },
-  { period: 12, data: await readStatsFile("src/data/stats_p12.csv") },
-  { period: 13, data: await readStatsFile("src/data/stats_p13.csv") },
-  { period: 14, data: await readStatsFile("src/data/stats_p14.csv") },
-  { period: 15, data: await readStatsFile("src/data/stats_p15.csv") },
-  { period: 16, data: await readStatsFile("src/data/stats_p16.csv") },
-  { period: 17, data: await readStatsFile("src/data/stats_p17.csv") },
-  { period: 18, data: await readStatsFile("src/data/stats_p18.csv") },
-  { period: 19, data: await readStatsFile("src/data/stats_p19.csv") },
-  { period: 20, data: await readStatsFile("src/data/stats_p20.csv") },
-  { period: 21, data: await readStatsFile("src/data/stats_p21.csv") },
-  { period: 22, data: await readStatsFile("src/data/stats_p22.csv") },
-  // Add more periods here as files become available:
-  // { period: 4, data: await readStatsFile("src/data/stats_p04.csv") },
-  // etc...
+  { period: 1, data: await readStatsFile("src/data/static/stats/stats_p01.csv") },
+  { period: 2, data: await readStatsFile("src/data/static/stats/stats_p02.csv") },
+  { period: 3, data: await readStatsFile("src/data/static/stats/stats_p03.csv") },
+  { period: 4, data: await readStatsFile("src/data/static/stats/stats_p04.csv") },
+  { period: 5, data: await readStatsFile("src/data/static/stats/stats_p05.csv") },
+  { period: 6, data: await readStatsFile("src/data/static/stats/stats_p06.csv") },
+  { period: 7, data: await readStatsFile("src/data/static/stats/stats_p07.csv") },
+  { period: 8, data: await readStatsFile("src/data/static/stats/stats_p08.csv") },
+  { period: 9, data: await readStatsFile("src/data/static/stats/stats_p09.csv") },
+  { period: 10, data: await readStatsFile("src/data/static/stats/stats_p10.csv") },
+  { period: 11, data: await readStatsFile("src/data/static/stats/stats_p11.csv") },
+  { period: 12, data: await readStatsFile("src/data/static/stats/stats_p12.csv") },
+  { period: 13, data: await readStatsFile("src/data/static/stats/stats_p13.csv") },
+  { period: 14, data: await readStatsFile("src/data/static/stats/stats_p14.csv") },
+  { period: 15, data: await readStatsFile("src/data/static/stats/stats_p15.csv") },
+  { period: 16, data: await readStatsFile("src/data/static/stats/stats_p16.csv") },
+  { period: 17, data: await readStatsFile("src/data/static/stats/stats_p17.csv") },
+  { period: 18, data: await readStatsFile("src/data/static/stats/stats_p18.csv") },
+  { period: 19, data: await readStatsFile("src/data/static/stats/stats_p19.csv") },
+  { period: 20, data: await readStatsFile("src/data/static/stats/stats_p20.csv") },
+  { period: 21, data: await readStatsFile("src/data/static/stats/stats_p21.csv") },
+  { period: 22, data: await readStatsFile("src/data/static/stats/stats_p22.csv") },
+//  { period: 23, data: await readStatsFile("src/data/static/stats/stats_p23.csv") },
+//  { period: 24, data: await readStatsFile("src/data/static/stats/stats_p24.csv") },
+//  { period: 25, data: await readStatsFile("src/data/static/stats/stats_p25.csv") },
 ];
-
-export const latestStatsFile = statsPeriods[statsPeriods.length - 1].data;
 
 //  Load period-specific roster files (add more as files become available)
 export const rosterPeriods = [
-  { period: 1, data: await csvParse(stripBom(readFileSync("src/data/rosters_p01.csv", "utf-8"))) },
-  { period: 2, data: await csvParse(stripBom(readFileSync("src/data/rosters_p02.csv", "utf-8"))) },
-  { period: 3, data: await csvParse(stripBom(readFileSync("src/data/rosters_p03.csv", "utf-8"))) },
-  { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
-  { period: 5, data: await csvParse(stripBom(readFileSync("src/data/rosters_p05.csv", "utf-8"))) },
-  { period: 6, data: await csvParse(stripBom(readFileSync("src/data/rosters_p06.csv", "utf-8"))) },
-  { period: 7, data: await csvParse(stripBom(readFileSync("src/data/rosters_p07.csv", "utf-8"))) },
-  { period: 8, data: await csvParse(stripBom(readFileSync("src/data/rosters_p08.csv", "utf-8"))) },
-  { period: 9, data: await csvParse(stripBom(readFileSync("src/data/rosters_p09.csv", "utf-8"))) },
-  { period: 10, data: await csvParse(stripBom(readFileSync("src/data/rosters_p10.csv", "utf-8"))) },
-  { period: 11, data: await csvParse(stripBom(readFileSync("src/data/rosters_p11.csv", "utf-8"))) },
-  { period: 12, data: await csvParse(stripBom(readFileSync("src/data/rosters_p12.csv", "utf-8"))) },
-  { period: 13, data: await csvParse(stripBom(readFileSync("src/data/rosters_p13.csv", "utf-8"))) },
-  { period: 14, data: await csvParse(stripBom(readFileSync("src/data/rosters_p14.csv", "utf-8"))) },
-  { period: 15, data: await csvParse(stripBom(readFileSync("src/data/rosters_p15.csv", "utf-8"))) },
-  { period: 16, data: await csvParse(stripBom(readFileSync("src/data/rosters_p16.csv", "utf-8"))) },
-  { period: 17, data: await csvParse(stripBom(readFileSync("src/data/rosters_p17.csv", "utf-8"))) },
-  { period: 18, data: await csvParse(stripBom(readFileSync("src/data/rosters_p18.csv", "utf-8"))) },
-  { period: 19, data: await csvParse(stripBom(readFileSync("src/data/rosters_p19.csv", "utf-8"))) },
-  { period: 20, data: await csvParse(stripBom(readFileSync("src/data/rosters_p20.csv", "utf-8"))) },
-  { period: 21, data: await csvParse(stripBom(readFileSync("src/data/rosters_p21.csv", "utf-8"))) },
-  { period: 22, data: await csvParse(stripBom(readFileSync("src/data/rosters_p22.csv", "utf-8"))) },
-//  { period: 23, data: await csvParse(stripBom(readFileSync("src/data/rosters_p23.csv", "utf-8"))) },
-//  { period: 24, data: await csvParse(stripBom(readFileSync("src/data/rosters_p24.csv", "utf-8"))) },
-//  { period: 25, data: await csvParse(stripBom(readFileSync("src/data/rosters_p25.csv", "utf-8"))) },
-  // Add more periods here as files become available:
-  // { period: 4, data: await csvParse(stripBom(readFileSync("src/data/rosters_p04.csv", "utf-8"))) },
-  // etc...
+  { period: 1, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p01.csv", "utf-8"))) },
+  { period: 2, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p02.csv", "utf-8"))) },
+  { period: 3, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p03.csv", "utf-8"))) },
+  { period: 4, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p04.csv", "utf-8"))) },
+  { period: 5, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p05.csv", "utf-8"))) },
+  { period: 6, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p06.csv", "utf-8"))) },
+  { period: 7, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p07.csv", "utf-8"))) },
+  { period: 8, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p08.csv", "utf-8"))) },
+  { period: 9, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p09.csv", "utf-8"))) },
+  { period: 10, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p10.csv", "utf-8"))) },
+  { period: 11, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p11.csv", "utf-8"))) },
+  { period: 12, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p12.csv", "utf-8"))) },
+  { period: 13, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p13.csv", "utf-8"))) },
+  { period: 14, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p14.csv", "utf-8"))) },
+  { period: 15, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p15.csv", "utf-8"))) },
+  { period: 16, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p16.csv", "utf-8"))) },
+  { period: 17, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p17.csv", "utf-8"))) },
+  { period: 18, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p18.csv", "utf-8"))) },
+  { period: 19, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p19.csv", "utf-8"))) },
+  { period: 20, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p20.csv", "utf-8"))) },
+  { period: 21, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p21.csv", "utf-8"))) },
+  { period: 22, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p22.csv", "utf-8"))) },
+//  { period: 23, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p23.csv", "utf-8"))) },
+//  { period: 24, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p24.csv", "utf-8"))) },
+//  { period: 25, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p25.csv", "utf-8"))) },
 ];
 
 export const statsData = {};
@@ -104,8 +99,8 @@ rosterPeriods.forEach(periodInfo => {
 export const availablePeriods = [...Object.keys(statsData)];
 export const lastPeriodNum = availablePeriods.length-1;
 
+export const latestStatsFile = statsPeriods[lastPeriodNum].data;
 export const latestRosterFile = rosterPeriods[lastPeriodNum].data;
-export const nextRosterFile = lastPeriodNum < 25 ? rosterPeriods[lastPeriodNum+1]?.data : null;
 
 // Function to map positions to G, D, or F
 export function mapPosition(pos) {
@@ -159,21 +154,15 @@ export function getStatsForPeriod(position, currentStats, previousStats) {
   }
   
   // Calculate current period gstat
-  let currentGstat = null;
+  let currentGstat = 0;
   if (position === "G") {
     currentGstat = 2 * (currentStats["stats/wins"] || 0) + (currentStats["stats/ties"] || 0) + 2 * (currentStats["stats/so"] || 0) + 0.15 * (currentStats["stats/sa"] || 0) - (currentStats["stats/ga"] || 0);
   }
   
   // Calculate previous period gstat
-  let prevGstat = null;
+  let prevGstat = 0;
   if (previousStats && position === "G") {
     prevGstat = 2 * (previousStats["stats/wins"] || 0) + (previousStats["stats/ties"] || 0) + 2 * (previousStats["stats/so"] || 0) + 0.15 * (previousStats["stats/sa"] || 0) - (previousStats["stats/ga"] || 0);
-  }
-  
-  // Calculate gstat difference (only for goalies)
-  let gstatDiff = null;
-  if (position === "G") {
-    gstatDiff = (currentGstat || 0) - (prevGstat || 0);
   }
   
   // Calculate current period toughness
@@ -204,8 +193,7 @@ export function getStatsForPeriod(position, currentStats, previousStats) {
     so: (position === "G") ? ((currentStats["stats/so"] || 0) - (previousStats?.["stats/so"] || 0)) : null,
     sa: (position === "G") ? ((currentStats["stats/sa"] || 0) - (previousStats?.["stats/sa"] || 0)) : null,
     ga: (position === "G") ? ((currentStats["stats/ga"] || 0) - (previousStats?.["stats/ga"] || 0)) : null,
-    gstat: currentGstat,
-    gstat: gstatDiff,
+    gstat: (currentGstat - prevGstat),
     games_played: (currentStats["stats/gp"] || 0) - (previousStats?.["stats/gp"] || 0)
   };
 }

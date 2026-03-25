@@ -1,7 +1,7 @@
 import { readCsvFile, statsData, rosterPeriods, availablePeriods, mapPosition, getStatsForPeriod, lastPeriodNum } from "../components/loadfiles.js";
 
-const teamInfo = await readCsvFile("src/data/team_info.csv");
-const playerInfo = await readCsvFile("src/data/player_info.csv");
+const teamInfo = await readCsvFile("src/data/static/team_info.csv");
+const playerInfo = await readCsvFile("src/data/static/player_info.csv");
 
 // Function to calculate rankings for a specific stat across all teams
 function calculateRankings(teams, period, statKey) {
