@@ -7,104 +7,70 @@ toc: false
 
 ```js
 // Load the data files
-const teamPlayers = await FileAttachment("./data/players.json").json();
-const teamInfo = await FileAttachment("./data/teams.json").json();
+const rosters = await FileAttachment("./data/rosters.json").json();
+const teamInfo = await FileAttachment("./data/teamInfo.json").json();
 
-const team1Selector = Inputs.select(teamPlayers.teams, {label: "Select Team 1:"});
+const team1Selector = Inputs.select(rosters.teams, {label: "Select Team 1:"});
 const selectedTeam1 = Generators.input(team1Selector);
 
-const team2Selector = Inputs.select(teamPlayers.teams, {label: "Select Team 2:"});
+const team2Selector = Inputs.select(rosters.teams, {label: "Select Team 2:"});
 const selectedTeam2 = view(team2Selector);
+
+function createRosterTable(roster) {
+  return Inputs.table(roster, {
+      columns: ["Name", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
+      header: {
+        Name: "Player Name",
+        Position: "Pos",
+        Salary: "Sal",
+        Contract: "Cont",
+        GamesPlayed: "GP",
+        Goals: "G",
+        Assists: "A",
+        Toughness: "T",
+        DStat: "D/GS",
+        Rating: "Rate",
+        NHLTeam: "NHL"
+      },
+      format: {
+        Goals: x => x !== null ? x : "",
+        Assists: x => x !== null ? x : "",
+        Toughness: x => x !== null ? x : "",
+        DStat: x => x !== null ? x.toFixed(2) : "",
+        Rating: x => x.toFixed(0)
+      },
+      sort: null,
+      width: {
+        Position: 25,
+        Salary: 20,
+        Contract: 40,
+        Goals: 20,
+        Assists: 20,
+        Toughness: 25,
+        DStat: 45,
+        GamesPlayed: 20,
+        NHLTeam: 35,
+        Rating: 30
+      },
+      rows: 50,
+      required: false
+    });
+}
 ```
 
 ```js
 const team1 = teamInfo.teams.find((t) => t.ABBR === selectedTeam1);
 const team2 = teamInfo.teams.find((t) => t.ABBR === selectedTeam2);
-const team1Roster = teamPlayers.teamData.find((t) => t.ABBR === selectedTeam1)["OVERALL"].ROSTER;
-const team2Roster = teamPlayers.teamData.find((t) => t.ABBR === selectedTeam2)["OVERALL"].ROSTER;
+const team1Roster = rosters.teamData.find((t) => t.ABBR === selectedTeam1)["OVERALL"].ROSTER;
+const team2Roster = rosters.teamData.find((t) => t.ABBR === selectedTeam2)["OVERALL"].ROSTER;
 ```
 
 ```js
-const team1Table = Inputs.table(team1Roster, {
-      columns: ["Name", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
-      header: {
-        Name: "Player Name",
-        Position: "Pos",
-        Salary: "Sal",
-        Contract: "Cont",
-        GamesPlayed: "GP",
-        Goals: "G",
-        Assists: "A",
-        Toughness: "T",
-        DStat: "D/GS",
-        Rating: "Rate",
-        NHLTeam: "NHL"
-      },
-      format: {
-        Goals: x => x !== null ? x : "",
-        Assists: x => x !== null ? x : "",
-        Toughness: x => x !== null ? x : "",
-        DStat: x => x !== null ? x.toFixed(2) : "",
-        Rating: x => x.toFixed(0)
-      },
-      sort: null,
-      width: {
-        Position: 25,
-        Salary: 20,
-        Contract: 40,
-        Goals: 20,
-        Assists: 20,
-        Toughness: 25,
-        DStat: 45,
-        GamesPlayed: 20,
-        NHLTeam: 35,
-        Rating: 30
-      },
-      rows: 50,
-      required: false
-    });
+const team1Table = createRosterTable(team1Roster);
+const team2Table = createRosterTable(team2Roster);
 
-const team2Table = Inputs.table(team2Roster, {
-      columns: ["Name", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
-      header: {
-        Name: "Player Name",
-        Position: "Pos",
-        Salary: "Sal",
-        Contract: "Cont",
-        GamesPlayed: "GP",
-        Goals: "G",
-        Assists: "A",
-        Toughness: "T",
-        DStat: "D/GS",
-        Rating: "Rate",
-        NHLTeam: "NHL"
-      },
-      format: {
-        Goals: x => x !== null ? x : "",
-        Assists: x => x !== null ? x : "",
-        Toughness: x => x !== null ? x : "",
-        DStat: x => x !== null ? x.toFixed(2) : "",
-        Rating: x => x.toFixed(0)
-      },
-      sort: null,
-      width: {
-        Position: 25,
-        Salary: 20,
-        Contract: 40,
-        Goals: 20,
-        Assists: 20,
-        Toughness: 25,
-        DStat: 45,
-        GamesPlayed: 20,
-        NHLTeam: 35,
-        Rating: 30
-      },
-      rows: 50,
-      required: false
-    });
-
-    const team1Selections = view(team1Table);
-    const team2Selections = view(team2Table);
+const team1Selections = view(team1Table);
+const team2Selections = view(team2Table);
 ```
 ```js
 const team1Trades = team1Selections.map((player) => `${player.Name}`).join(', ');

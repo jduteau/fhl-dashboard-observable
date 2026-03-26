@@ -7,7 +7,7 @@ toc: false
 
 ```js
 // Load the data files
-const teamInfo = await FileAttachment("./data/teams.json").json();
+const teamInfo = await FileAttachment("./data/teamInfo.json").json();
 const currentPeriod = teamInfo.availablePeriods.length;
 ```
 <div class="tabs">

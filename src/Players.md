@@ -7,7 +7,7 @@ toc: false
 
 ```js
 // Load the data files
-const teamInfo = await FileAttachment("./data/players.json").json();
+const teamInfo = await FileAttachment("./data/rosters.json").json();
 
 const teamSelector = Inputs.select(teamInfo.teams, {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
