@@ -52,7 +52,7 @@ export const statsPeriods = [
   { period: 22, data: await readStatsFile("src/data/static/stats/stats_p22.csv") },
   { period: 23, data: await readStatsFile("src/data/static/stats/stats_p23.csv") },
   { period: 24, data: await readStatsFile("src/data/static/stats/stats_p24.csv") },
-//  { period: 25, data: await readStatsFile("src/data/static/stats/stats_p25.csv") },
+  { period: 25, data: await readStatsFile("src/data/static/stats/stats_p25.csv") },
 ];
 
 //  Load period-specific roster files (add more as files become available)
@@ -81,7 +81,7 @@ export const rosterPeriods = [
   { period: 22, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p22.csv", "utf-8"))) },
   { period: 23, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p23.csv", "utf-8"))) },
   { period: 24, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p24.csv", "utf-8"))) },
-//  { period: 25, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p25.csv", "utf-8"))) },
+  { period: 25, data: await csvParse(stripBom(readFileSync("src/data/static/rosters/rosters_p25.csv", "utf-8"))) },
 ];
 
 export const statsData = {};
