@@ -12,5 +12,5 @@ round,matchup,team1,team2
 2,3,NJD,TOR
 2,4,DET,MIN
 3,1,CGY,TOR
-3,2,VEG,DET
-4,1,CGY,VEG
+3,2,VEG,MIN
+4,1,TOR,MIN

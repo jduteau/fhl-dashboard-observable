@@ -14,8 +14,7 @@ const playoffData = await FileAttachment("./data/playoffs.json").json();
 if (playoffData.availableRounds.length === 0) {
   display(html`<div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #666;">
     <h3>No Playoff Data Available</h3>
-    <p>Playoff statistics files (stats_playoff_r01.csv through stats_playoff_r04.csv) are not yet available.</p>
-    <p>Run the playoff stats script to generate playoff data.</p>
+    <p>Come back when the playoffs have started!</p>
   </div>`);
 } else {
   // Create main tabs for each round with sub-tabs for matchups/rankings
@@ -171,6 +170,7 @@ if (playoffData.availableRounds.length === 0) {
                   gstat: x => x.toFixed(2)
                 },
                 sort: "overallRank",
+                rows: 33,
                 reverse: false,
                 width: {
                   overallRank: 30,

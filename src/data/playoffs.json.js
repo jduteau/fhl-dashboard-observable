@@ -59,6 +59,12 @@ function calculateTeamStats(round, teamAbbr) {
   };
 
   teamPlayers.forEach(player => {
+    // Check if this player is active (not a reserve)
+    const rosterEntry = teamRoster.find(r => r.ID === player.hockeyRef);
+    if (!rosterEntry || rosterEntry.RESERVE === 'R') {
+      return; // Skip reserve players
+    }
+    
     const position = mapPosition(player.pos);
     
     teamTotals.goals += player["stats/goals"] || 0;
@@ -110,11 +116,19 @@ availablePlayoffRounds.forEach(round => {
     matchups: []
   };
   
-  // Calculate stats for all teams in this round for ranking purposes
-  const allTeams = [...new Set(bracketConfig.map(row => [row.team1, row.team2]).flat())];
-  const roundTeamStats = [];
+  // Get only teams participating in this specific round
+  const bracketRound = playoffBracket.rounds[round.round - 1];
+  const roundTeams = [];
+  if (bracketRound) {
+    bracketRound.matchups.forEach(matchup => {
+      if (matchup.team1) roundTeams.push(matchup.team1);
+      if (matchup.team2) roundTeams.push(matchup.team2);
+    });
+  }
   
-  allTeams.forEach(teamAbbr => {
+  // Calculate stats only for teams in this round
+  const roundTeamStats = [];
+  roundTeams.forEach(teamAbbr => {
     const teamStats = calculateTeamStats(round, teamAbbr);
     if (teamStats) {
       roundTeamStats.push(teamStats);
@@ -339,9 +353,9 @@ function calculateOverallRankings(teams, individualRankings) {
   // Calculate overall rankings for this round
   const overallRankings = calculateOverallRankings(roundTeamStats, individualRankings);
   
-  const bracketRound = playoffBracket.rounds[round.round - 1];
-  if (bracketRound) {
-    bracketRound.matchups.forEach(matchup => {
+  const matchupBracketRound = playoffBracket.rounds[round.round - 1];
+  if (matchupBracketRound) {
+    matchupBracketRound.matchups.forEach(matchup => {
       const team1Stats = calculateTeamStats(round, matchup.team1);
       const team2Stats = calculateTeamStats(round, matchup.team2);
       
