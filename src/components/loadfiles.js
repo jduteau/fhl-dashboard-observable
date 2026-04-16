@@ -102,17 +102,21 @@ export const lastPeriodNum = availablePeriods.length-1;
 export const latestStatsFile = statsPeriods[lastPeriodNum].data;
 export const latestRosterFile = rosterPeriods[lastPeriodNum].data;
 
-// Playoff stats loading - expecting stats_playoff_r01.csv, stats_playoff_r02.csv, stats_playoff_r03.csv, stats_playoff_r04.csv for the 4 rounds
-export const playoffRounds = [
-  { round: 1, name: "First Round", statsFile: null, rosterFile: null, available: false },
-  { round: 2, name: "Conference Semi-Finals", statsFile: null, rosterFile: null, available: false },
-  { round: 3, name: "Conference Finals", statsFile: null, rosterFile: null, available: false },
-  { round: 4, name: "Stanley Cup Final", statsFile: null, rosterFile: null, available: false },
-];
+// Load playoff round configuration
+const playoffRoundsConfig = await readCsvFile("src/data/static/playoff_rounds.csv");
 
-// Try to load playoff stats and roster files (playoff_r01-r04)
-for (let i = 0; i < 4; i++) {
-  const roundNum = i + 1;
+// Initialize playoff rounds array from configuration
+export const playoffRounds = playoffRoundsConfig.map(config => ({
+  round: parseInt(config.round),
+  name: config.name,
+  statsFile: null,
+  rosterFile: null,
+  available: false
+}));
+
+// Try to load playoff stats and roster files for each configured round
+for (let i = 0; i < playoffRounds.length; i++) {
+  const roundNum = playoffRounds[i].round;
   const paddedNum = roundNum.toString().padStart(2, '0');
   try {
     // Load stats file

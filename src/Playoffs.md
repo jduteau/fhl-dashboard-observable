@@ -18,28 +18,72 @@ if (playoffData.availableRounds.length === 0) {
     <p>Run the playoff stats script to generate playoff data.</p>
   </div>`);
 } else {
-  // Create main tabs with proper html template literal structure
+  // Create main tabs for each round with sub-tabs for matchups/rankings
   display(html`<div class="main-tabs">
     <div class="main-tab-buttons">
-      <button class="main-tab-button active" onclick="showMainTab('matchups-main-tab', this)">Matchups</button>
-      <button class="main-tab-button" onclick="showMainTab('rankings-main-tab', this)">Rankings</button>
+      ${playoffData.availableRounds.map((round, index) => 
+        html`<button class="main-tab-button${index === 0 ? ' active' : ''}" onclick="showMainTab('round-${round}-main-tab', this)">
+          ${playoffData.roundNames[round]}
+        </button>`
+      )}
     </div>
     
-    <div id="matchups-main-tab" class="main-tab-content active">
-      <div class="sub-tabs">
-        <div class="sub-tab-buttons">
-          ${playoffData.availableRounds.map((round, index) => 
-            html`<button class="sub-tab-button${index === 0 ? ' active' : ''}" onclick="showSubTab('round-${round}-tab', this)">
-              ${playoffData.roundNames[round]}
-            </button>`
-          )}
-        </div>
-        <div class="sub-tab-content-container">
-          ${playoffData.availableRounds.map((round, index) => {
-            const roundData = playoffData.data[round];
-            if (!roundData || !roundData.matchups) return html``;
-            
-            return html`<div id="round-${round}-tab" class="sub-tab-content${index === 0 ? ' active' : ''}">
+    ${playoffData.availableRounds.map((round, roundIndex) => {
+      const roundData = playoffData.data[round];
+      if (!roundData || !roundData.matchups) return html``;
+      
+      // Extract teams from matchups for rankings
+      const teams = [];
+      roundData.matchups.forEach(matchup => {
+        if (matchup.team1 && matchup.team1.abbr) {
+          teams.push({
+            overallRank: matchup.team1.rankings.total,
+            team: matchup.team1.abbr,
+            teamName: matchup.team1.name,
+            goals: matchup.team1.goals,
+            goalsRank: matchup.team1.rankings.goals,
+            assists: matchup.team1.assists,
+            assistsRank: matchup.team1.rankings.assists,
+            toughness: matchup.team1.toughness,
+            toughnessRank: matchup.team1.rankings.toughness,
+            dstat: matchup.team1.dstat,
+            dstatRank: matchup.team1.rankings.dstat,
+            gstat: matchup.team1.gstat,
+            gstatRank: matchup.team1.rankings.gstat,
+            overall: matchup.team1.rankings.goals + matchup.team1.rankings.assists + matchup.team1.rankings.toughness + matchup.team1.rankings.dstat + matchup.team1.rankings.gstat
+          });
+        }
+        if (matchup.team2 && matchup.team2.abbr) {
+          teams.push({
+            overallRank: matchup.team2.rankings.total,
+            team: matchup.team2.abbr,
+            teamName: matchup.team2.name,
+            goals: matchup.team2.goals,
+            goalsRank: matchup.team2.rankings.goals,
+            assists: matchup.team2.assists,
+            assistsRank: matchup.team2.rankings.assists,
+            toughness: matchup.team2.toughness,
+            toughnessRank: matchup.team2.rankings.toughness,
+            dstat: matchup.team2.dstat,
+            dstatRank: matchup.team2.rankings.dstat,
+            gstat: matchup.team2.gstat,
+            gstatRank: matchup.team2.rankings.gstat,
+            overall: matchup.team2.rankings.goals + matchup.team2.rankings.assists + matchup.team2.rankings.toughness + matchup.team2.rankings.dstat + matchup.team2.rankings.gstat
+          });
+        }
+      });
+      
+      const rankingsData = teams.sort((a, b) => a.overallRank - b.overallRank);
+      
+      return html`<div id="round-${round}-main-tab" class="main-tab-content${roundIndex === 0 ? ' active' : ''}">
+        <div class="sub-tabs">
+          <div class="sub-tab-buttons">
+            <button class="sub-tab-button active" onclick="showSubTab('round-${round}-matchups-tab', this)">Matchups</button>
+            <button class="sub-tab-button" onclick="showSubTab('round-${round}-rankings-tab', this)">Rankings</button>
+          </div>
+          
+          <div class="sub-tab-content-container">
+            <div id="round-${round}-matchups-tab" class="sub-tab-content active">
               ${roundData.matchups.map(matchup => {
                 if (!matchup.team1 || !matchup.team2) {
                   return html`<p><strong>Matchup ${matchup.matchup}:</strong> TBD vs TBD</p>`;
@@ -85,72 +129,9 @@ if (playoffData.availableRounds.length === 0) {
                   </table>
                 </div>`;
               })}
-            </div>`;
-          })}
-        </div>
-      </div>
-    </div>
-    
-    <div id="rankings-main-tab" class="main-tab-content">
-      <div class="sub-tabs">
-        <div class="sub-tab-buttons">
-          ${playoffData.availableRounds.map((round, index) => 
-            html`<button class="sub-tab-button${index === 0 ? ' active' : ''}" onclick="showSubTab('rankings-round-${round}-tab', this)">
-              ${playoffData.roundNames[round]}
-            </button>`
-          )}
-        </div>
-        <div class="sub-tab-content-container">
-          ${playoffData.availableRounds.map((round, index) => {
-            const roundData = playoffData.data[round];
-            if (!roundData || !roundData.matchups) return html``;
+            </div>
             
-            // Extract teams from matchups and create rankings array
-            const teams = [];
-            roundData.matchups.forEach(matchup => {
-              if (matchup.team1 && matchup.team1.abbr) {
-                teams.push({
-                  overallRank: matchup.team1.rankings.total,
-                  team: matchup.team1.abbr,
-                  teamName: matchup.team1.name,
-                  goals: matchup.team1.goals,
-                  goalsRank: matchup.team1.rankings.goals,
-                  assists: matchup.team1.assists,
-                  assistsRank: matchup.team1.rankings.assists,
-                  toughness: matchup.team1.toughness,
-                  toughnessRank: matchup.team1.rankings.toughness,
-                  dstat: matchup.team1.dstat,
-                  dstatRank: matchup.team1.rankings.dstat,
-                  gstat: matchup.team1.gstat,
-                  gstatRank: matchup.team1.rankings.gstat,
-                  overall: matchup.team1.rankings.goals + matchup.team1.rankings.assists + matchup.team1.rankings.toughness + matchup.team1.rankings.dstat + matchup.team1.rankings.gstat
-                });
-              }
-              if (matchup.team2 && matchup.team2.abbr) {
-                teams.push({
-                  overallRank: matchup.team2.rankings.total,
-                  team: matchup.team2.abbr,
-                  teamName: matchup.team2.name,
-                  goals: matchup.team2.goals,
-                  goalsRank: matchup.team2.rankings.goals,
-                  assists: matchup.team2.assists,
-                  assistsRank: matchup.team2.rankings.assists,
-                  toughness: matchup.team2.toughness,
-                  toughnessRank: matchup.team2.rankings.toughness,
-                  dstat: matchup.team2.dstat,
-                  dstatRank: matchup.team2.rankings.dstat,
-                  gstat: matchup.team2.gstat,
-                  gstatRank: matchup.team2.rankings.gstat,
-                  overall: matchup.team2.rankings.goals + matchup.team2.rankings.assists + matchup.team2.rankings.toughness + matchup.team2.rankings.dstat + matchup.team2.rankings.gstat
-                });
-              }
-            });
-            
-            // Sort by overall ranking (rank 1 first, then 2, 3, etc.)
-            const rankingsData = teams.sort((a, b) => a.overallRank - b.overallRank);
-            
-            return html`<div id="rankings-round-${round}-tab" class="sub-tab-content${index === 0 ? ' active' : ''}">
-              <h3>${playoffData.roundNames[round]} Team Rankings</h3>
+            <div id="round-${round}-rankings-tab" class="sub-tab-content">
               ${Inputs.table(rankingsData, {
                 columns: [
                   "overallRank",
@@ -208,11 +189,11 @@ if (playoffData.availableRounds.length === 0) {
                 },
                 select: false
               })}
-            </div>`;
-          })}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </div>`;
+    })}
   </div>`);
 }
 ```
