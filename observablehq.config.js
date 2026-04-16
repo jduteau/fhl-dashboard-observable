@@ -23,6 +23,7 @@ export default {
     {name: "Overall Stats", path: "/Overall"},
     {name: "Compare Teams", path: "/CompareTeams"},
     {name: "Stats Visualizations", path: "/StatViz"},
+    {name: "Playoffs", path: "/Playoffs"},
   ],
 
   // Content to add to the head of the page, e.g. for a favicon:

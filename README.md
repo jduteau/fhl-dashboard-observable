@@ -15,7 +15,7 @@ Then visit <http://localhost:3000> to preview your app.
 
 ## Project Overview
 
-The FHL Dashboard consists of seven main sections:
+The FHL Dashboard consists of eight main sections:
 
 - **Team Standings** - Division-based standings and overall team rankings
 - **Team Information** - Team details, cash, salaries, and roster summaries  
@@ -24,6 +24,7 @@ The FHL Dashboard consists of seven main sections:
 - **Overall Stats** - Cumulative statistics across all periods
 - **Compare Teams** - Head-to-head team performance comparison
 - **Stats Visualizations** - Interactive charts and graphs
+- **Playoffs** - Tournament bracket display and team vs team playoff statistics
 
 ## Project Structure
 
@@ -36,6 +37,7 @@ The FHL Dashboard consists of seven main sections:
 │  │  ├─ *.json.js              # data loaders (transform CSV to JSON)
 │  │  └─ static/
 │  │     ├─ *.csv               # raw team/player data
+│  │     ├─ playoff_bracket.csv # playoff tournament bracket configuration
 │  │     ├─ stats/              # period-specific stats (stats_p01.csv - stats_p25.csv)
 │  │     └─ rosters/            # period-specific rosters (rosters_p01.csv - rosters_p25.csv)
 │  ├─ *.md                      # dashboard pages
@@ -52,12 +54,30 @@ The FHL Dashboard consists of seven main sections:
 
 **`src/data/`** - Data loaders that transform CSV files into structured JSON, plus static CSV files organized by periods.
 
-**`observablehq.config.js`** - App configuration defining the seven main navigation sections and page routing.
+**`observablehq.config.js`** - App configuration defining the eight main navigation sections and page routing.
 
 ## FHL Data Concepts
 
 ### Periods
 FHL operates in numbered periods (P01, P02, etc.) representing scoring periods throughout the season. Currently supports periods 1-25.
+
+### Playoffs
+Playoff data uses dedicated playoff files for the four playoff rounds:
+- **Round 1**: `stats_playoff_r01.csv` - First Round (8 matchups)
+- **Round 2**: `stats_playoff_r02.csv` - Conference Semi-Finals (4 matchups)
+- **Round 3**: `stats_playoff_r03.csv` - Conference Finals (2 matchups)  
+- **Round 4**: `stats_playoff_r04.csv` - Stanley Cup Final (1 matchup)
+
+The playoffs section displays a tournament bracket and detailed team vs team statistical comparisons.
+
+### Playoff Bracket Configuration
+Edit the playoff matchups in [src/data/static/playoff_bracket.csv](src/data/static/playoff_bracket.csv):
+- **Round 1**: 8 matchups (First Round)
+- **Round 2**: 4 matchups (Conference Semi-Finals)  
+- **Round 3**: 2 matchups (Conference Finals)
+- **Round 4**: 1 matchup (Stanley Cup Final)
+
+The CSV format is: `round,matchup,team1,team2`
 
 ### Fantasy Statistics
 - **D-Stat**: `blocks + takeaways - giveaways + (toi / divisor)` where divisor = 20 for defensemen, 30 for forwards

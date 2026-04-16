@@ -102,6 +102,38 @@ export const lastPeriodNum = availablePeriods.length-1;
 export const latestStatsFile = statsPeriods[lastPeriodNum].data;
 export const latestRosterFile = rosterPeriods[lastPeriodNum].data;
 
+// Playoff stats loading - expecting stats_playoff_r01.csv, stats_playoff_r02.csv, stats_playoff_r03.csv, stats_playoff_r04.csv for the 4 rounds
+export const playoffRounds = [
+  { round: 1, name: "First Round", statsFile: null, rosterFile: null, available: false },
+  { round: 2, name: "Conference Semi-Finals", statsFile: null, rosterFile: null, available: false },
+  { round: 3, name: "Conference Finals", statsFile: null, rosterFile: null, available: false },
+  { round: 4, name: "Stanley Cup Final", statsFile: null, rosterFile: null, available: false },
+];
+
+// Try to load playoff stats and roster files (playoff_r01-r04)
+for (let i = 0; i < 4; i++) {
+  const roundNum = i + 1;
+  const paddedNum = roundNum.toString().padStart(2, '0');
+  try {
+    // Load stats file
+    const statsFilename = `src/data/static/stats/stats_playoff_r${paddedNum}.csv`;
+    const playoffStats = await readStatsFile(statsFilename);
+    playoffRounds[i].statsFile = playoffStats;
+    
+    // Load roster file 
+    const rosterFilename = `src/data/static/rosters/rosters_playoff_r${paddedNum}.csv`;
+    const playoffRoster = await csvParse(stripBom(readFileSync(rosterFilename, "utf-8")));
+    playoffRounds[i].rosterFile = playoffRoster;
+    
+    // Only mark as available if both files exist
+    playoffRounds[i].available = true;
+  } catch (error) {
+    // Files don't exist yet, keep as unavailable
+  }
+}
+
+export const availablePlayoffRounds = playoffRounds.filter(round => round.available);
+
 // Function to map positions to G, D, or F
 export function mapPosition(pos) {
   if (!pos) return "F";
