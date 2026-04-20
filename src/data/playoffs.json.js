@@ -55,7 +55,8 @@ function calculateTeamStats(round, teamAbbr) {
     toi: 0,
     dstat: 0,
     gstat: 0,
-    gp: 0
+    gp: 0,
+    goalieGp: 0
   };
 
   teamPlayers.forEach(player => {
@@ -88,6 +89,7 @@ function calculateTeamStats(round, teamAbbr) {
     // Calculate G-stat for goalies
     if (position === "G") {
       teamTotals.gstat += 2 * (player["stats/wins"] || 0) + (player["stats/ties"] || 0) + 2 * (player["stats/so"] || 0) + 0.15 * (player["stats/sa"] || 0) - (player["stats/ga"] || 0);
+      teamTotals.goalieGp += player["stats/gp"] || 0;
     }
     
     teamTotals.gp += player["stats/gp"] || 0;
@@ -204,8 +206,8 @@ function calculateGstatRankings(teams) {
   const teamsWithoutGoalieGames = [];
   
   teams.forEach(team => {
-    // Check if team has any gstat value (indicating goalie games played)
-    const hasGoalieGames = (team.gstat || 0) > 0;
+    // Check if team has any games played by goalies (indicating active goalie participation)
+    const hasGoalieGames = (team.goalieGp || 0) > 0;
     
     // Round gstat value to 2 decimal places for consistent comparison
     let gstatValue = team.gstat || 0;
