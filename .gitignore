@@ -5,6 +5,10 @@ yarn-error.log
 fhl_stats_overall.csv
 fhl_stats_overall.json
 fhl_stats_overall_bak.json
+fhl_playoff_stats_overall.csv
+fhl_playoff_goalies_stats_overall.csv
 fhlgetstats.sh
 fhlgetplayoffstats.sh
 fhlgetplayerinfo.sh
+.claude/
+
