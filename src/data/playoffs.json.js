@@ -29,7 +29,8 @@ bracketConfig.forEach(row => {
 });
 
 // Function to calculate team stats for a playoff round using roster files
-function calculateTeamStats(round, teamAbbr) {
+// prevRound: if provided, stats are computed as the difference (this round minus previous round)
+function calculateTeamStats(round, teamAbbr, prevRound = null) {
   if (!round.statsFile || !round.rosterFile) return null;
   
   // Get players rostered to this FHL team from the roster file
@@ -40,6 +41,19 @@ function calculateTeamStats(round, teamAbbr) {
   
   // Find stats for these specific players in the stats file
   const teamPlayers = round.statsFile.filter(player => teamPlayerIds.includes(player.hockeyRef));
+  
+  // Build a lookup map for previous round stats to compute per-round differentials
+  const prevStatsMap = {};
+  if (prevRound && prevRound.statsFile) {
+    prevRound.statsFile.forEach(p => { prevStatsMap[p.hockeyRef] = p; });
+  }
+  
+  // Helper: returns the per-round value for a stat field (current minus previous round)
+  const stat = (player, field) => {
+    const curr = player[field] || 0;
+    const prev = prevStatsMap[player.hockeyRef] ? (prevStatsMap[player.hockeyRef][field] || 0) : 0;
+    return curr - prev;
+  };
   
   // Calculate team totals
   let teamTotals = {
@@ -68,31 +82,31 @@ function calculateTeamStats(round, teamAbbr) {
     
     const position = mapPosition(player.pos);
     
-    teamTotals.goals += player["stats/goals"] || 0;
-    teamTotals.assists += player["stats/assists"] || 0;
-    teamTotals.points += (player["stats/goals"] || 0) + (player["stats/assists"] || 0);
-    teamTotals.pim += player["stats/pim"] || 0;
-    teamTotals.hits += player["stats/hits"] || 0;
-    teamTotals.toughness += (player["stats/pim"] || 0) + (player["stats/hits"] || 0);
-    teamTotals.blocks += player["stats/blocks"] || 0;
-    teamTotals.takeaways += player["stats/take"] || 0;
-    teamTotals.giveaways += player["stats/give"] || 0;
-    teamTotals.toi += player["stats/toi"] || 0;
+    teamTotals.goals += stat(player, "stats/goals");
+    teamTotals.assists += stat(player, "stats/assists");
+    teamTotals.points += stat(player, "stats/goals") + stat(player, "stats/assists");
+    teamTotals.pim += stat(player, "stats/pim");
+    teamTotals.hits += stat(player, "stats/hits");
+    teamTotals.toughness += stat(player, "stats/pim") + stat(player, "stats/hits");
+    teamTotals.blocks += stat(player, "stats/blocks");
+    teamTotals.takeaways += stat(player, "stats/take");
+    teamTotals.giveaways += stat(player, "stats/give");
+    teamTotals.toi += stat(player, "stats/toi");
     
     // Calculate D-stat by position
     if (position === "D") {
-      teamTotals.dstat += (player["stats/toi"] || 0) / 20 + (player["stats/blocks"] || 0) + (player["stats/take"] || 0) - (player["stats/give"] || 0);
+      teamTotals.dstat += stat(player, "stats/toi") / 20 + stat(player, "stats/blocks") + stat(player, "stats/take") - stat(player, "stats/give");
     } else if (position === "F") {
-      teamTotals.dstat += (player["stats/toi"] || 0) / 30 + (player["stats/blocks"] || 0) + (player["stats/take"] || 0) - (player["stats/give"] || 0);
+      teamTotals.dstat += stat(player, "stats/toi") / 30 + stat(player, "stats/blocks") + stat(player, "stats/take") - stat(player, "stats/give");
     }
     
     // Calculate G-stat for goalies
     if (position === "G") {
-      teamTotals.gstat += 2 * (player["stats/wins"] || 0) + (player["stats/ties"] || 0) + 2 * (player["stats/so"] || 0) + 0.15 * (player["stats/sa"] || 0) - (player["stats/ga"] || 0);
-      teamTotals.goalieGp += player["stats/gp"] || 0;
+      teamTotals.gstat += 2 * stat(player, "stats/wins") + stat(player, "stats/ties") + 2 * stat(player, "stats/so") + 0.15 * stat(player, "stats/sa") - stat(player, "stats/ga");
+      teamTotals.goalieGp += stat(player, "stats/gp");
     }
     
-    teamTotals.gp += player["stats/gp"] || 0;
+    teamTotals.gp += stat(player, "stats/gp");
   });
 
   const teamData = teamInfo.find(t => t.ABBR === teamAbbr);
@@ -112,7 +126,10 @@ const playoffData = {};
 // First, calculate all team stats for rankings
 const allTeamStats = {};
 
-availablePlayoffRounds.forEach(round => {
+availablePlayoffRounds.forEach((round, roundIndex) => {
+  // Determine the previous available round for per-round stat differentials
+  const prevRound = roundIndex > 0 ? availablePlayoffRounds[roundIndex - 1] : null;
+
   playoffData[round.round] = {
     ...round,
     matchups: []
@@ -131,7 +148,7 @@ availablePlayoffRounds.forEach(round => {
   // Calculate stats only for teams in this round
   const roundTeamStats = [];
   roundTeams.forEach(teamAbbr => {
-    const teamStats = calculateTeamStats(round, teamAbbr);
+    const teamStats = calculateTeamStats(round, teamAbbr, prevRound);
     if (teamStats) {
       roundTeamStats.push(teamStats);
     }
@@ -358,8 +375,8 @@ function calculateOverallRankings(teams, individualRankings) {
   const matchupBracketRound = playoffBracket.rounds[round.round - 1];
   if (matchupBracketRound) {
     matchupBracketRound.matchups.forEach(matchup => {
-      const team1Stats = calculateTeamStats(round, matchup.team1);
-      const team2Stats = calculateTeamStats(round, matchup.team2);
+      const team1Stats = calculateTeamStats(round, matchup.team1, prevRound);
+      const team2Stats = calculateTeamStats(round, matchup.team2, prevRound);
       
       // Add rankings to each team
       if (team1Stats) {
