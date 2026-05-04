@@ -21,7 +21,7 @@ if (playoffData.availableRounds.length === 0) {
   display(html`<div class="main-tabs">
     <div class="main-tab-buttons">
       ${playoffData.availableRounds.map((round, index) => 
-        html`<button class="main-tab-button${index === 0 ? ' active' : ''}" onclick="showMainTab('round-${round}-main-tab', this)">
+        html`<button class="main-tab-button${index === playoffData.availableRounds.length - 1 ? ' active' : ''}" onclick="showMainTab('round-${round}-main-tab', this)">
           ${playoffData.roundNames[round]}
         </button>`
       )}
@@ -74,7 +74,7 @@ if (playoffData.availableRounds.length === 0) {
       
       const rankingsData = teams.sort((a, b) => a.overallRank - b.overallRank);
       
-      return html`<div id="round-${round}-main-tab" class="main-tab-content${roundIndex === 0 ? ' active' : ''}">
+      return html`<div id="round-${round}-main-tab" class="main-tab-content${roundIndex === playoffData.availableRounds.length - 1 ? ' active' : ''}">`
         <div class="sub-tabs">
           <div class="sub-tab-buttons">
             <button class="sub-tab-button active" onclick="showSubTab('round-${round}-matchups-tab', this)">Matchups</button>
