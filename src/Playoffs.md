@@ -74,7 +74,7 @@ if (playoffData.availableRounds.length === 0) {
       
       const rankingsData = teams.sort((a, b) => a.overallRank - b.overallRank);
       
-      return html`<div id="round-${round}-main-tab" class="main-tab-content${roundIndex === playoffData.availableRounds.length - 1 ? ' active' : ''}">`
+      return html`<div id="round-${round}-main-tab" class="main-tab-content${roundIndex === playoffData.availableRounds.length - 1 ? ' active' : ''}">
         <div class="sub-tabs">
           <div class="sub-tab-buttons">
             <button class="sub-tab-button active" onclick="showSubTab('round-${round}-matchups-tab', this)">Matchups</button>
