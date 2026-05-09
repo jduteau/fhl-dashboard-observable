@@ -96,18 +96,99 @@ const teamData = teamInfo.map(team => {
       }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
   });
 
+  // Add OVERALL stats using the latest round's stats without differential subtraction
+  if (availablePlayoffRounds.length > 0) {
+    const latestRound = availablePlayoffRounds[availablePlayoffRounds.length - 1];
+    const latestStats = latestRound.statsFile;
+    const latestRoster = latestRound.rosterFile;
+
+    team['OVERALL'] = {};
+    const overallRoster = latestRoster.filter(player => player.ABBR === team.ABBR);
+
+    team['OVERALL']['ROSTER'] = overallRoster.map(player => {
+      const info = playerInfo.find(p => p.ID === player.ID);
+      const contract = contracts.find(c => c.ID === player.ID);
+      const position = mapPosition(info.Pos);
+
+      const currentPlayerStats = latestStats.find(s => s.hockeyRef === player.ID) || {};
+      const playerStats = getOverallStats(position, currentPlayerStats);
+
+      return {
+        PLAYER_ID: player.ID,
+        Name: info.Name,
+        BirthDate: info.BirthDate,
+        Age: calculateAge(info.BirthDate),
+        Position: position,
+        NHLTeam: info.NHL,
+        Salary: contract?.Salary || 0,
+        Contract: contract?.Contract || '---',
+        Reserve: player.RESERVE || "",
+        Goals: position === "G" ? null : playerStats.goals,
+        Assists: position === "G" ? null : playerStats.assists,
+        PIM: position === "G" ? null : playerStats.pim,
+        Hits: position === "G" ? null : playerStats.hits,
+        Blocks: position === "G" ? null : playerStats.blocks,
+        Take: position === "G" ? null : playerStats.take,
+        Give: position === "G" ? null : playerStats.give,
+        TOI: position === "G" ? null : playerStats.toi,
+        Record: position === "G" ? `${playerStats.wins}-${playerStats.losses}-${playerStats.ties}` : null,
+        SO: position === "G" ? (playerStats.so || 0) : null,
+        SA: position === "G" ? (playerStats.sa || 0) : null,
+        GA: position === "G" ? (playerStats.ga || 0) : null,
+        Toughness: position === "G" ? null : playerStats.toughness,
+        DStat: position === "G" ? (playerStats.gstat || 0) : playerStats.dstat,
+        GamesPlayed: playerStats.games_played,
+      };
+    });
+
+    team['OVERALL']['ROSTER'].sort((a, b) => {
+      const posOrder = { 'D': 1, 'F': 2, 'G': 3 };
+      if (posOrder[a.Position] !== posOrder[b.Position]) {
+        return posOrder[a.Position] - posOrder[b.Position];
+      }
+      if (a.Reserve !== b.Reserve) {
+        return (a.Reserve === "R" ? 1 : 0) - (b.Reserve === "R" ? 1 : 0);
+      }
+      return a.Name.localeCompare(b.Name);
+    });
+
+    team['OVERALL']['ACTIVE_TOTALS'] = team['OVERALL']['ROSTER']
+      .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
+      .reduce((totals, player) => ({
+        goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
+        assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
+        toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
+        dstat: totals.dstat + (player.Position !== "G" ? (player.DStat || 0) : 0),
+        gstat: totals.gstat + (player.Position === "G" ? (player.DStat || 0) : 0)
+      }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
+
+    team['OVERALL']['RESERVE_TOTALS'] = team['OVERALL']['ROSTER']
+      .filter(player => player.Reserve === "R")
+      .reduce((totals, player) => ({
+        goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
+        assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
+        toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
+        dstat: totals.dstat + (player.Position !== "G" ? (player.DStat || 0) : 0),
+        gstat: totals.gstat + (player.Position === "G" ? (player.DStat || 0) : 0)
+      }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
+  }
+
   return team;
 });
 
 // Create available periods list (playoff rounds)
-const availablePeriods = availablePlayoffRounds.map(round => `R${round.round.toString().padStart(2, '0')}`);
+const roundKeys = availablePlayoffRounds.map(round => `R${round.round.toString().padStart(2, '0')}`);
+const availablePeriods = availablePlayoffRounds.length > 0 ? [...roundKeys, 'OVERALL'] : [];
+
+const roundNames = availablePlayoffRounds.reduce((acc, round) => {
+  acc[`R${round.round.toString().padStart(2, '0')}`] = round.name;
+  return acc;
+}, {});
+if (availablePlayoffRounds.length > 0) roundNames['OVERALL'] = 'Overall';
 
 process.stdout.write(JSON.stringify({
   teams,
   teamData,
   availablePeriods,
-  roundNames: availablePlayoffRounds.reduce((acc, round) => {
-    acc[`R${round.round.toString().padStart(2, '0')}`] = round.name;
-    return acc;
-  }, {})
+  roundNames
 }));

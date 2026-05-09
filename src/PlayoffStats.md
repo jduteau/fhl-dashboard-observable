@@ -27,7 +27,11 @@ const teamSelector = teamInfo.availablePeriods.length > 0 ?
 const selectedTeam = teamSelector ? Generators.input(teamSelector) : null;
 
 const periodSelector = teamInfo.availablePeriods.length > 0 ? 
-  Inputs.select(teamInfo.availablePeriods, {label: "Select Round:", value: teamInfo.availablePeriods[teamInfo.availablePeriods.length-1]}) : null;
+  Inputs.select(teamInfo.availablePeriods, {
+    label: "Select Round:",
+    value: teamInfo.availablePeriods[teamInfo.availablePeriods.length-1],
+    format: p => teamInfo.roundNames[p] || p
+  }) : null;
 const selectedPeriod = periodSelector ? Generators.input(periodSelector) : null;
 ```
 
