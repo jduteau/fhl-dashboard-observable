@@ -94,37 +94,19 @@ const currentPeriod = teamInfo.availablePeriods.length;
   </div>
 
   <div id="draft-order-tab" class="tab-content">
-    <h3>Round 1 Draft Order</h3>
-    ${Inputs.table(draftOrder.round1, {
-      columns: ["order", "pick", "pickName", "owner", "ownerName"],
+    ${Inputs.table(draftOrder.combined, {
+      columns: ["order", "r1pick", "r1", "r2pick", ...draftOrder.otherRoundNumbers.map(r => `r${r}`)],
       header: {
         order: "Pick #",
-        pick: "Original Team",
-        pickName: "Team Name",
-        owner: "Held By",
-        ownerName: "Holder Name"
+        r1pick: "R1 Original Team",
+        r1: "R1 Held By",
+        r2pick: "R2-4 Original Team",
+        ...Object.fromEntries(draftOrder.otherRoundNumbers.map(r => [`r${r}`, `R${r} Held By`]))
       },
       width: {
-        order: 70,
-        pick: 80,
-        owner: 100
-      },
-      rows: 32,
-      select: false
-    })}
-    <h3>Rounds 2–4 Draft Order</h3>
-    ${Inputs.table(draftOrder.otherRounds, {
-      columns: ["order", "pick", "pickName", ...draftOrder.otherRoundNumbers.map(r => `r${r}`), ...draftOrder.otherRoundNumbers.map(r => `r${r}Name`)],
-      header: {
-        order: "Pick #",
-        pick: "Original Team",
-        pickName: "Team Name",
-        ...Object.fromEntries(draftOrder.otherRoundNumbers.map(r => [`r${r}`, `R${r} Held By`])),
-        ...Object.fromEntries(draftOrder.otherRoundNumbers.map(r => [`r${r}Name`, `R${r} Holder`]))
-      },
-      width: {
-        order: 70,
-        pick: 80
+        order: 65,
+        r1pick: 130,
+        r2pick: 145
       },
       rows: 32,
       select: false

@@ -54,8 +54,26 @@ const otherRoundsRows = draftOrder
     return entry;
   });
 
+// Combined rows: zip R1 and R2-4 by position order
+const maxRows = Math.max(round1Rows.length, otherRoundsRows.length);
+const combinedRows = Array.from({length: maxRows}, (_, i) => {
+  const r1Row = round1Rows[i] || {};
+  const otherRow = otherRoundsRows[i] || {};
+  const combined = {
+    order: i + 1,
+    r1pick: r1Row.pick || "—",
+    r1: r1Row.owner || "—",
+    r2pick: otherRow.pick || "—"
+  };
+  for (const r of otherRounds) {
+    combined[`r${r}`] = otherRow[`r${r}`] || "—";
+  }
+  return combined;
+});
+
 process.stdout.write(JSON.stringify({
   round1: round1Rows,
   otherRounds: otherRoundsRows,
-  otherRoundNumbers: otherRounds
+  otherRoundNumbers: otherRounds,
+  combined: combinedRows
 }));
