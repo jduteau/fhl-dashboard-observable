@@ -8,12 +8,14 @@ toc: false
 ```js
 // Load the data files
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
+const draftOrder = await FileAttachment("./data/draftOrder.json").json();
 const currentPeriod = teamInfo.availablePeriods.length;
 ```
 <div class="tabs">
   <div class="tab-buttons">
     <button class="tab-button active" onclick="showTab('cash-tab', this)">Team Cash Balances</button>
     <button class="tab-button" onclick="showTab('picks-tab', this)">Team Draft Picks</button>
+    <button class="tab-button" onclick="showTab('draft-order-tab', this)">Draft Order</button>
     <button class="tab-button" onclick="showTab('owner-tab', this)">Team Owners</button>
   </div>
   
@@ -86,6 +88,44 @@ const currentPeriod = teamInfo.availablePeriods.length;
         ABBR: 60,
       },
       sort: "ABBR",
+      rows: 32,
+      select: false
+    })}
+  </div>
+
+  <div id="draft-order-tab" class="tab-content">
+    <h3>Round 1 Draft Order</h3>
+    ${Inputs.table(draftOrder.round1, {
+      columns: ["order", "pick", "pickName", "owner", "ownerName"],
+      header: {
+        order: "Pick #",
+        pick: "Original Team",
+        pickName: "Team Name",
+        owner: "Held By",
+        ownerName: "Holder Name"
+      },
+      width: {
+        order: 70,
+        pick: 80,
+        owner: 100
+      },
+      rows: 32,
+      select: false
+    })}
+    <h3>Rounds 2–4 Draft Order</h3>
+    ${Inputs.table(draftOrder.otherRounds, {
+      columns: ["order", "pick", "pickName", ...draftOrder.otherRoundNumbers.map(r => `r${r}`), ...draftOrder.otherRoundNumbers.map(r => `r${r}Name`)],
+      header: {
+        order: "Pick #",
+        pick: "Original Team",
+        pickName: "Team Name",
+        ...Object.fromEntries(draftOrder.otherRoundNumbers.map(r => [`r${r}`, `R${r} Held By`])),
+        ...Object.fromEntries(draftOrder.otherRoundNumbers.map(r => [`r${r}Name`, `R${r} Holder`]))
+      },
+      width: {
+        order: 70,
+        pick: 80
+      },
       rows: 32,
       select: false
     })}
