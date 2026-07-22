@@ -8,15 +8,18 @@ toc: false
 ```js
 // Load the data files
 const teamInfo = await FileAttachment("./data/standings.json").json();
+const _params = new URLSearchParams(window.location.search);
+const _season = _params.get("season") || teamInfo.currentSeason;
+const _sd = teamInfo.data[_season];
 
-const periodSelector = Inputs.select(teamInfo.availablePeriods, {label: "Select Period:", value: teamInfo.availablePeriods[teamInfo.availablePeriods.length-1]});
+const periodSelector = Inputs.select(_sd.availablePeriods, {label: "Select Period:", value: _sd.availablePeriods[_sd.availablePeriods.length-1]});
 const selectedPeriod = Generators.input(periodSelector);
 
 // Create division-grouped standings
 const divisionStandings = {};
-teamInfo.rankings.overallStandings.forEach(team => {
+_sd.rankings.overallStandings.forEach(team => {
   // Get team division from teams data
-  const teamData = teamInfo.teams.find(t => t.ABBR === team.team);
+  const teamData = _sd.teams.find(t => t.ABBR === team.team);
   const division = teamData.DIVISION;
   
   if (!divisionStandings[division]) {
@@ -121,7 +124,7 @@ Object.keys(divisionStandings).forEach(division => {
   
   <div id="rankings-tab" class="tab-content">
    ${periodSelector}
-    ${Inputs.table(teamInfo.rankings.periods[selectedPeriod-1], {
+    ${Inputs.table(_sd.rankings.periods[selectedPeriod-1], {
       columns: [
         "overallRank",
         "team",

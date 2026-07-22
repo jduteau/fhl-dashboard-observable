@@ -1,7 +1,4 @@
-import { readCsvFile, statsData, rosterPeriods, availablePeriods, mapPosition, getStatsForPeriod, lastPeriodNum } from "../components/loadfiles.js";
-
-const teamInfo = await readCsvFile("src/data/static/team_info.csv");
-const playerInfo = await readCsvFile("src/data/static/player_info.csv");
+import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, getStatsForPeriod } from "../components/loadfiles.js";
 
 // Function to calculate rankings for a specific stat across all teams
 function calculateRankings(teams, period, statKey) {
@@ -449,88 +446,91 @@ function createTeamRankings(teams, availablePeriods) {
   };
 }
 
-const teamData = teamInfo.map(team => {
+function buildSeasonStandings(sf, teamInfo, playerInfo) {
+  const { statsData, rosterPeriods, availablePeriods } = sf;
 
-  // Add period-specific rosters with salaries  
-  rosterPeriods.forEach(periodInfo => {
-    team[periodInfo.period] = {};
-    const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
-    const currentStats = statsData[periodInfo.period];
-    const previousStats = (periodInfo.period > 1) ?  statsData[periodInfo.period - 1] : [];
-    team[periodInfo.period]['ROSTER'] = roster.map(player => {
-      const info = playerInfo.find(p => p.ID === player.ID);
-      const position = mapPosition(info.Pos);
-      const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {}); 
-      return {
-        PLAYER_ID: player.ID,
-        Name: info.Name,
-        Position: position,
-        NHLTeam: info.NHL,
-        Reserve: player.RESERVE,
-        Goals: position === "G" ? null : playerStats.goals,
-        Assists: position === "G" ? null : playerStats.assists,
-        PIM: position === "G" ? null : playerStats.pim,
-        Hits: position === "G" ? null : playerStats.hits,
-        Blocks: position === "G" ? null : playerStats.blocks,
-        Take: position === "G" ? null : playerStats.take,
-        Give: position === "G" ? null : playerStats.give,
-        TOI: position === "G" ? null : playerStats.toi,
-        Record: position === "G" ? playerStats.wins !== null ? `${playerStats.wins}-${playerStats.losses}-${playerStats.ties}` : '0-0-0' : null,
-        SO: position === "G" ? (playerStats.so || 0) : null,
-        SA: position === "G" ? (playerStats.sa || 0) : null,
-        GA: position === "G" ? (playerStats.ga || 0) : null,
-        Toughness: position === "G" ? null : playerStats.toughness,
-        DStat: position === "G" ? null : playerStats.dstat,
-        GStat: position === "G" ? (playerStats.gstat || 0) : null,
-        GamesPlayed: playerStats.games_played,
-      };
+  const teamData = teamInfo.map(team => {
+    rosterPeriods.forEach(periodInfo => {
+      team[periodInfo.period] = {};
+      const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
+      const currentStats = statsData[periodInfo.period];
+      const previousStats = (periodInfo.period > 1) ?  statsData[periodInfo.period - 1] : [];
+      team[periodInfo.period]['ROSTER'] = roster.map(player => {
+        const info = playerInfo.find(p => p.ID === player.ID);
+        const position = mapPosition(info.Pos);
+        const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {});
+        return {
+          PLAYER_ID: player.ID,
+          Name: info.Name,
+          Position: position,
+          NHLTeam: info.NHL,
+          Reserve: player.RESERVE,
+          Goals: position === "G" ? null : playerStats.goals,
+          Assists: position === "G" ? null : playerStats.assists,
+          PIM: position === "G" ? null : playerStats.pim,
+          Hits: position === "G" ? null : playerStats.hits,
+          Blocks: position === "G" ? null : playerStats.blocks,
+          Take: position === "G" ? null : playerStats.take,
+          Give: position === "G" ? null : playerStats.give,
+          TOI: position === "G" ? null : playerStats.toi,
+          Record: position === "G" ? playerStats.wins !== null ? `${playerStats.wins}-${playerStats.losses}-${playerStats.ties}` : '0-0-0' : null,
+          SO: position === "G" ? (playerStats.so || 0) : null,
+          SA: position === "G" ? (playerStats.sa || 0) : null,
+          GA: position === "G" ? (playerStats.ga || 0) : null,
+          Toughness: position === "G" ? null : playerStats.toughness,
+          DStat: position === "G" ? null : playerStats.dstat,
+          GStat: position === "G" ? (playerStats.gstat || 0) : null,
+          GamesPlayed: playerStats.games_played,
+        };
+      });
+      team[periodInfo.period]['ROSTER'].sort((a, b) => {
+        const posOrder = { 'G': 3, 'D': 1, 'F': 2 };
+        if (posOrder[a.Position] !== posOrder[b.Position]) {
+          return posOrder[a.Position] - posOrder[b.Position];
+        }
+        if (a.Reserve !== b.Reserve) {
+          return (a.Reserve === "R" ? 1 : 0) - (b.Reserve === "R" ? 1 : 0);
+        }
+        return a.GamesPlayed - b.GamesPlayed;
+      });
+
+      team[periodInfo.period]['ACTIVE_TOTALS'] = team[periodInfo.period]['ROSTER']
+        .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
+        .reduce((totals, player) => ({
+          goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
+          assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
+          toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
+          dstat: totals.dstat + (player.DStat || 0),
+          gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
+        }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
     });
-    team[periodInfo.period]['ROSTER'].sort((a, b) => {
-      const posOrder = { 'G': 3, 'D': 1, 'F': 2 };
-      if (posOrder[a.Position] !== posOrder[b.Position]) {
-        return posOrder[a.Position] - posOrder[b.Position];
-      }
-      if (a.Reserve !== b.Reserve) {
-        return (a.Reserve === "R" ? 1 : 0) - (b.Reserve === "R" ? 1 : 0);
-      }
-      return a.GamesPlayed - b.GamesPlayed;
-    });
-
-    team[periodInfo.period]['ACTIVE_TOTALS'] = team[periodInfo.period]['ROSTER']
-      .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
-      .reduce((totals, player) => ({
-        goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
-        assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
-        toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
-        dstat: totals.dstat + (player.DStat || 0),
-        gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
-      }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
-
+    return team;
   });
 
-  return team;
-});
+  function periodHasTeamStats(teams, period) {
+    return teams.some(team => {
+      const activeTotals = team[period]?.ACTIVE_TOTALS;
+      if (!activeTotals) return false;
+      return (activeTotals.goals || 0) > 0 ||
+             (activeTotals.assists || 0) > 0 ||
+             (activeTotals.toughness || 0) > 0 ||
+             (activeTotals.dstat || 0) > 0 ||
+             (activeTotals.gstat || 0) > 0;
+    });
+  }
 
-// Filter periods to only include those where some team has non-zero stats
-function periodHasTeamStats(teams, period) {
-  return teams.some(team => {
-    const activeTotals = team[period]?.ACTIVE_TOTALS;
-    if (!activeTotals) return false;
-    
-    return (activeTotals.goals || 0) > 0 ||
-           (activeTotals.assists || 0) > 0 ||
-           (activeTotals.toughness || 0) > 0 ||
-           (activeTotals.dstat || 0) > 0 ||
-           (activeTotals.gstat || 0) > 0;
-  });
+  const periodsWithStats = availablePeriods.filter(period => periodHasTeamStats(teamData, period));
+  const rankings = createTeamRankings(teamData, periodsWithStats);
+
+  return { teams: teamInfo, rankings, availablePeriods: periodsWithStats };
 }
 
-const periodsWithStats = availablePeriods.filter(period => 
-  periodHasTeamStats(teamData, period)
-);
+const allData = {};
+for (const season of seasons) {
+  const sf = await loadSeasonData(season);
+  const teamInfo = await readCsvFile(`${sf.basePath}/team_info.csv`);
+  const playerInfo = await readCsvFile(`${sf.basePath}/player_info.csv`);
+  allData[season] = buildSeasonStandings(sf, teamInfo, playerInfo);
+}
 
-// Create team rankings object - only for periods with team stats
-const rankings = createTeamRankings(teamData, periodsWithStats);
-
-process.stdout.write(JSON.stringify({ teams: teamInfo, rankings, availablePeriods: periodsWithStats }));
-//process.stdout.write(JSON.stringify(teamRankings));
+process.stdout.write(JSON.stringify({ seasons, currentSeason, data: allData }));

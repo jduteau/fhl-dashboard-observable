@@ -9,7 +9,11 @@ toc: false
 // Load the data files
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
 const draftOrder = await FileAttachment("./data/draftOrder.json").json();
-const currentPeriod = teamInfo.availablePeriods.length;
+const _params = new URLSearchParams(window.location.search);
+const _season = _params.get("season") || teamInfo.currentSeason;
+const _sd = teamInfo.data[_season];
+const _draftSd = draftOrder.data[_season];
+const currentPeriod = _sd.availablePeriods.length;
 ```
 <div class="tabs">
   <div class="tab-buttons">
@@ -21,7 +25,7 @@ const currentPeriod = teamInfo.availablePeriods.length;
   
   <div id="cash-tab" class="tab-content active">
     <h3>CASH AS OF END OF PERIOD: ${currentPeriod-1}</h3>
-    ${Inputs.table(teamInfo.teams, {
+    ${Inputs.table(_sd.teams, {
       columns: [
         "ABBR",
         "NAME", 
@@ -71,7 +75,7 @@ const currentPeriod = teamInfo.availablePeriods.length;
   </div>
 
   <div id="picks-tab" class="tab-content">
-    ${Inputs.table(teamInfo.teams, {
+    ${Inputs.table(_sd.teams, {
       columns: [
         "ABBR",
         "NAME",
@@ -94,14 +98,14 @@ const currentPeriod = teamInfo.availablePeriods.length;
   </div>
 
   <div id="draft-order-tab" class="tab-content">
-    ${Inputs.table(draftOrder.combined, {
-      columns: ["order", "r1pick", "r1", "r2pick", ...draftOrder.otherRoundNumbers.map(r => `r${r}`)],
+    ${Inputs.table(_draftSd.combined, {
+      columns: ["order", "r1pick", "r1", "r2pick", ..._draftSd.otherRoundNumbers.map(r => `r${r}`)],
       header: {
         order: "Pick #",
         r1pick: "R1 Original Team",
         r1: "R1 Held By",
         r2pick: "R2-4 Original Team",
-        ...Object.fromEntries(draftOrder.otherRoundNumbers.map(r => [`r${r}`, `R${r} Held By`]))
+        ...Object.fromEntries(_draftSd.otherRoundNumbers.map(r => [`r${r}`, `R${r} Held By`]))
       },
       width: {
         order: 65,
@@ -114,7 +118,7 @@ const currentPeriod = teamInfo.availablePeriods.length;
   </div>
 
   <div id="owner-tab" class="tab-content">
-    ${Inputs.table(teamInfo.teams, {
+    ${Inputs.table(_sd.teams, {
       columns: [
         "ABBR",
         "NAME",

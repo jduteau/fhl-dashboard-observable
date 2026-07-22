@@ -7,11 +7,14 @@ toc: false
 
 ```js
 const playoffData = await FileAttachment("./data/playoffs.json").json();
+const _params = new URLSearchParams(window.location.search);
+const _season = _params.get("season") || playoffData.currentSeason;
+const _sd = playoffData.data[_season] ?? { availableRounds: [], roundNames: {}, bracket: { rounds: [] }, data: {}, teams: [] };
 ```
 
 ```js
 // Check if there's any playoff data - if not, show no data message and exit
-if (playoffData.availableRounds.length === 0) {
+if (_sd.availableRounds.length === 0) {
   display(html`<div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #666;">
     <h3>No Playoff Data Available</h3>
     <p>Come back when the playoffs have started!</p>
@@ -20,15 +23,15 @@ if (playoffData.availableRounds.length === 0) {
   // Create main tabs for each round with sub-tabs for matchups/rankings
   display(html`<div class="main-tabs">
     <div class="main-tab-buttons">
-      ${playoffData.availableRounds.map((round, index) => 
-        html`<button class="main-tab-button${index === playoffData.availableRounds.length - 1 ? ' active' : ''}" onclick="showMainTab('round-${round}-main-tab', this)">
-          ${playoffData.roundNames[round]}
+      ${_sd.availableRounds.map((round, index) => 
+        html`<button class="main-tab-button${index === _sd.availableRounds.length - 1 ? ' active' : ''}" onclick="showMainTab('round-${round}-main-tab', this)">
+          ${_sd.roundNames[round]}
         </button>`
       )}
     </div>
     
-    ${playoffData.availableRounds.map((round, roundIndex) => {
-      const roundData = playoffData.data[round];
+    ${_sd.availableRounds.map((round, roundIndex) => {
+      const roundData = _sd.data[round];
       if (!roundData || !roundData.matchups) return html``;
       
       // Extract teams from matchups for rankings
@@ -74,7 +77,7 @@ if (playoffData.availableRounds.length === 0) {
       
       const rankingsData = teams.sort((a, b) => a.overallRank - b.overallRank);
       
-      return html`<div id="round-${round}-main-tab" class="main-tab-content${roundIndex === playoffData.availableRounds.length - 1 ? ' active' : ''}">
+      return html`<div id="round-${round}-main-tab" class="main-tab-content${roundIndex === _sd.availableRounds.length - 1 ? ' active' : ''}">
         <div class="sub-tabs">
           <div class="sub-tab-buttons">
             <button class="sub-tab-button active" onclick="showSubTab('round-${round}-matchups-tab', this)">Matchups</button>

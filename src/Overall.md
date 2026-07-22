@@ -8,11 +8,14 @@ toc: false
 ```js
 // Load the data files
 const playerInfo = await FileAttachment("./data/allplayers.json").json();
+const _params = new URLSearchParams(window.location.search);
+const _season = _params.get("season") || playerInfo.currentSeason;
+const _sd = playerInfo.data[_season];
 
-const periodSelector = Inputs.select(playerInfo.availablePeriods, {label: "Select Period:", value: playerInfo.availablePeriods[playerInfo.availablePeriods.length-1]});
+const periodSelector = Inputs.select(_sd.availablePeriods, {label: "Select Period:", value: _sd.availablePeriods[_sd.availablePeriods.length-1]});
 const selectedPeriod = Generators.input(periodSelector);
 
-const teamSelector = Inputs.select(playerInfo.teams, {label: "Select Team:"});
+const teamSelector = Inputs.select(_sd.teams, {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
 
 ```
@@ -21,7 +24,7 @@ ${teamSelector}
 ${searchInput}
 
 ```js
-const playersToSearch = playerInfo.playerData.map(p => p[selectedPeriod]).filter((p) => (selectedTeam === "All") || (p.FHL === selectedTeam));
+const playersToSearch = _sd.playerData.map(p => p[selectedPeriod]).filter((p) => (selectedTeam === "All") || (p.FHL === selectedTeam));
 console.log(playersToSearch);
 const searchInput = Inputs.search(playersToSearch);
 const searchPlayers = Generators.input(searchInput);

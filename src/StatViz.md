@@ -7,8 +7,11 @@ toc: false
 ```js
 // Load the data files
 const stats = await FileAttachment("./data/stats.json").json();
+const _params = new URLSearchParams(window.location.search);
+const _season = _params.get("season") || stats.currentSeason;
+const _sd = stats.data[_season];
 
-const teamSelector = Inputs.select(["All", ...stats.teams], {label: "Select Team:"});
+const teamSelector = Inputs.select(["All", ..._sd.teams], {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
 
 ```
@@ -19,7 +22,7 @@ ${Plot.plot({
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
-        Plot.barY(stats.goalRanges, {x: "goals", y: "playerCount"})
+        Plot.barY(_sd.goalRanges, {x: "goals", y: "playerCount"})
     ]
 })}
 
@@ -29,7 +32,7 @@ ${Plot.plot({
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
-        Plot.barY(stats.assistRanges, {x: "assists", y: "playerCount"})
+        Plot.barY(_sd.assistRanges, {x: "assists", y: "playerCount"})
     ]
 })}
 
@@ -39,7 +42,7 @@ ${Plot.plot({
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
-        Plot.barY(stats.toughnessRanges, {x: "toughness", y: "playerCount"})
+        Plot.barY(_sd.toughnessRanges, {x: "toughness", y: "playerCount"})
     ]
 })}
 
@@ -49,7 +52,7 @@ ${Plot.plot({
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
-        Plot.barY(stats.dstatRanges, {x: "dstat", y: "playerCount"})
+        Plot.barY(_sd.dstatRanges, {x: "dstat", y: "playerCount"})
     ]
 })}
 
@@ -59,19 +62,19 @@ ${Plot.plot({
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
-        Plot.barY(stats.gstatRanges, {x: "gstat", y: "playerCount"})
+        Plot.barY(_sd.gstatRanges, {x: "gstat", y: "playerCount"})
     ]
 })}
 
 ${teamSelector}
 
 ```js
-const allForwards = stats.contractRanking.filter(s => s.Position ==="F");
-const allDefencemen = stats.contractRanking.filter(s => s.Position ==="D");
-const allGoalies = stats.contractRanking.filter(s => s.Position ==="G");
-const forwards = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "F"));
-const defencemen = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "D"));
-const goalies = stats.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "G"));
+const allForwards = _sd.contractRanking.filter(s => s.Position ==="F");
+const allDefencemen = _sd.contractRanking.filter(s => s.Position ==="D");
+const allGoalies = _sd.contractRanking.filter(s => s.Position ==="G");
+const forwards = _sd.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "F"));
+const defencemen = _sd.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "D"));
+const goalies = _sd.contractRanking.filter(s => ((selectedTeam === "All") || (s.Team === selectedTeam)) && (s.Position === "G"));
 ```
 
 <h3>Forwards Salary vs Rating</h3>

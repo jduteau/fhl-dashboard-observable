@@ -8,16 +8,19 @@ toc: false
 ```js
 // Load the data files
 const teamInfo = await FileAttachment("./data/rosters.json").json();
+const _params = new URLSearchParams(window.location.search);
+const _season = _params.get("season") || teamInfo.currentSeason;
+const _sd = teamInfo.data[_season];
 
-const selectedPeriod = teamInfo.availablePeriods[teamInfo.availablePeriods.length-2];
+const selectedPeriod = _sd.availablePeriods[_sd.availablePeriods.length-2];
 
-const teamSelector = Inputs.select(teamInfo.teams, {label: "Select Team:"});
+const teamSelector = Inputs.select(_sd.teams, {label: "Select Team:"});
 
 const selectedTeam = view(teamSelector);
 ```
 
 ```js
-const team = teamInfo.teamData.find((t) => t.ABBR === selectedTeam);
+const team = _sd.teamData.find((t) => t.ABBR === selectedTeam);
 const roster = team[selectedPeriod].ROSTER;
 const selection = view(Inputs.table(roster, {
   columns: ["Name", "Position", "Reserve", "NHLTeam"],

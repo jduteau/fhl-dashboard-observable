@@ -1,8 +1,9 @@
 import {csvFormat} from "d3-dsv";
-import { readCsvFile, latestStatsFile, latestRosterFile, mapPosition, calculateAge, getOverallStats } from "../components/loadfiles.js";
+import { readCsvFile, currentSeason, latestStatsFile, latestRosterFile, mapPosition, calculateAge, getOverallStats } from "../components/loadfiles.js";
 
-const playerInfo = await readCsvFile("src/data/static/player_info.csv");
-const contracts = await readCsvFile("src/data/static/contracts.csv");
+const basePath = `src/data/static/${currentSeason}`;
+const playerInfo = await readCsvFile(`${basePath}/player_info.csv`);
+const contracts = await readCsvFile(`${basePath}/contracts.csv`);
 
 const playerData = playerInfo.map(info => {
 

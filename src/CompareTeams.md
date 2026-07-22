@@ -9,11 +9,15 @@ toc: false
 // Load the data files
 const rosters = await FileAttachment("./data/rosters.json").json();
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
+const _params = new URLSearchParams(window.location.search);
+const _season = _params.get("season") || rosters.currentSeason;
+const _rsd = rosters.data[_season];
+const _tisd = teamInfo.data[_season];
 
-const team1Selector = Inputs.select(rosters.teams, {label: "Select Team 1:"});
+const team1Selector = Inputs.select(_rsd.teams, {label: "Select Team 1:"});
 const selectedTeam1 = Generators.input(team1Selector);
 
-const team2Selector = Inputs.select(rosters.teams, {label: "Select Team 2:"});
+const team2Selector = Inputs.select(_rsd.teams, {label: "Select Team 2:"});
 const selectedTeam2 = view(team2Selector);
 
 function createRosterTable(roster) {
@@ -59,10 +63,10 @@ function createRosterTable(roster) {
 ```
 
 ```js
-const team1 = teamInfo.teams.find((t) => t.ABBR === selectedTeam1);
-const team2 = teamInfo.teams.find((t) => t.ABBR === selectedTeam2);
-const team1Roster = rosters.teamData.find((t) => t.ABBR === selectedTeam1)["OVERALL"].ROSTER;
-const team2Roster = rosters.teamData.find((t) => t.ABBR === selectedTeam2)["OVERALL"].ROSTER;
+const team1 = _tisd.teams.find((t) => t.ABBR === selectedTeam1);
+const team2 = _tisd.teams.find((t) => t.ABBR === selectedTeam2);
+const team1Roster = _rsd.teamData.find((t) => t.ABBR === selectedTeam1)["OVERALL"].ROSTER;
+const team2Roster = _rsd.teamData.find((t) => t.ABBR === selectedTeam2)["OVERALL"].ROSTER;
 ```
 
 ```js
@@ -81,8 +85,8 @@ const team2SalariesOut = team2Selections.map((player) => player.Salary).reduce(f
 
 const team1NewSalaryPerPeriod = (team1.LatestSalary - team1SalariesOut + team2SalariesOut) / 25;
 const team2NewSalaryPerPeriod = (team2.LatestSalary - team2SalariesOut + team1SalariesOut) / 25;
-const team1NewBudget = team1.CASH - (team1NewSalaryPerPeriod < 13 ? 13 : team1NewSalaryPerPeriod) * (25 - teamInfo.lastPeriodNum);
-const team2NewBudget = team2.CASH - (team2NewSalaryPerPeriod < 13 ? 13 : team2NewSalaryPerPeriod) * (25 - teamInfo.lastPeriodNum);
+const team1NewBudget = team1.CASH - (team1NewSalaryPerPeriod < 13 ? 13 : team1NewSalaryPerPeriod) * (25 - _tisd.lastPeriodNum);
+const team2NewBudget = team2.CASH - (team2NewSalaryPerPeriod < 13 ? 13 : team2NewSalaryPerPeriod) * (25 - _tisd.lastPeriodNum);
 ```
 
 <pre>
