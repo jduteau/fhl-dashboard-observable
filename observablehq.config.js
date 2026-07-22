@@ -82,7 +82,7 @@ export default {
         if (!href || href.startsWith('http') || href.startsWith('//') ||
             href.startsWith('#') || href.startsWith('mailto:')) return;
         try {
-          var url = new URL(href, window.location.origin);
+          var url = new URL(href, window.location.href);
           if (url.origin !== window.location.origin) return;
           if (!url.searchParams.get('season')) {
             e.preventDefault();
