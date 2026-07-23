@@ -5,7 +5,7 @@ import stripBom from "strip-bom";
 
 // Read seasons at config-load time so they can be inlined into every page's HTML
 const _seasonsRaw = csvParse(stripBom(readFileSync("src/data/static/seasons.csv", "utf-8")));
-const _seasons = _seasonsRaw.map(s => s.season);
+const _seasons = _seasonsRaw.filter(s => s.stub !== "true").map(s => s.season);
 const _currentSeason = _seasonsRaw.find(s => s.current === "true")?.season || _seasons[_seasons.length - 1];
 export default {
   // The app’s title; used in the sidebar and webpage titles.

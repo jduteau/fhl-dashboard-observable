@@ -1,4 +1,4 @@
-import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge } from "../components/loadfiles.js";
+import { readCsvFile, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge } from "../components/loadfiles.js";
 
 function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks) {
   const { rosterPeriods, availablePeriods, lastPeriodNum } = sf;
@@ -74,8 +74,16 @@ for (const season of seasons) {
   const owners = await readCsvFile(`${sf.basePath}/owners.csv`);
   const playerInfo = await readCsvFile(`${sf.basePath}/player_info.csv`);
   const contracts = await readCsvFile(`${sf.basePath}/contracts.csv`);
-  const currentPicks = await readCsvFile(`${sf.basePath}/current_picks.csv`);
-  const nextPicks = await readCsvFile(`${sf.basePath}/next_picks.csv`);
+  const currentPicks = await readCsvFile(`${sf.basePath}/draft_picks.csv`);
+  const nextSeasonIndex = allSeasons.indexOf(season) + 1;
+  let nextPicks = [];
+  if (nextSeasonIndex < allSeasons.length) {
+    try {
+      nextPicks = await readCsvFile(`src/data/static/${allSeasons[nextSeasonIndex]}/draft_picks.csv`);
+    } catch (e) {
+      nextPicks = [];
+    }
+  }
   allData[season] = buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks);
 }
 

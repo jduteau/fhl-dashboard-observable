@@ -1,3 +1,4 @@
-season,label,ageCutoff,current
-2025-26,2025-26,2025-09-15,false
-2026-27,2026-27,2026-09-15,true
+season,label,ageCutoff,current,stub
+2025-26,2025-26,2025-09-15,false,false
+2026-27,2026-27,2026-09-15,true,false
+2027-28,2027-28,2027-09-15,false,true

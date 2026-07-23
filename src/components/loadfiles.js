@@ -210,7 +210,8 @@ export async function loadSeasonData(season) {
 
 // Load available seasons from config
 export const seasonsConfig = await readCsvFile("src/data/static/seasons.csv");
-export const seasons = seasonsConfig.map(s => s.season);
+export const allSeasons = seasonsConfig.map(s => s.season);
+export const seasons = seasonsConfig.filter(s => s.stub !== 'true').map(s => s.season);
 export const currentSeason = seasonsConfig.find(s => s.current === "true")?.season || seasons[seasons.length - 1];
 
 // Backward-compatible top-level exports pointing to current season data

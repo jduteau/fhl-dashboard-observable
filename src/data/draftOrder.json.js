@@ -69,7 +69,7 @@ const allData = {};
 for (const season of seasons) {
   const sf = await loadSeasonData(season);
   const draftOrderData = await readCsvFile(`${sf.basePath}/draft_order.csv`);
-  const currentPicks = await readCsvFile(`${sf.basePath}/current_picks.csv`);
+  const currentPicks = await readCsvFile(`${sf.basePath}/draft_picks.csv`);
   const teamInfo = await readCsvFile(`${sf.basePath}/team_info.csv`);
   allData[season] = buildSeasonDraftOrder(sf, draftOrderData, currentPicks, teamInfo);
 }
