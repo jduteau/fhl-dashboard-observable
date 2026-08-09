@@ -268,7 +268,7 @@ wilsbad01,DAL,R
 brandmi01,DAL,
 crozima01,DAL,
 draisle01,DAL,
-edstrad01,DAL,
+edstrad01,MIN,
 gatcoma01,DAL,
 hanlejo01,DAL,
 hymanza01,DAL,
@@ -432,7 +432,7 @@ reschco01,MIN,R
 stenbot01,MIN,R
 thrunhe01,MIN,R
 trikogl01,MIN,R
-valimju01,MIN,R
+valimju01,WPG,R
 arvidvi01,MIN,
 brysoja01,MIN,
 buntimi01,MIN,
@@ -448,7 +448,7 @@ royma04,MIN,
 scheima01,MIN,
 schenlu01,MIN,
 sennebe01,MIN,
-silovar01,MIN,
+silovar01,WPG,
 smithwi01,MIN,
 stephch02,MIN,
 timmico01,MIN,
@@ -661,7 +661,7 @@ luchaje01,PHI,R
 lundean01,PHI,R
 lundkni01,PHI,
 miromda01,PHI,R
-raddyta01,PHI,R
+raddyta01,WPG,R
 seguity01,PHI,R
 surineg01,PHI,R
 vansash01,PHI,R
@@ -670,7 +670,7 @@ bluegte01,PHI,
 bumpal01,PHI,
 chatfja01,PHI,R
 cowanea01,CHI,
-durzise01,PHI,
+durzise01,WPG,
 eicheja01,CHI,
 goncaga01,PHI,
 hameele01,PHI,
@@ -995,13 +995,13 @@ bruniha01,WPG,R
 dellaty01,WPG,R
 faksara01,WPG,R
 huttobe01,WPG,R
-jarrytr01,WPG,R
+jarrytr01,LAK,R
 kanepa01,WPG,R
 klingjo01,WPG,R
 koivuvi01,WPG,R
 mcgroru01,WPG,R
 murasse01,WPG,R
-murphco02,WPG,R
+murphco02,MIN,R
 petryje01,WPG,R
 pickaca01,WPG,R
 saadbr01,WPG,R
@@ -1016,7 +1016,7 @@ horvabo01,WPG,
 ingraco01,WPG,
 karlser01,WPG,
 kopitan01,WPG,
-krebspe01,WPG,
+krebspe01,PHI,
 kulakbr01,WPG,
 letankr01,WPG,
 lizotbl01,WPG,
