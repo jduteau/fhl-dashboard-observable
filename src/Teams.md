@@ -14,6 +14,8 @@ const _season = _params.get("season") || teamInfo.currentSeason;
 const _sd = teamInfo.data[_season];
 const _draftSd = draftOrder.data[_season];
 const currentPeriod = _sd.availablePeriods.length;
+const _currentDraftYear = parseInt(_season.split("-")[0]) + 1;
+const _nextDraftYear = _currentDraftYear + 1;
 ```
 <div class="tabs">
   <div class="tab-buttons">
@@ -85,8 +87,8 @@ const currentPeriod = _sd.availablePeriods.length;
       header: {
         ABBR: "Team",
         NAME: "Team Name",
-        CURRENT_PICKS: "Current Year",
-        NEXT_PICKS: "Next Year",
+        CURRENT_PICKS: `${_currentDraftYear} Draft`,
+        NEXT_PICKS: `${_nextDraftYear} Draft`,
       },
       width: {
         ABBR: 60,
