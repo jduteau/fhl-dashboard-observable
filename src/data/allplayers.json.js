@@ -1,7 +1,7 @@
 import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
 
 function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
-  const { latestStatsFile, latestRosterFile, statsPeriods, statsData, availablePeriods, getOverallStats } = sf;
+  const { season, latestStatsFile, latestRosterFile, statsPeriods, statsData, availablePeriods, getOverallStats } = sf;
   const teams = ["All", ...teamInfo.map(team => team.ABBR).sort(), "FA"];
 
   const playerData = playerInfo.map(info => {
@@ -17,7 +17,7 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
       Drafted: drafted.find(d => d.fhl === info.Name) ? true : false,
       Name: info.Name,
       BirthDate: info.BirthDate,
-      Age: calculateAge(info.BirthDate),
+      Age: calculateAge(info.BirthDate, season),
       Position: position,
       NHLTeam: info.NHL,
       Salary: contract?.Salary || 0,
@@ -52,7 +52,7 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
         Drafted: drafted.find(d => d.fhl === info.Name) ? true : false,
         Name: info.Name,
         BirthDate: info.BirthDate,
-        Age: calculateAge(info.BirthDate),
+        Age: calculateAge(info.BirthDate, season),
         Position: position,
         NHLTeam: info.NHL,
         Salary: contract?.Salary || 0,

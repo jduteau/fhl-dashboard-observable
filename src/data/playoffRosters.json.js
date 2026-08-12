@@ -1,7 +1,7 @@
 import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
 
 function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) {
-  const { availablePlayoffRounds } = sf;
+  const { season, availablePlayoffRounds } = sf;
   const getOverallStats = sf.getOverallStats;
   const teams = teamInfo.map(team => team.ABBR).sort();
 
@@ -30,7 +30,7 @@ function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) 
           PLAYER_ID: player.ID,
           Name: info.Name,
           BirthDate: info.BirthDate,
-          Age: calculateAge(info.BirthDate),
+          Age: calculateAge(info.BirthDate, season),
           Position: position,
           NHLTeam: info.NHL,
           Salary: contract?.Salary || 0,
@@ -96,7 +96,7 @@ function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) 
           PLAYER_ID: player.ID,
           Name: info.Name,
           BirthDate: info.BirthDate,
-          Age: calculateAge(info.BirthDate),
+          Age: calculateAge(info.BirthDate, season),
           Position: position,
           NHLTeam: info.NHL,
           Salary: contract?.Salary || 0,

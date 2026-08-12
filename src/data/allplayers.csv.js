@@ -16,7 +16,7 @@ const playerData = playerInfo.map(info => {
       FHL: roster?.ABBR || 'FA',
       Name: info.Name,
       BirthDate: info.BirthDate,
-      Age: calculateAge(info.BirthDate),
+      Age: calculateAge(info.BirthDate, currentSeason),
       Position: position,
       NHLTeam: info.NHL,
       Salary: contract?.Salary || 0,

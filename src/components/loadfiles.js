@@ -199,6 +199,7 @@ export async function loadSeasonData(season) {
   const getOverallStats = createGetOverallStats(distributions);
 
   return {
+    season,
     basePath,
     statsPeriods, statsData, rosterPeriods, rosterData,
     playoffRounds, availablePlayoffRounds,
@@ -236,13 +237,27 @@ export function mapPosition(pos) {
   return "F"; // All other positions (C, LW, RW, F, etc.) become F
 }
 
-// Function to calculate age as of September 15 of current year
-export function calculateAge(birthDateStr) {
+// Parse a YYYY-MM-DD date string as a local date (avoids the UTC shift of new Date(str))
+function parseLocalDate(dateStr) {
+  const [year, month, day] = String(dateStr).split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+}
+
+// Age cutoff for a season: the ageCutoff from seasons.csv, else September 15 of the season's first year
+export function getAgeCutoff(season) {
+  const config = seasonsConfig.find(s => s.season === season);
+  if (config?.ageCutoff) return parseLocalDate(config.ageCutoff);
+  const seasonYear = parseInt(String(season).split("-")[0], 10);
+  return new Date(seasonYear, 8, 15); // September 15 (month is 0-indexed)
+}
+
+// Function to calculate age as of the season's age cutoff date
+export function calculateAge(birthDateStr, season = currentSeason) {
   if (!birthDateStr) return "N/A";
-  
-  const birthDate = new Date(birthDateStr);
-  const cutoffDate = new Date(2025, 8, 15); // September 15, 2025 (month is 0-indexed)
-  
+
+  const birthDate = parseLocalDate(birthDateStr);
+  const cutoffDate = getAgeCutoff(season);
+
   let age = cutoffDate.getFullYear() - birthDate.getFullYear();
   const monthDiff = cutoffDate.getMonth() - birthDate.getMonth();
   
