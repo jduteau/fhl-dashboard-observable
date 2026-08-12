@@ -667,7 +667,7 @@ seguity01,PHI,R
 surineg01,PHI,R
 vansash01,PHI,R
 zavraeg01,PHI,R
-bluegte01,PHI,
+bluegte01,TOR,
 bumpal01,PHI,
 goncaga01,PHI,
 hameele01,PHI,
@@ -861,7 +861,7 @@ armiajo01,TOR,R
 bainsar01,TOR,R
 bearet01,TOR,R
 chadwno01,TOR,R
-colansa01,TOR,R
+colansa01,PHI,R
 groulbe01,TOR,R
 jenseni02,TOR,R
 kaliyar01,TOR,R
