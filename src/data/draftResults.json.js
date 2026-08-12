@@ -36,8 +36,10 @@ for (const season of seasons) {
   const results = flat.map(pick => {
     const playerId = playerIdMap[pick.pickLabel] || null;
     const player = playerId ? playerInfoMap[playerId] : null;
+    const traded = pick.team && pick.team !== "—" && pick.team !== pick.originalTeam;
     return {
       ...pick,
+      teamLabel: traded ? `${pick.originalTeam}(${pick.team})` : pick.originalTeam,
       playerId,
       player: player ? player.Name : (playerId || null),
       playerNHLTeam: player ? player.NHL : null,

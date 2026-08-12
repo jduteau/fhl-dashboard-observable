@@ -23,7 +23,7 @@ if (_drSd.sourceSeason === null) {
     columns: [
       "round",
       "order",
-      "team",
+      "teamLabel",
       "player",
       "playerNHLTeam",
       "playerPosition"
@@ -31,7 +31,7 @@ if (_drSd.sourceSeason === null) {
     header: {
       round: "Round",
       order: "Pick #",
-      team: "Team",
+      teamLabel: "Team",
       player: "Player",
       playerNHLTeam: "NHL Team",
       playerPosition: "Pos"
@@ -44,7 +44,7 @@ if (_drSd.sourceSeason === null) {
     width: {
       round: 60,
       order: 70,
-      team: 60,
+      teamLabel: 100,
       playerNHLTeam: 70,
       playerPosition: 50
     },
