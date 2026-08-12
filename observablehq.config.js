@@ -26,6 +26,7 @@ export default {
   pages: [
     {name: "Team Standings", path: "/Standings"},
     {name: "Team Information", path: "/Teams"},
+    {name: "Draft Results", path: "/DraftResults"},
     {name: "Team Statistics", path: "/Players"},
     {name: "Team Roster", path: "/Roster"},
     {name: "Overall Stats", path: "/Overall"},
