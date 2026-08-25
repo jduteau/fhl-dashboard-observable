@@ -26,7 +26,7 @@ for (const season of seasons) {
   }
   const playerIdMap = {};
   for (const row of draftResults) {
-    playerIdMap[row.PICK] = row.PLAYERID ?? row.PLAYER_ID;
+    playerIdMap[row.PICK.trim()] = row.PLAYERID ?? row.PLAYER_ID;
   }
   const playerInfoMap = {};
   for (const player of playerInfo) {
