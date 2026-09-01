@@ -23,22 +23,32 @@ const selectedTeam = view(teamSelector);
 const team = _sd.teamData.find((t) => t.ABBR === selectedTeam);
 const roster = team[selectedPeriod].ROSTER;
 const selection = view(Inputs.table(roster, {
-  columns: ["Name", "Position", "Reserve", "NHLTeam"],
+  columns: ["Name", "Position", "Reserve", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
   header: {
     Name: "Player Name",
     Position: "Pos",
     Reserve: "R",
-    NHLTeam: "NHL"
+    NHLTeam: "NHL",
+    Salary: "Salary ($)",
+    Contract: "Contract",
+    BirthDate: "Birth Date",
+    Age: "Age"
   },
   format: {
-    Reserve: x => x === "R" ? "✓" : ""
+    Reserve: x => x === "R" ? "✓" : "",
+    Salary: x => x ? x.toLocaleString("en-US") : "0",
+    BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
   },
   sort: null,
   rows: 50,
   width: {
     NHL: 60,
     Position: 40,
-    Reserve: 35
+    Reserve: 35,
+    Team: 50,
+    Salary: 80,
+    BirthDate: 90,
+    Age: 40
   },
   value: roster.filter((p) => p.Reserve === "R")
 }));
