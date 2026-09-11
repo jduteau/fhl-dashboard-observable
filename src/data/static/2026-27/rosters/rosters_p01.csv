@@ -8,10 +8,10 @@ ihswoja01,ANA,R
 koblati01,ANA,R
 miettju01,ANA,R
 shurama01,ANA,R
+sissoco01,ANA,R
 vanacma01,ANA,R
 willato01,ANA,R
 backos01,ANA,
-blackma01,ANA,
 buiumze01,ANA,
 chishde01,ANA,
 comrier01,ANA,
@@ -96,7 +96,6 @@ shabama01,BUF,R
 shearco01,BUF,R
 ungerfe01,BUF,R
 yurovda01,BUF,R
-boesebr01,BUF,
 carlide01,BUF,
 chiarbe01,BUF,
 coolede01,BUF,
@@ -106,7 +105,6 @@ fantiad01,BUF,
 forsbfi01,BUF,
 gibsojo02,BUF,
 grossty01,BUF,
-gudasra01,BUF,
 guentdy01,BUF,
 hathaga01,BUF,
 hermael01,BUF,
@@ -118,6 +116,8 @@ lavoito01,BUF,
 malotje01,BUF,
 melanja01,BUF,
 nikisal01,BUF,
+palmiky01,BUF,
+peekean01,BUF,
 pohlker01,BUF,
 postami01,BUF,
 powerow01,BUF,
@@ -125,7 +125,6 @@ smithga02,BUF,
 sorenwi01,BUF,
 tkachbr01,BUF,
 trochvi01,BUF,
-wolljo01,BUF,
 zachapa01,BUF,
 bardaza01,CAR,R
 bennimi01,CAR,R
@@ -133,7 +132,6 @@ douglcu01,CAR,R
 fedotiv01,CAR,R
 hallafi01,CAR,R
 kurasph01,CAR,R
-lamouma01,CAR,R
 lundca01,CAR,R
 mewshe01,CAR,R
 perroja01,CAR,R
@@ -177,9 +175,9 @@ foligma01,CBJ,
 forbode01,CBJ,
 howdebr01,CBJ,
 johnswy01,CBJ,
+killoal01,CBJ,
 knighsp01,CBJ,
 kulebol01,CBJ,
-kulikdm01,CBJ,
 martijo01,CBJ,
 meierti01,CBJ,
 mrazepe01,CBJ,
@@ -221,7 +219,6 @@ hinosvi01,CGY,
 kellypa01,CGY,
 kucheni01,CGY,
 laughsc01,CGY,
-lindees01,CGY,
 lindgch01,CGY,
 lindhel01,CGY,
 mansojo01,CGY,
@@ -254,6 +251,7 @@ finniem01,CHI,
 gadjojo01,CHI,
 hamildo01,CHI,
 jeannta01,CHI,
+joseppi01,CHI,
 klevety01,CHI,
 lardini01,CHI,
 levshar01,CHI,
@@ -270,7 +268,6 @@ vejmeka01,CHI,
 wytteet01,CHI,
 broztr01,COL,R
 drouijo01,COL,R
-dudaar01,COL,R
 elickch01,COL,R
 goligal01,COL,R
 howeta01,COL,R
@@ -278,11 +275,11 @@ huttobe01,COL,R
 karlswi01,COL,R
 lafreto01,COL,R
 macewza01,COL,R
+mukhash01,COL,R
 murtaja01,COL,R
 nylanal01,COL,R
 oconnlo01,COL,R
 yamamka01,COL,R
-bogosza01,COL,
 duchema01,COL,
 ekholma01,COL,
 hallta02,COL,
@@ -313,6 +310,7 @@ oreilsa01,DAL,R
 skinnje01,DAL,R
 wilsbad01,DAL,R
 berzkru01,DAL,
+binnijo01,DAL,
 brandmi01,DAL,
 crozima01,DAL,
 cullewy01,DAL,
@@ -324,6 +322,7 @@ hymanza01,DAL,
 johanjo03,DAL,
 jonesbe01,DAL,
 kaisewy01,DAL,
+lindees01,DAL,
 lorenst01,DAL,
 mancivi01,DAL,
 nugenry01,DAL,
@@ -346,14 +345,11 @@ caseyse01,DET,R
 ernead01,DET,R
 firkuja01,DET,R
 girarsa01,DET,R
-jankoma01,DET,R
 kessemi01,DET,R
 martibr02,DET,R
-mukhash01,DET,R
 ostapza01,DET,R
 protail01,DET,R
 robiner01,DET,R
-sissoco01,DET,R
 smithre01,DET,R
 solbest01,DET,R
 bjorkol01,DET,
@@ -366,9 +362,7 @@ faberbr01,DET,
 hagelbr01,DET,
 hanifno01,DET,
 hillad01,DET,
-korczka01,DET,
 mooreia01,DET,
-nichuva01,DET,
 perryco01,DET,
 podkova01,DET,
 royni01,DET,
@@ -502,6 +496,7 @@ buntimi01,MIN,
 edstrad01,MIN,
 eriksjo02,MIN,
 gallabr01,MIN,
+gudasra01,MIN,
 hanlejo01,MIN,
 hertlto01,MIN,
 leean01,MIN,
@@ -517,6 +512,7 @@ shaikal01,MIN,
 smithwi01,MIN,
 stephch02,MIN,
 vasilan02,MIN,
+wolljo01,MIN,
 abolsro01,MTL,R
 cossase01,MTL,R
 dachki01,MTL,R
@@ -581,6 +577,7 @@ kuempda01,NJD,
 nilssfe01,NJD,
 norrijo01,NJD,
 palaton01,NJD,
+pelecad01,NJD,
 perroda01,NJD,
 provoiv01,NJD,
 seeleni01,NJD,
@@ -605,6 +602,8 @@ saleed01,NSH,R
 silayan01,NSH,R
 anderjo05,NSH,
 audymjo01,NSH,
+blackma01,NSH,
+bogosza01,NSH,
 cozendy01,NSH,
 eberljo01,NSH,
 ekblaaa01,NSH,
@@ -676,6 +675,7 @@ ziemmko01,NYR,R
 zonnobi01,NYR,R
 ahose01,NYR,
 bensoza01,NYR,
+berggjo02,NYR,
 byfiequ01,NYR,
 clarkbr02,NYR,
 dickisa01,NYR,
@@ -685,6 +685,7 @@ kokkoni01,NYR,
 koleske01,NYR,
 leonary01,NYR,
 martopo01,NYR,
+merzlel01,NYR,
 morozva01,NYR,
 oettija01,NYR,
 rinzesa01,NYR,
@@ -750,10 +751,8 @@ hindsty01,PHI,
 hryckju01,PHI,
 jamesdo01,PHI,
 jugnaty01,PHI,
-kadrina01,PHI,
 labano01,PHI,
 landega01,PHI,
-lundkni01,PHI,
 marchma01,PHI,
 martiem01,PHI,
 morozil01,PHI,
@@ -795,6 +794,7 @@ hutsoco01,PIT,
 lacomja01,PIT,
 lambebr01,PIT,
 lauzoje01,PIT,
+lundkni01,PIT,
 mcbaija03,PIT,
 necasma01,PIT,
 nemecsi01,PIT,
@@ -853,7 +853,6 @@ harkija01,SJS,R
 huntda01,SJS,R
 lakovly01,SJS,R
 mikkoni01,SJS,R
-montesa01,SJS,R
 moverja01,SJS,R
 reavery01,SJS,R
 rittida01,SJS,R
@@ -863,10 +862,10 @@ villena01,SJS,R
 amadimi01,SJS,
 annunju01,SJS,
 bouchev01,SJS,
-drysdja01,SJS,
 dunnvi02,SJS,
 ehlerni01,SJS,
 elofsax01,SJS,
+ferrama01,SJS,
 goodrba01,SJS,
 grafco01,SJS,
 gustaer02,SJS,
@@ -875,7 +874,6 @@ heineem01,SJS,
 jennebo01,SJS,
 kartyty01,SJS,
 kempead01,SJS,
-killoal01,SJS,
 kivirjo01,SJS,
 lafreal01,SJS,
 larssad01,SJS,
@@ -902,7 +900,6 @@ robersi01,STL,R
 rosenis01,STL,R
 stigate01,STL,R
 bennja01,STL,
-berggjo02,STL,
 brattje01,STL,
 dimarma01,STL,
 erssosa01,STL,
@@ -915,8 +912,7 @@ linry01,STL,
 mcnabbr01,STL,
 mintypa01,STL,
 mitteca01,STL,
-peekean01,STL,
-reichlu01,STL,
+nichuva01,STL,
 roobrry01,STL,
 schmani01,STL,
 tarasda02,STL,
@@ -943,8 +939,9 @@ carcomi01,TBL,
 colembl01,TBL,
 deangan01,TBL,
 druryja01,TBL,
-ferrama01,TBL,
+drysdja01,TBL,
 garlaco01,TBL,
+korczka01,TBL,
 larkidy01,TBL,
 luukkuk01,TBL,
 lyonal01,TBL,
@@ -952,18 +949,17 @@ mackina01,TBL,
 malenbe01,TBL,
 metsaza01,TBL,
 pastrda01,TBL,
-pelecad01,TBL,
 quillja01,TBL,
 quinnja01,TBL,
 rustbr01,TBL,
 stanllo01,TBL,
 tarasvl01,TBL,
 timmico01,TBL,
-whiteza01,TBL,
 armiajo01,TOR,R
 bainsar01,TOR,R
 bearet01,TOR,R
 chadwno01,TOR,R
+dudaar01,TOR,R
 engvapi01,TOR,R
 foligni01,TOR,R
 groulbe01,TOR,R
@@ -971,7 +967,6 @@ jenseni02,TOR,R
 kaliyar01,TOR,R
 obrieli01,TOR,R
 paterji01,TOR,R
-stechtr01,TOR,R
 sunieay01,TOR,R
 aaremni01,TOR,
 andraem01,TOR,
@@ -998,7 +993,6 @@ pezzemi01,TOR,
 ralphco01,TOR,
 reinhco01,TOR,
 riellmo01,TOR,
-roberni01,TOR,
 rosloja01,TOR,
 sharaye01,TOR,
 tolopni01,TOR,
@@ -1017,7 +1011,6 @@ sidorye01,UTA,R
 spellaj01,UTA,R
 sturmni01,UTA,R
 anderra01,UTA,
-binnijo01,UTA,
 catesno01,UTA,
 coleia01,UTA,
 dastoch01,UTA,
@@ -1044,8 +1037,10 @@ frondan01,VAN,R
 jiricda01,VAN,R
 kemeljo01,VAN,R
 koivuaa01,VAN,R
+lamouma01,VAN,R
 lindsca01,VAN,R
 mazurca01,VAN,R
+montesa01,VAN,R
 moonejo01,VAN,R
 ritchry01,VAN,R
 xhekafl01,VAN,R
@@ -1066,10 +1061,12 @@ morrosc02,VAN,
 perrega01,VAN,
 pulocry01,VAN,
 raymolu01,VAN,
+reichlu01,VAN,
 tanevch01,VAN,
 trejbto01,VAN,
 turcoal02,VAN,
 villexa01,VAN,
+whiteza01,VAN,
 xhekaar01,VAN,
 behrese01,VEG,R
 chaboth01,VEG,R
@@ -1082,6 +1079,7 @@ mcilrdy01,VEG,R
 mckowhu01,VEG,R
 mugglle01,VEG,R
 nosekto01,VEG,R
+stechtr01,VEG,R
 steelsa01,VEG,R
 stevecl01,VEG,R
 vanecvi01,VEG,R
@@ -1095,6 +1093,7 @@ girgeze01,VEG,
 hugheja03,VEG,
 johanma03,VEG,
 kapanol01,VEG,
+kulikdm01,VEG,
 lyubuil01,VEG,
 mcdonry01,VEG,
 mcmicco01,VEG,
@@ -1126,6 +1125,7 @@ stivajo01,WPG,R
 valimju01,WPG,R
 vanritr01,WPG,R
 blackco01,WPG,
+boesebr01,WPG,
 chinaye01,WPG,
 crevilo01,WPG,
 desimni01,WPG,
@@ -1154,6 +1154,7 @@ forsban01,WSH,R
 freijal01,WSH,R
 greenli01,WSH,R
 hemmiem01,WSH,R
+jankoma01,WSH,R
 jellvos01,WSH,R
 kudryki01,WSH,R
 leddyni01,WSH,R
@@ -1173,6 +1174,7 @@ comphj.01,WSH,
 glendlu01,WSH,
 grubaph01,WSH,
 jokihhe01,WSH,
+kadrina01,WSH,
 kotkaje01,WSH,
 krebspe01,WSH,
 kuninlu01,WSH,
@@ -1180,12 +1182,12 @@ lawrety01,WSH,
 manthan01,WSH,
 mcavoch01,WSH,
 mcleory01,WSH,
-merzlel01,WSH,
 mirosiv01,WSH,
 monahse01,WSH,
 nurseda01,WSH,
 plantvi01,WSH,
 rantami01,WSH,
+roberni01,WSH,
 ruckma01,WSH,
 valenad01,WSH,
 wilsoto01,WSH,
