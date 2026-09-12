@@ -22,9 +22,9 @@ hakanwi01,ANA,
 hischni01,ANA,
 hoferjo01,ANA,
 holinmi01,ANA,
-joshuda01,ANA,
+joshuda01,DET,
 khusnma01,ANA,
-liljeti01,ANA,
+liljeti01,CBJ,
 oconndr01,ANA,
 olivima01,ANA,
 petroal01,ANA,
@@ -186,7 +186,7 @@ pageaje01,CBJ,
 siegejo01,CBJ,
 smithja04,CBJ,
 tavarjo01,CBJ,
-teravte01,CBJ,
+teravte01,SEA,
 troubja01,CBJ,
 tuchal01,CBJ,
 walkese01,CBJ,
@@ -229,7 +229,7 @@ samosma01,CGY,
 thomplo01,CGY,
 vanecja01,CGY,
 ziemebr01,CGY,
-zuccama01,CGY,
+zuccama01,MTL,
 benakad01,CHI,R
 hildede01,CHI,R
 kantsro01,CHI,R
@@ -307,7 +307,7 @@ jonsssa01,DAL,R
 kulicji01,DAL,R
 letoude01,DAL,R
 oreilsa01,DAL,R
-skinnje01,DAL,R
+skinnje01,FLA,R
 wilsbad01,DAL,R
 berzkru01,DAL,
 binnijo01,DAL,
@@ -354,7 +354,7 @@ smithre01,DET,R
 solbest01,DET,R
 bjorkol01,DET,
 celebma01,DET,
-coppan01,DET,
+coppan01,VEG,
 cuyllwi01,DET,
 daccojo01,DET,
 doanjo01,DET,
@@ -363,7 +363,7 @@ hagelbr01,DET,
 hanifno01,DET,
 hillad01,DET,
 mooreia01,DET,
-perryco01,DET,
+perryco01,LAK,
 podkova01,DET,
 royni01,DET,
 savoima01,DET,
@@ -394,7 +394,7 @@ helledr01,EDM,
 ignatsi01,EDM,
 kapriki01,EDM,
 maattol01,EDM,
-marksja02,EDM,
+marksja02,MTL,
 mathemi01,EDM,
 mckenga01,EDM,
 mctavma01,EDM,
@@ -419,7 +419,7 @@ barromo01,FLA,
 belchet01,FLA,
 blakeja02,FLA,
 demeldy01,FLA,
-dillobr01,FLA,
+dillobr01,CGY,
 ellerla01,FLA,
 galvato01,FLA,
 gritsar01,FLA,
@@ -429,7 +429,7 @@ heiskmi01,FLA,
 helleco01,FLA,
 hoenjo01,FLA,
 jostty01,FLA,
-kastema01,FLA,
+kastema01,PIT,
 kuzmean01,FLA,
 lapiehe01,FLA,
 lindhha01,FLA,
@@ -485,7 +485,7 @@ deslani01,MIN,R
 dumbama01,MIN,R
 geekico01,MIN,R
 jonesma03,MIN,R
-lombery01,MIN,R
+lombery01,NYR,R
 murphco02,MIN,R
 reschco01,MIN,R
 stenbot01,MIN,R
@@ -534,7 +534,7 @@ caufico01,MTL,
 coutuse01,MTL,
 danauph01,MTL,
 fleurha01,MTL,
-foegewa01,MTL,
+foegewa01,SEA,
 goljead01,MTL,
 gregono01,MTL,
 iafalal01,MTL,
@@ -693,7 +693,7 @@ roberja01,NYR,
 slafkju01,NYR,
 stanklo01,NYR,
 werenza01,NYR,
-wothepa01,NYR,
+wothepa01,PHI,
 zegratr01,NYR,
 carrial01,OTT,R
 cootebr01,OTT,R
@@ -723,10 +723,10 @@ rossima01,OTT,
 samsoil01,OTT,
 schwico01,OTT,
 sebrado01,OTT,
-soucyca01,OTT,
+soucyca01,FLA,
 svechan01,OTT,
 svechfe01,OTT,
-vatrafr01,OTT,
+vatrafr01,WSH,
 verhaca01,OTT,
 zaryco01,OTT,
 blumema01,PHI,R
@@ -871,7 +871,7 @@ grafco01,SJS,
 gustaer02,SJS,
 haighhu01,SJS,
 heineem01,SJS,
-jennebo01,SJS,
+jennebo01,DET,
 kartyty01,SJS,
 kempead01,SJS,
 kivirjo01,SJS,
@@ -899,7 +899,7 @@ priceca02,STL,R
 robersi01,STL,R
 rosenis01,STL,R
 stigate01,STL,R
-bennja01,STL,
+bennja01,FLA,
 brattje01,STL,
 dimarma01,STL,
 erssosa01,STL,
@@ -914,7 +914,7 @@ mintypa01,STL,
 mitteca01,STL,
 nichuva01,STL,
 roobrry01,STL,
-schmani01,STL,
+schmani01,CGY,
 tarasda02,STL,
 thompta01,STL,
 trudefe01,STL,
@@ -955,7 +955,7 @@ rustbr01,TBL,
 stanllo01,TBL,
 tarasvl01,TBL,
 timmico01,TBL,
-armiajo01,TOR,R
+armiajo01,MTL,R
 bainsar01,TOR,R
 bearet01,TOR,R
 chadwno01,TOR,R
@@ -970,7 +970,7 @@ paterji01,TOR,R
 sunieay01,TOR,R
 aaremni01,TOR,
 andraem01,TOR,
-backlmi01,TOR,
+backlmi01,SJS,
 bahlke01,TOR,
 bluegte01,TOR,
 bobrose01,TOR,
@@ -983,7 +983,7 @@ hollju01,TOR,
 karlsli01,TOR,
 kniesma01,TOR,
 lowryad01,TOR,
-maccema01,TOR,
+maccema01,SJS,
 mccabja01,TOR,
 mcmanbo02,TOR,
 meyerbe01,TOR,
@@ -1064,7 +1064,7 @@ raymolu01,VAN,
 reichlu01,VAN,
 tanevch01,VAN,
 trejbto01,VAN,
-turcoal02,VAN,
+turcoal02,ANA,
 villexa01,VAN,
 whiteza01,VAN,
 xhekaar01,VAN,
@@ -1096,11 +1096,11 @@ kapanol01,VEG,
 kulikdm01,VEG,
 lyubuil01,VEG,
 mcdonry01,VEG,
-mcmicco01,VEG,
+mcmicco01,STL,
 ovechal01,VEG,
 prademi01,VEG,
 samuema02,VEG,
-sandira01,VEG,
+sandira01,CHI,
 sherwki01,VEG,
 sogaama01,VEG,
 sourdju01,VEG,
@@ -1159,16 +1159,16 @@ jellvos01,WSH,R
 kudryki01,WSH,R
 leddyni01,WSH,R
 lyselfa01,WSH,R
-marchbr03,WSH,R
+marchbr03,PIT,R
 merkuge01,WSH,R
 reidca01,WSH,R
-stenlke01,WSH,R
+stenlke01,DET,R
 vaakaur01,WSH,R
 zellewi01,WSH,R
 anderad01,WSH,
 boqviad01,WSH,
 carlobr01,WSH,
-carrisa01,WSH,
+carrisa01,TBL,
 cizikca01,WSH,
 comphj.01,WSH,
 glendlu01,WSH,
@@ -1191,3 +1191,9 @@ roberni01,WSH,
 ruckma01,WSH,
 valenad01,WSH,
 wilsoto01,WSH,
+janmama02,COL,
+berarbr02,FLA,
+rempema01,FLA,
+domima01,FLA,
+nelsoty01,FLA,
+garandy01,SEA,
