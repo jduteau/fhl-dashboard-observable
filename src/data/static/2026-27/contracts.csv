@@ -44,7 +44,6 @@ haymelu01,0,---
 henriad01,0,---
 howeta01,0,---
 ihswoja01,0,---
-ioriovi01,0,---
 jansslu01,0,---
 jarnkca01,0,---
 jellvos01,0,---
@@ -88,7 +87,6 @@ nosekto01,0,---
 nyquigu01,0,---
 obrieli01,0,---
 P-mcallry01,0,---
-pachabr01,0,---
 paterji01,0,---
 pezzemi01,0,---
 philpno01,0,---
@@ -115,13 +113,11 @@ suterry01,0,---
 suzdaal01,0,---
 talboca01,0,---
 thompja01,0,---
-thrunhe01,0,---
 toewsjo01,0,---
 tomasph01,0,---
 trikogl01,0,---
 tuomasa01,0,---
 vanrija01,0,---
-varlasi01,0,---
 villama01,0,---
 zamulye01,0,---
 ziemmko01,0,---
@@ -137,6 +133,7 @@ backlmi01,10,C-27
 bainsar01,1,C-27
 balinuv01,5,C-27
 barbaiv01,15,C-27
+barreal01,1,C-27
 barroju01,5,C-27
 barzama01,35,C-27
 beanja01,1,C-27
@@ -311,6 +308,7 @@ hussovi01,10,C-27
 hutsoqu01,1,C-27
 huttobe01,1,C-27
 hymanza01,35,C-27
+ioriovi01,2,C-27
 ivaniv01,1,C-27
 jankoma01,4,C-27
 janmama02,3,C-27
@@ -432,6 +430,7 @@ ostapza01,7,C-27
 ostluno01,9,C-27
 othmabr01,14,C-27
 ovechal01,21,C-27
+pachabr01,5,C-27
 pageaje01,11,C-27
 palaton01,7,C-27
 panarar01,40,C-27
@@ -521,6 +520,7 @@ stromry01,15,C-27
 sundqos01,1,C-27
 suterpi01,15,C-27
 svechfe01,9,C-27
+sykorad01,1,C-27
 tanevbr01,1,C-27
 tarasda02,17,C-27
 tarasvl01,1,C-27
@@ -529,6 +529,7 @@ teravte01,7,C-27
 texieal01,3,C-27
 theodsh01,30,C-27
 thomplo01,31,C-27
+thrunhe01,1,C-27
 tkachbr01,33,C-27
 toewsde01,20,C-27
 toffoty01,18,C-27
@@ -541,6 +542,7 @@ ullmali01,38,C-27
 vaakaur01,1,C-27
 valimju01,6,C-27
 vanecvi01,1,C-27
+varlasi01,11,C-27
 vejmeka01,16,C-27
 velenjo01,1,C-27
 verhaca01,28,C-27
