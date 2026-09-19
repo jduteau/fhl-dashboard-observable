@@ -6,6 +6,8 @@ toc: false
 # Playoff Statistics
 
 ```js
+import {playerNameFormat} from "./components/playerLink.js";
+
 // Load the playoff roster data
 const teamInfo = await FileAttachment("./data/playoffRosters.json").json();
 const _params = new URLSearchParams(window.location.search);
@@ -62,6 +64,7 @@ if (_sd.availablePeriods.length > 0) {
         Age: "Age"
       },
       format: {
+        Name: playerNameFormat,
         Salary: x => x ? x.toLocaleString("en-US") : "0",
         BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
       },
@@ -113,6 +116,7 @@ if (_sd.availablePeriods.length > 0) {
         Age: "Age"
       },
       format: {
+        Name: playerNameFormat,
         Reserve: x => x === "R" ? "✓" : "",
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",
@@ -184,6 +188,7 @@ if (_sd.availablePeriods.length > 0) {
         NHLTeam: "NHL"
       },
       format: {
+        Name: playerNameFormat,
         Reserve: x => x === "R" ? "✓" : "",
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",

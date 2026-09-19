@@ -6,6 +6,8 @@ toc: false
 # Player Statistics
 
 ```js
+import {playerNameFormat} from "./components/playerLink.js";
+
 // Load the data files
 const teamInfo = await FileAttachment("./data/rosters.json").json();
 const _params = new URLSearchParams(window.location.search);
@@ -40,6 +42,7 @@ ${periodSelector}
         Age: "Age"
       },
       format: {
+        Name: playerNameFormat,
         Salary: x => x ? x.toLocaleString("en-US") : "0",
         BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
       },
@@ -92,6 +95,7 @@ ${periodSelector}
         Age: "Age"
       },
       format: {
+        Name: playerNameFormat,
         Reserve: x => x === "R" ? "✓" : "",
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",
@@ -166,6 +170,7 @@ ${periodSelector}
         Rating: "Rate"
       },
       format: {
+        Name: playerNameFormat,
         Reserve: x => x === "R" ? "✓" : "",
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",

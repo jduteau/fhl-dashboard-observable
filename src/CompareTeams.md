@@ -6,6 +6,8 @@ toc: false
 # Compare Teams
 
 ```js
+import {playerNameFormat} from "./components/playerLink.js";
+
 // Load the data files
 const rosters = await FileAttachment("./data/rosters.json").json();
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
@@ -37,6 +39,7 @@ function createRosterTable(roster) {
         NHLTeam: "NHL"
       },
       format: {
+        Name: playerNameFormat,
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",
         Toughness: x => x !== null ? x : "",

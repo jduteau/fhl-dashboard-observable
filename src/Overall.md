@@ -6,6 +6,8 @@ toc: false
 # Overall Player Statistics
 
 ```js
+import {playerLink} from "./components/playerLink.js";
+
 // Load the data files
 const playerInfo = await FileAttachment("./data/allplayers.json").json();
 const _params = new URLSearchParams(window.location.search);
@@ -60,7 +62,9 @@ ${Inputs.table(searchPlayers, {
     },
     format: {
     Name: (x, i, data) => {
-        return data[i].Drafted ? x : html`<span style="background-color: yellow;">${x}</span>`;
+        const link = playerLink(x, data[i].PLAYER_ID);
+        if (!data[i].Drafted && link instanceof HTMLElement) link.style.backgroundColor = "yellow";
+        return link;
     },
     Goals: x => x !== null ? x : "",
     Assists: x => x !== null ? x : "",

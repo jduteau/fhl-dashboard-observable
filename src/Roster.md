@@ -6,6 +6,8 @@ toc: false
 # Team Roster Management
 
 ```js
+import {playerNameFormat} from "./components/playerLink.js";
+
 // Load the data files
 const teamInfo = await FileAttachment("./data/rosters.json").json();
 const _params = new URLSearchParams(window.location.search);
@@ -35,6 +37,7 @@ const selection = view(Inputs.table(roster, {
     Age: "Age"
   },
   format: {
+    Name: playerNameFormat,
     Reserve: x => x === "R" ? "✓" : "",
     Salary: x => x ? x.toLocaleString("en-US") : "0",
     BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
