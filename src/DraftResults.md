@@ -6,7 +6,7 @@ toc: false
 # Draft Results
 
 ```js
-import {playerLink} from "./components/playerLink.js";
+import {playerLinks} from "./components/playerLink.js";
 
 const draftResults = await FileAttachment("./data/draftResults.json").json();
 const _params = new URLSearchParams(window.location.search);
@@ -27,6 +27,7 @@ if (_drSd.sourceSeason === null) {
       "order",
       "teamLabel",
       "player",
+      "playerId",
       "playerNHLTeam",
       "playerPosition"
     ],
@@ -35,15 +36,18 @@ if (_drSd.sourceSeason === null) {
       order: "Pick #",
       teamLabel: "Team",
       player: "Player",
+      playerId: "Links",
       playerNHLTeam: "NHL Team",
       playerPosition: "Pos"
     },
     format: {
-      player: (x, i, data) => x ? playerLink(x, data[i].playerId) : "—",
+      player: x => x ?? "—",
+      playerId: (x, i, data) => playerLinks({hockeyRef: x, hockeyDb: data[i].playerHockeyDB, puckPedia: data[i].playerPuckPedia}),
       playerNHLTeam: x => x ?? "—",
       playerPosition: x => x ?? "—"
     },
     width: {
+      playerId: 90,
       round: 60,
       order: 70,
       teamLabel: 100,

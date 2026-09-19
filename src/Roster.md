@@ -6,7 +6,7 @@ toc: false
 # Team Roster Management
 
 ```js
-import {playerNameFormat} from "./components/playerLink.js";
+import {playerLinksFormat} from "./components/playerLink.js";
 
 // Load the data files
 const teamInfo = await FileAttachment("./data/rosters.json").json();
@@ -25,9 +25,10 @@ const selectedTeam = view(teamSelector);
 const team = _sd.teamData.find((t) => t.ABBR === selectedTeam);
 const roster = team[selectedPeriod].ROSTER;
 const selection = view(Inputs.table(roster, {
-  columns: ["Name", "Position", "Reserve", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
+  columns: ["Name", "PLAYER_ID", "Position", "Reserve", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
   header: {
     Name: "Player Name",
+    PLAYER_ID: "Links",
     Position: "Pos",
     Reserve: "R",
     NHLTeam: "NHL",
@@ -37,7 +38,7 @@ const selection = view(Inputs.table(roster, {
     Age: "Age"
   },
   format: {
-    Name: playerNameFormat,
+    PLAYER_ID: playerLinksFormat,
     Reserve: x => x === "R" ? "✓" : "",
     Salary: x => x ? x.toLocaleString("en-US") : "0",
     BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
@@ -45,6 +46,7 @@ const selection = view(Inputs.table(roster, {
   sort: null,
   rows: 50,
   width: {
+    PLAYER_ID: 90,
     NHL: 60,
     Position: 40,
     Reserve: 35,

@@ -42,6 +42,8 @@ for (const season of seasons) {
       teamLabel: traded ? `${pick.originalTeam}(${pick.team})` : pick.originalTeam,
       playerId,
       player: player ? player.Name : (playerId || null),
+      playerHockeyDB: player ? player.HockeyDB : null,
+      playerPuckPedia: player ? player.PuckPedia : null,
       playerNHLTeam: player ? player.NHL : null,
       playerPosition: player ? mapPosition(player.Pos) : null
     };

@@ -6,7 +6,7 @@ toc: false
 # Playoff Statistics
 
 ```js
-import {playerNameFormat} from "./components/playerLink.js";
+import {playerLinksFormat} from "./components/playerLink.js";
 
 // Load the playoff roster data
 const teamInfo = await FileAttachment("./data/playoffRosters.json").json();
@@ -54,9 +54,10 @@ if (_sd.availablePeriods.length > 0) {
     
     <div id="contract-tab" class="tab-content">
     ${Inputs.table(_sd.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Salary", "Contract", "BirthDate", "Age"],
+      columns: ["Name", "PLAYER_ID", "Position", "Salary", "Contract", "BirthDate", "Age"],
       header: {
         Name: "Player Name",
+        PLAYER_ID: "Links",
         Position: "Pos",
         Salary: "Salary ($)",
         Contract: "Contract",
@@ -64,13 +65,14 @@ if (_sd.availablePeriods.length > 0) {
         Age: "Age"
       },
       format: {
-        Name: playerNameFormat,
+        PLAYER_ID: playerLinksFormat,
         Salary: x => x ? x.toLocaleString("en-US") : "0",
         BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
       },
       sort: "Name",
       rows: 50,
       width: {
+        PLAYER_ID: 90,
         Position: 40,
         Salary: 80,
         Age: 50
@@ -99,9 +101,10 @@ if (_sd.availablePeriods.length > 0) {
       </div>
     </div>
     ${Inputs.table(_sd.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
+      columns: ["Name", "PLAYER_ID", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
       header: {
         Name: "Player Name",
+        PLAYER_ID: "Links",
         Position: "Pos",
         Reserve: "R",
         GamesPlayed: "GP",
@@ -116,7 +119,7 @@ if (_sd.availablePeriods.length > 0) {
         Age: "Age"
       },
       format: {
-        Name: playerNameFormat,
+        PLAYER_ID: playerLinksFormat,
         Reserve: x => x === "R" ? "✓" : "",
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",
@@ -127,6 +130,7 @@ if (_sd.availablePeriods.length > 0) {
       },
       sort: null,
       width: {
+        PLAYER_ID: 90,
         Position: 40,
         Reserve: 20,
         Goals: 40,
@@ -165,9 +169,10 @@ if (_sd.availablePeriods.length > 0) {
       </div>
     </div>
     ${Inputs.table(_sd.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "NHLTeam"],
+      columns: ["Name", "PLAYER_ID", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "NHLTeam"],
       header: {
         Name: "Player Name",
+        PLAYER_ID: "Links",
         Position: "Pos",
         Reserve: "R",
         Goals: "G",
@@ -188,7 +193,7 @@ if (_sd.availablePeriods.length > 0) {
         NHLTeam: "NHL"
       },
       format: {
-        Name: playerNameFormat,
+        PLAYER_ID: playerLinksFormat,
         Reserve: x => x === "R" ? "✓" : "",
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",
@@ -206,6 +211,7 @@ if (_sd.availablePeriods.length > 0) {
         DStat: x => x !== null ? x.toFixed(2) : ""
       },
       width: {
+        PLAYER_ID: 90,
         Position: 40,
         Reserve: 20,
         Goals: 40,

@@ -6,7 +6,7 @@ toc: false
 # Player Statistics
 
 ```js
-import {playerNameFormat} from "./components/playerLink.js";
+import {playerLinksFormat} from "./components/playerLink.js";
 
 // Load the data files
 const teamInfo = await FileAttachment("./data/rosters.json").json();
@@ -32,9 +32,10 @@ ${periodSelector}
   
   <div id="contract-tab" class="tab-content">
     ${Inputs.table(_sd.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Salary", "Contract", "BirthDate", "Age"],
+      columns: ["Name", "PLAYER_ID", "Position", "Salary", "Contract", "BirthDate", "Age"],
       header: {
         Name: "Player Name",
+        PLAYER_ID: "Links",
         Position: "Pos",
         Salary: "Salary ($)",
         Contract: "Contract",
@@ -42,13 +43,14 @@ ${periodSelector}
         Age: "Age"
       },
       format: {
-        Name: playerNameFormat,
+        PLAYER_ID: playerLinksFormat,
         Salary: x => x ? x.toLocaleString("en-US") : "0",
         BirthDate: x => x ? new Date(x).toLocaleDateString() : "N/A"
       },
       sort: "Name",
       rows: 50,
       width: {
+        PLAYER_ID: 90,
         Position: 40,
         Salary: 80,
         Age: 50
@@ -77,9 +79,10 @@ ${periodSelector}
       </div>
     </div>
     ${Inputs.table(_sd.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
+      columns: ["Name", "PLAYER_ID", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam", "Salary", "Contract", "BirthDate", "Age"],
       header: {
         Name: "Player Name",
+        PLAYER_ID: "Links",
         Position: "Pos",
         Reserve: "R",
         GamesPlayed: "GP",
@@ -95,7 +98,7 @@ ${periodSelector}
         Age: "Age"
       },
       format: {
-        Name: playerNameFormat,
+        PLAYER_ID: playerLinksFormat,
         Reserve: x => x === "R" ? "✓" : "",
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",
@@ -107,6 +110,7 @@ ${periodSelector}
       },
       sort: null,
       width: {
+        PLAYER_ID: 90,
         Position: 40,
         Reserve: 20,
         Goals: 40,
@@ -146,9 +150,10 @@ ${periodSelector}
       </div>
     </div>
     ${Inputs.table(_sd.teamData.find((t) => t.ABBR === selectedTeam)[selectedPeriod].ROSTER, {
-      columns: ["Name", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "Rating", "NHLTeam"],
+      columns: ["Name", "PLAYER_ID", "Position", "Reserve", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Record", "SO", "GA", "SA", "Rating", "NHLTeam"],
       header: {
         Name: "Player Name",
+        PLAYER_ID: "Links",
         Position: "Pos",
         Reserve: "R",
         Goals: "G",
@@ -170,7 +175,7 @@ ${periodSelector}
         Rating: "Rate"
       },
       format: {
-        Name: playerNameFormat,
+        PLAYER_ID: playerLinksFormat,
         Reserve: x => x === "R" ? "✓" : "",
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",
@@ -189,6 +194,7 @@ ${periodSelector}
         Rating: x => x.toFixed(0)
       },
       width: {
+        PLAYER_ID: 90,
         Position: 40,
         Reserve: 20,
         Goals: 40,
@@ -353,16 +359,16 @@ window.showTab = function(tabId, buttonElement) {
 }
 
 /* Bold specific columns in ext-stats-tab */
-#ext-stats-tab table th:nth-child(6), /* Goals */
-#ext-stats-tab table td:nth-child(6),
-#ext-stats-tab table th:nth-child(7), /* Assists */
+#ext-stats-tab table th:nth-child(7), /* Goals */
 #ext-stats-tab table td:nth-child(7),
-#ext-stats-tab table th:nth-child(10), /* Toughness */
-#ext-stats-tab table td:nth-child(10),
-#ext-stats-tab table th:nth-child(15), /* DStat */
-#ext-stats-tab table td:nth-child(15),
-#ext-stats-tab table th:nth-child(20), /* GStat */
-#ext-stats-tab table td:nth-child(20) {
+#ext-stats-tab table th:nth-child(8), /* Assists */
+#ext-stats-tab table td:nth-child(8),
+#ext-stats-tab table th:nth-child(11), /* Toughness */
+#ext-stats-tab table td:nth-child(11),
+#ext-stats-tab table th:nth-child(16), /* DStat */
+#ext-stats-tab table td:nth-child(16),
+#ext-stats-tab table th:nth-child(21), /* GStat */
+#ext-stats-tab table td:nth-child(21) {
   font-weight: bold;
 }
 </style>

@@ -29,6 +29,8 @@ function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) 
         return {
           PLAYER_ID: player.ID,
           Name: info.Name,
+          HockeyDB: info.HockeyDB,
+          PuckPedia: info.PuckPedia,
           BirthDate: info.BirthDate,
           Age: calculateAge(info.BirthDate, season),
           Position: position,
@@ -95,6 +97,8 @@ function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) 
         return {
           PLAYER_ID: player.ID,
           Name: info.Name,
+          HockeyDB: info.HockeyDB,
+          PuckPedia: info.PuckPedia,
           BirthDate: info.BirthDate,
           Age: calculateAge(info.BirthDate, season),
           Position: position,

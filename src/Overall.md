@@ -6,7 +6,7 @@ toc: false
 # Overall Player Statistics
 
 ```js
-import {playerLink} from "./components/playerLink.js";
+import {playerLinksFormat} from "./components/playerLink.js";
 
 // Load the data files
 const playerInfo = await FileAttachment("./data/allplayers.json").json();
@@ -34,9 +34,10 @@ const searchPlayers = Generators.input(searchInput);
 
 <div class="tab-content">
 ${Inputs.table(searchPlayers, {
-    columns: ["Name", "Position", "FHL", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Wins", "Losses", "Ties", "SO", "GA", "SA", "Rating", "NHLTeam", "Salary", "Contract"],
+    columns: ["Name", "PLAYER_ID", "Position", "FHL", "GamesPlayed", "Goals", "Assists", "PIM", "Hits", "Toughness", "Blocks", "Take", "Give", "TOI", "DStat", "Wins", "Losses", "Ties", "SO", "GA", "SA", "Rating", "NHLTeam", "Salary", "Contract"],
     header: {
     Name: "Player Name",
+    PLAYER_ID: "Links",
     Position: "Pos",
     Salary: "Salary",
     Contract: "Contract",
@@ -62,10 +63,9 @@ ${Inputs.table(searchPlayers, {
     },
     format: {
     Name: (x, i, data) => {
-        const link = playerLink(x, data[i].PLAYER_ID);
-        if (!data[i].Drafted && link instanceof HTMLElement) link.style.backgroundColor = "yellow";
-        return link;
+        return data[i].Drafted ? x : html`<span style="background-color: yellow;">${x}</span>`;
     },
+    PLAYER_ID: playerLinksFormat,
     Goals: x => x !== null ? x : "",
     Assists: x => x !== null ? x : "",
     Toughness: x => x !== null ? x : "",
@@ -85,6 +85,7 @@ ${Inputs.table(searchPlayers, {
     Rating: x => x.toFixed(0)
     },
     width: {
+    PLAYER_ID: 90,
     Position: 20,
     Goals: 40,
     Assists: 40,

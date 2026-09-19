@@ -6,7 +6,7 @@ toc: false
 # Compare Teams
 
 ```js
-import {playerNameFormat} from "./components/playerLink.js";
+import {playerLinksFormat} from "./components/playerLink.js";
 
 // Load the data files
 const rosters = await FileAttachment("./data/rosters.json").json();
@@ -24,9 +24,10 @@ const selectedTeam2 = view(team2Selector);
 
 function createRosterTable(roster) {
   return Inputs.table(roster, {
-      columns: ["Name", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
+      columns: ["Name", "PLAYER_ID", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
       header: {
         Name: "Player Name",
+        PLAYER_ID: "Links",
         Position: "Pos",
         Salary: "Sal",
         Contract: "Cont",
@@ -39,7 +40,7 @@ function createRosterTable(roster) {
         NHLTeam: "NHL"
       },
       format: {
-        Name: playerNameFormat,
+        PLAYER_ID: playerLinksFormat,
         Goals: x => x !== null ? x : "",
         Assists: x => x !== null ? x : "",
         Toughness: x => x !== null ? x : "",
@@ -48,6 +49,7 @@ function createRosterTable(roster) {
       },
       sort: null,
       width: {
+        PLAYER_ID: 90,
         Position: 25,
         Salary: 20,
         Contract: 40,
