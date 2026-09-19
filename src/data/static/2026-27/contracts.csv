@@ -33,11 +33,9 @@ gilbede01,0,---
 glendlu01,0,---
 goligal01,0,---
 granshe01,0,---
-groshma01,0,---
 grzelma01,0,---
 hamblja01,0,---
 hamontr01,0,---
-harkija01,0,---
 harrijo01,0,---
 hayeske01,0,---
 haymelu01,0,---
@@ -82,7 +80,6 @@ morinet01,0,---
 moverja01,0,---
 mrazepe01,0,---
 murrama02,0,---
-myersph01,0,---
 nosekto01,0,---
 nyquigu01,0,---
 obrieli01,0,---
@@ -111,7 +108,6 @@ stillch01,0,---
 sturmni01,0,---
 suterry01,0,---
 suzdaal01,0,---
-talboca01,0,---
 thompja01,0,---
 toewsjo01,0,---
 tomasph01,0,---
@@ -273,6 +269,7 @@ greenjo02,5,C-27
 greenry01,7,C-27
 gregono01,1,C-27
 greigri01,19,C-27
+groshma01,1,C-27
 grubaph01,12,C-27
 grundca01,1,C-27
 gudbrer01,12,C-27
@@ -284,6 +281,7 @@ hallafi01,1,C-27
 hallist01,6,C-27
 hamildo01,10,C-27
 hanifno01,28,C-27
+harkija01,1,C-27
 hathaga01,14,C-27
 haulaer01,10,C-27
 heidtri01,1,C-27
@@ -410,6 +408,7 @@ milleka01,22,C-27
 mitteca01,13,C-27
 montobr01,40,C-27
 moserja01,16,C-27
+myersph01,1,C-27
 nelsobr01,18,C-27
 nelsoty01,2,C-27
 nichuva01,16,C-27
@@ -436,6 +435,7 @@ palaton01,7,C-27
 panarar01,40,C-27
 pastrda01,40,C-27
 pearsta01,1,C-27
+peartja01,1,C-27
 pelleja01,1,C-27
 perroda01,1,C-27
 perroja01,1,C-27
@@ -521,6 +521,7 @@ sundqos01,1,C-27
 suterpi01,15,C-27
 svechfe01,9,C-27
 sykorad01,1,C-27
+talboca01,6,C-27
 tanevbr01,1,C-27
 tarasda02,17,C-27
 tarasvl01,1,C-27

@@ -368,7 +368,7 @@ varlasi01,EDM,
 sorokil01,EDM,
 stromdy01,EDM,
 stromry01,EDM,
-wrighsh01,EDM,
+wrighsh01,WPG,
 badindo01,FLA,R
 czataet01,FLA,R
 gauthet01,FLA,R
@@ -686,7 +686,7 @@ chatfja01,PHI,R
 colansa01,PHI,R
 fiskeos01,PHI,R
 gillsp01,PHI,R
-hallist01,PHI,R
+hallist01,STL,R
 luchaje01,PHI,R
 lundean01,PHI,R
 seguity01,PHI,R
@@ -922,7 +922,7 @@ ralphco01,TOR,
 reinhco01,TOR,
 riellmo01,TOR,
 rosloja01,TOR,
-sharaye01,TOR,
+sharaye01,OTT,
 tavarjo01,TOR,
 tolopni01,TOR,
 villewi01,TOR,
@@ -1038,7 +1038,7 @@ murasse01,WPG,R
 pickaca01,WPG,R
 raddyta01,WPG,R
 stivajo01,WPG,R
-valimju01,WPG,R
+valimju01,EDM,R
 vanritr01,WPG,R
 blackco01,WPG,
 boesebr01,WPG,
@@ -1046,7 +1046,7 @@ chinaye01,WPG,
 crevilo01,WPG,
 desimni01,WPG,
 doughdr01,WPG,
-durzise01,WPG,
+durzise01,EDM,
 faulkju01,WPG,
 gudbrer01,WPG,
 hayesav01,WPG,
@@ -1103,3 +1103,8 @@ ruckma01,WSH,
 valenad01,WSH,
 vatrafr01,WSH,
 wilsoto01,WSH,
+harkija01,DET,
+myersph01,DET,
+talboca01,FLA,
+peartja01,NYI,
+groshma01,NYI,
