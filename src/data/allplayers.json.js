@@ -4,8 +4,11 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
   const { season, latestStatsFile, latestRosterFile, statsPeriods, statsData, availablePeriods, getOverallStats } = sf;
   const teams = ["All", ...teamInfo.map(team => team.ABBR).sort(), "FA"];
 
+  const draftedIds = new Set(drafted.map(d => String(d.hockeydb).trim()));
+
   const playerData = playerInfo.map(info => {
     let player = {};
+    const isDrafted = !!info.HockeyDB && draftedIds.has(String(info.HockeyDB).trim());
     const roster = latestRosterFile.find(p => p.ID === info.ID);
     const contract = contracts.find(c => c.ID === info.ID);
     const position = mapPosition(info.Pos);
@@ -14,7 +17,7 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
     player.OVERALL = {
       PLAYER_ID: info.ID,
       FHL: roster?.ABBR || 'FA',
-      Drafted: drafted.find(d => d.fhl === info.Name) ? true : false,
+      Drafted: isDrafted,
       Name: info.Name,
       HockeyDB: info.HockeyDB,
       PuckPedia: info.PuckPedia,
@@ -51,7 +54,7 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
       player[periodInfo.period] = {
         PLAYER_ID: info.ID,
         FHL: roster?.ABBR || 'FA',
-        Drafted: drafted.find(d => d.fhl === info.Name) ? true : false,
+        Drafted: isDrafted,
         Name: info.Name,
         HockeyDB: info.HockeyDB,
         PuckPedia: info.PuckPedia,
