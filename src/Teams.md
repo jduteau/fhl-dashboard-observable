@@ -65,6 +65,7 @@ const _nextDraftYear = _currentDraftYear + 1;
       },
       sort: "ABBR",
       rows: 32,
+      layout: "auto",
       width: {
         ABBR: 60,
         CASH: 60,
@@ -109,6 +110,7 @@ const _nextDraftYear = _currentDraftYear + 1;
         r2pick: "R2-4 Original Team",
         ...Object.fromEntries(_draftSd.otherRoundNumbers.map(r => [`r${r}`, `R${r} Held By`]))
       },
+      layout: "auto",
       width: {
         order: 65,
         r1pick: 130,

@@ -46,6 +46,7 @@ if (_drSd.sourceSeason === null) {
       playerNHLTeam: x => x ?? "—",
       playerPosition: x => x ?? "—"
     },
+    layout: "auto",
     width: {
       playerId: 90,
       round: 60,

@@ -45,12 +45,12 @@ const selection = view(Inputs.table(roster, {
   },
   sort: null,
   rows: 50,
+  layout: "auto",
   width: {
     PLAYER_ID: 90,
-    NHL: 60,
+    NHLTeam: 60,
     Position: 40,
     Reserve: 35,
-    Team: 50,
     Salary: 80,
     BirthDate: 90,
     Age: 40
