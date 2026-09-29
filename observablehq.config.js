@@ -38,6 +38,7 @@ export default {
 
   // Content to add to the head of the page, e.g. for a favicon:
   head: `<link rel="icon" href="observable.png" type="image/png" sizes="32x32">
+<link rel="stylesheet" href="/styles/responsive.css">
 <script>
   (function() {
     var seasons = ${JSON.stringify(_seasons)};

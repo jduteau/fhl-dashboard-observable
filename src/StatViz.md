@@ -17,54 +17,59 @@ const selectedTeam = Generators.input(teamSelector);
 ```
 
 <h3>Goal Distribution</h3>
-${Plot.plot({
+${resize((width) => Plot.plot({
+    width,
     y: {grid:true}, 
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
         Plot.barY(_sd.goalRanges, {x: "goals", y: "playerCount"})
     ]
-})}
+}))}
 
 <h3>Assist Distribution</h3>
-${Plot.plot({
+${resize((width) => Plot.plot({
+    width,
     y: {grid:true}, 
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
         Plot.barY(_sd.assistRanges, {x: "assists", y: "playerCount"})
     ]
-})}
+}))}
 
 <h3>Toughness Distribution</h3>
-${Plot.plot({
+${resize((width) => Plot.plot({
+    width,
     y: {grid:true}, 
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
         Plot.barY(_sd.toughnessRanges, {x: "toughness", y: "playerCount"})
     ]
-})}
+}))}
 
 <h3>DStat Distribution</h3>
-${Plot.plot({
+${resize((width) => Plot.plot({
+    width,
     y: {grid:true}, 
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
         Plot.barY(_sd.dstatRanges, {x: "dstat", y: "playerCount"})
     ]
-})}
+}))}
 
 <h3>GStat Distribution</h3>
-${Plot.plot({
+${resize((width) => Plot.plot({
+    width,
     y: {grid:true, interval: 1}, 
     x: {interval: 1},
     marks: [ 
         Plot.ruleY([0]), 
         Plot.barY(_sd.gstatRanges, {x: "gstat", y: "playerCount"})
     ]
-})}
+}))}
 
 ${teamSelector}
 
@@ -78,7 +83,8 @@ const goalies = _sd.contractRanking.filter(s => ((selectedTeam === "All") || (s.
 ```
 
 <h3>Forwards Salary vs Rating</h3>
-${Plot.plot({
+${resize((width) => Plot.plot({
+  width,
   marks: [
     Plot.ruleY([0,50,100]),
     Plot.dot(forwards, { x: "Salary", y: "Rating"}),
@@ -86,10 +92,11 @@ ${Plot.plot({
     Plot.linearRegressionY(allForwards, {x: "Salary", y: "Rating", stroke: "blue"}),
     Plot.tip(forwards, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
   ]
-})}
+}))}
 
 <h3>Defencemen Salary vs Rating</h3>
-${Plot.plot({
+${resize((width) => Plot.plot({
+  width,
   marks: [
     Plot.ruleY([0,50,100]),
     Plot.dot(defencemen, { x: "Salary", y: "Rating"}),
@@ -97,12 +104,13 @@ ${Plot.plot({
     Plot.linearRegressionY(allDefencemen, {x: "Salary", y: "Rating", stroke: "blue"}),
     Plot.tip(defencemen, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name }))
   ]
-})}
+}))}
 
 <h3>Goalies Salary vs Rating</h3>
-${
+${resize((width) =>
   (selectedTeam === "All") ?
     Plot.plot({
+    width,
     marks: [
       Plot.ruleY([0,50,100]),
       Plot.dot(goalies, { x: "Salary", y: "Rating"}),
@@ -112,6 +120,7 @@ ${
     ]
   }) :
     Plot.plot({
+    width,
     marks: [
       Plot.ruleY([0,50,100]),
       Plot.dot(goalies, { x: "Salary", y: "Rating"}),
@@ -119,5 +128,5 @@ ${
       Plot.tip(goalies, Plot.pointer({ x: "Salary", y: "Rating", title: (d) => d.Name })),
     ]
   })
-}
+)}
 

@@ -1,0 +1,24 @@
+/*
+ * Site-wide responsive fixes, loaded on every page via observablehq.config.js's
+ * `head` option. Pages each carry their own copy of the tab/stats CSS, so these
+ * rules only add properties those copies don't already set (flex-wrap, overflow)
+ * to avoid fighting the cascade with per-page <style> blocks that load later in
+ * the document.
+ */
+
+/* Inputs.table renders a <form> around a <table> that's allowed to grow wider
+   than its container; without this the whole page gains horizontal scroll
+   instead of just the table. */
+form:has(> table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Let tab bars and stat-total rows wrap onto a second line on narrow screens
+   instead of overflowing the viewport. */
+.totals-row,
+.tab-buttons,
+.main-tab-buttons,
+.sub-tab-buttons {
+  flex-wrap: wrap;
+}
