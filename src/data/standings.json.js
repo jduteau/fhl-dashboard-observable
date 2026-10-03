@@ -269,6 +269,9 @@ function createTeamRankings(teams, availablePeriods) {
         toughness: activeTotals.toughness || 0,
         dstat: activeTotals.dstat || 0,
         gstat: activeTotals.gstat || 0,
+        goalieGames: (team[period]?.ROSTER || [])
+          .filter(player => player.Position === "G" && player.Reserve !== "R")
+          .reduce((total, goalie) => total + (goalie.GamesPlayed || 0), 0),
         // Individual stat rankings
         goalsRank: individualRankings.goals[team.ABBR] || 0,
         assistsRank: individualRankings.assists[team.ABBR] || 0,
@@ -297,6 +300,7 @@ function createTeamRankings(teams, availablePeriods) {
     let totalToughness = 0;
     let totalDstat = 0;
     let totalGstat = 0;
+    let totalGoalieGames = 0;
     let totalWins = 0;
     let totalLosses = 0;
     let totalTies = 0;
@@ -313,6 +317,7 @@ function createTeamRankings(teams, availablePeriods) {
         totalToughness += teamData.toughness || 0;
         totalDstat += teamData.dstat || 0;
         totalGstat += teamData.gstat || 0;
+        totalGoalieGames += teamData.goalieGames || 0;
         totalWins += teamData.wins || 0;
         totalLosses += teamData.losses || 0;
         totalTies += teamData.ties || 0;
@@ -328,6 +333,7 @@ function createTeamRankings(teams, availablePeriods) {
       toughness: totalToughness,
       dstat: totalDstat,
       gstat: totalGstat,
+      goalieGames: totalGoalieGames,
       wins: totalWins,
       losses: totalLosses,
       ties: totalTies,
@@ -355,20 +361,21 @@ function createTeamRankings(teams, availablePeriods) {
     // Create array of teams with their stat values
     const teamStats = overallStandings.map(team => ({
       team: team.team,
-      value: team[statKey] || 0
+      value: team[statKey] || 0,
+      hasGoalieGames: (team.goalieGames || 0) > 0
     }));
     
     // Handle gstat special ranking (teams with 0 goalie games ranked lower)
     if (statKey === 'gstat') {
       // Separate teams with and without goalie games (assuming 0 gstat means no goalie games)
-      const teamsWithGoalieGames = teamStats.filter(t => t.value > 0);
-      const teamsWithoutGoalieGames = teamStats.filter(t => t.value === 0);
+      const teamsWithGoalieGames = teamStats.filter(t => t.hasGoalieGames);
+      const teamsWithoutGoalieGames = teamStats.filter(t => !t.hasGoalieGames);
       
       // Sort teams with goalie games by gstat (descending)
       teamsWithGoalieGames.sort((a, b) => b.value - a.value);
       
-      // Sort teams without goalie games by team name for consistency
-      teamsWithoutGoalieGames.sort((a, b) => a.team.localeCompare(b.team));
+      // Sort teams without goalie games by gstat (descending), matching the period rankings
+      teamsWithoutGoalieGames.sort((a, b) => b.value - a.value);
       
       const gstatRankings = {};
       const gstatPrecision = 0.01;
@@ -394,9 +401,17 @@ function createTeamRankings(teams, availablePeriods) {
       
       // Assign rankings to teams without goalie games (lower than all teams with games)
       let rankForNoGames = lowestRankWithGames - 1;
+      previousValue = null;
       
       teamsWithoutGoalieGames.forEach((teamStat, index) => {
-        gstatRankings[teamStat.team] = rankForNoGames - index;
+        const valuesEqual = previousValue !== null &&
+          Math.abs(teamStat.value - previousValue) < gstatPrecision;
+        
+        if (!valuesEqual) {
+          rankForNoGames = lowestRankWithGames - 1 - index;
+        }
+        gstatRankings[teamStat.team] = rankForNoGames;
+        previousValue = teamStat.value;
       });
       
       // Apply gstat rankings to overallStandings
