@@ -4,7 +4,7 @@
 # Usage: ./count_roster.sh [period_number|roster_file]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROSTER_DIR="$SCRIPT_DIR/src/data/static/rosters"
+ROSTER_DIR="$SCRIPT_DIR/src/data/static/2026-27/rosters"
 
 if [ $# -eq 0 ]; then
     echo "FHL Active Roster Counter"

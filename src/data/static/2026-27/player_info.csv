@@ -1,6 +1,6 @@
 ﻿ID,Name,BirthDate,Pos,NHL,HockeyDB,PuckPedia
 fleurma01,Marc-André Fleury,1984-11-28,G,MIN,55016,marc-andre-fleury
-perryco01,Corey Perry,1985-05-16,RW,TBL,59656,corey-perry
+perryco01,Corey Perry,1985-05-16,RW,LAK,59656,corey-perry
 ovechal01,Alex Ovechkin,1985-09-17,LW,WSH,63735,alex-ovechkin
 burnsbr01,Brent Burns,1985-03-09,D,COL,71733,brent-burns
 goligal01,Alex Goligoski,1985-07-30,D,PIT,72455,alex-goligoski
@@ -128,7 +128,7 @@ pageaje01,Jean-Gabriel Pageau,1992-11-11,C,NYI,122661,jean-gabriel-pageau
 palaton01,Ondřej Palát,1991-03-28,LW,NYI,122662,ondrej-palat
 demeldy01,Dylan DeMelo,1993-05-01,D,WPG,122857,dylan-demelo
 hamildo01,Dougie Hamilton,1993-06-17,D,NJD,122868,dougie-hamilton
-jennebo01,Boone Jenner,1993-06-15,C,CBJ,122877,boone-jenner
+jennebo01,Boone Jenner,1993-06-15,C,WSH,122877,boone-jenner
 mrazepe01,Petr Mrázek,1992-02-14,G,ANA,122893,petr-mrazek
 noesest01,Stefan Noesen,1993-02-12,RW,NJD,122895,stefan-noesen
 sabousc01,Scott Sabourin,1992-07-30,F,TBL,122904,scott-sabourin
@@ -230,7 +230,7 @@ bennima01,Matt Benning,1994-05-25,D,TOR,139599,matt-benning
 lyonal01,Alex Lyon,1992-12-09,G,BUF,139929,alex-lyon
 brodzjo01,Jonny Brodzinski,1993-06-19,C,NYR,139946,jonny-brodzinski
 zibanmi01,Mika Zibanejad,1993-04-18,C,NYR,139958,mika-zibanejad
-arvidvi01,Viktor Arvidsson,1993-04-08,LW,BOS,139983,viktor-arvidsson
+arvidvi01,Viktor Arvidsson,1993-04-08,LW,DET,139983,viktor-arvidsson
 huttobe01,Ben Hutton,1993-04-20,D,VEG,141927,ben-hutton
 weegama01,MacKenzie Weegar,1994-01-07,D,UTA,142279,mackenzie-weegar
 olofsvi01,Victor Olofsson,1995-07-18,RW,VEG,142605,victor-olofsson
@@ -243,13 +243,13 @@ blackco01,Colin Blackwell,1993-03-28,C,DAL,143113,colin-blackwell
 labatjo01,Joseph LaBate,1993-04-16,C,VAN,143115,joseph-labate
 mackina01,Nathan MacKinnon,1995-09-01,C,COL,143744,nathan-mackinnon
 gravery01,Ryan Graves,1995-05-21,D,PIT,143756,ryan-graves
-johnsro02,Ross Johnston,1994-02-18,LW,ANA,143769,ross-johnston
+johnsro02,Ross Johnston,1994-02-18,LW,STL,143769,ross-johnston
 duclaan01,Anthony Duclair,1995-08-26,LW,NYI,143840,anthony-duclair
 gaudrfr01,Frédérick Gaudreau,1993-05-01,C,SEA,143870,frederick-gaudreau
 helleco01,Connor Hellebuyck,1993-05-19,G,WPG,144065,connor-hellebuyck
 stolaan01,Anthony Stolarz,1994-01-20,G,TOR,144264,anthony-stolarz
 teravte01,Teuvo Teräväinen,1994-09-11,F,CHI,144613,teuvo-teravainen
-gustaer02,Erik Gustafsson,1992-03-14,D,DET,144637,erik-gustafsson
+gustaer02,Erik Gustafsson,1992-03-14,D,LAK,144637,erik-gustafsson
 nosekto01,Tomáš Nosek,1992-09-01,C,FLA,144787,tomas-nosek
 bertuty01,Tyler Bertuzzi,1995-02-24,LW,CHI,145020,tyler-bertuzzi
 dickija01,Jason Dickinson,1995-07-04,C,EDM,145034,jason-dickinson
@@ -330,7 +330,7 @@ connoky01,Kyle Connor,1996-12-09,LW,WPG,160546,kyle-connor
 guentja01,Jake Guentzel,1994-10-06,C,TBL,160569,jake-guentzel
 larkidy01,Dylan Larkin,1996-07-30,C,DET,160580,dylan-larkin
 milanso01,Sonny Milano,1996-05-12,LW,WSH,160599,sonny-milano
-tuchal01,Alex Tuch,1996-05-10,RW,BUF,160632,alex-tuch
+tuchal01,Alex Tuch,1996-05-10,RW,WSH,160632,alex-tuch
 acciano01,Noel Acciari,1991-12-01,C,PHI,160732,noel-acciari
 rooneke01,Kevin Rooney,1993-05-21,C,UTA,160749,kevin-rooney
 marnemi01,Mitch Marner,1997-05-05,RW,VEG,161029,mitch-marner
@@ -339,7 +339,7 @@ eyssimi01,Michael Eyssimont,1996-09-09,C,BOS,161159,michael-eyssimont
 sherwki01,Kiefer Sherwood,1995-03-31,RW,SJS,161165,kiefer-sherwood
 dvorach01,Christian Dvorak,1996-02-02,C,PHI,161358,christian-dvorak
 royma04,Matt Roy,1995-03-01,D,WSH,161684,matt-roy
-carlobr01,Brandon Carlo,1996-11-26,D,TOR,161688,brandon-carlo
+carlobr01,Brandon Carlo,1996-11-26,D,STL,161688,brandon-carlo
 capobky01,Kyle Capobianco,1997-08-13,D,DAL,161693,kyle-capobianco
 pionkne01,Neal Pionk,1995-07-29,D,WPG,161716,neal-pionk
 sarosju01,Juuse Saros,1995-04-19,G,NSH,161740,juuse-saros
@@ -351,7 +351,7 @@ kapanka01,Kasperi Kapanen,1996-07-23,RW,EDM,162338,kasperi-kapanen
 kahkoka01,Kaapo Kähkönen,1996-08-16,G,MTL,162341,kaapo-kahkonen
 hintzro01,Roope Hintz,1996-11-17,LW,DAL,162402,roope-hintz
 blackma01,Mackenzie Blackwood,1996-12-09,G,COL,162424,mackenzie-blackwood
-koleske01,Keegan Kolesar,1997-04-08,RW,VEG,162464,keegan-kolesar
+koleske01,Keegan Kolesar,1997-04-08,RW,DET,162464,keegan-kolesar
 nichuva01,Valeri Nichushkin,1995-03-04,RW,CBJ,162486,valeri-nichushkin
 barzama01,Mathew Barzal,1997-05-26,C,NYI,162987,mathew-barzal
 heineda01,Danton Heinen,1995-07-05,C,CBJ,163050,danton-heinen
@@ -425,9 +425,9 @@ steelsa01,Sam Steel,1998-02-03,C,DAL,171350,sam-steel
 cirelan01,Anthony Cirelli,1997-07-15,C,TBL,171437,anthony-cirelli
 stillri01,Riley Stillman,1998-03-09,D,EDM,171449,riley-stillman
 blaissa01,Sammy Blais,1996-06-17,LW,OTT,171529,sammy-blais
-greeraj01,A.J. Greer,1996-12-14,LW,FLA,171577,aj-greer
+greeraj01,A.J. Greer,1996-12-14,LW,ANA,171577,aj-greer
 howdebr01,Brett Howden,1998-03-29,C,VEG,171615,brett-howden
-kivirjo01,Joel Kiviranta,1996-03-23,F,COL,171624,joel-kiviranta
+kivirjo01,Joel Kiviranta,1996-03-23,F,DAL,171624,joel-kiviranta
 coghldy01,Dylan Coghlan,1998-02-19,D,VEG,171659,dylan-coghlan
 vielje01,Jeffrey Viel,1997-01-28,F,TBL,171886,jeffrey-viel
 malenbe01,Beck Malenstyn,1998-02-04,LW,BUF,172179,beck-malenstyn
@@ -437,7 +437,7 @@ cholode01,Dennis Cholowski,1998-02-15,D,NJD,172263,dennis-cholowski
 hartca01,Carter Hart,1998-08-13,G,VEG,172631,carter-hart
 mahurjo01,Josh Mahura,1998-05-05,D,SEA,172634,josh-mahura
 geekimo01,Morgan Geekie,1998-07-20,C,BOS,172640,morgan-geekie
-skinnst01,Stuart Skinner,1998-11-01,G,PIT,172646,stuart-skinner
+skinnst01,Stuart Skinner,1998-11-01,G,WPG,172646,stuart-skinner
 boesebr01,Brock Boeser,1997-02-25,RW,VAN,172649,brock-boeser
 kylinol01,Oliver Kylington,1997-05-19,D,CGY,172719,oliver-kylington
 fialake01,Kevin Fiala,1996-07-22,LW,LAK,172722,kevin-fiala
@@ -462,8 +462,8 @@ foegewa01,Warren Foegele,1996-04-01,LW,OTT,175316,warren-foegele
 laffesa01,Sam Lafferty,1995-03-06,C,CHI,175320,sam-lafferty
 forslgu02,Gustav Forsling,1996-06-12,D,FLA,175324,gustav-forsling
 kovacjo01,Johnathan Kovacevic,1997-07-12,D,NJD,175803,johnathan-kovacevic
-ferrama01,Mario Ferraro,1998-09-17,D,SJS,176062,mario-ferraro
-malotje01,Jeff Malott,1996-08-07,F,LAK,176312,jeff-malott
+ferrama01,Mario Ferraro,1998-09-17,D,WPG,176062,mario-ferraro
+malotje01,Jeff Malott,1996-08-07,F,ANA,176312,jeff-malott
 eriksjo02,Joel Eriksson Ek,1997-01-29,C,MIN,176330,joel-eriksson-ek
 lizotbl01,Blake Lizotte,1997-12-13,C,PIT,176501,blake-lizotte
 philpno01,Noah Philp,1998-08-31,F,CAR,176622,noah-philp
@@ -484,13 +484,13 @@ fleurca01,Cale Fleury,1998-11-19,D,SEA,177026,cale-fleury
 gregono01,Noah Gregor,1998-07-28,C,FLA,177031,noah-gregor
 thomplo01,Logan Thompson,1997-02-25,G,WSH,177085,logan-thompson
 yamamka01,Kailer Yamamoto,1998-09-29,RW,UTA,177091,kailer-yamamoto
-deshavi01,Vincent Desharnais,1996-05-29,D,SJS,177194,vincent-desharnais
+deshavi01,Vincent Desharnais,1996-05-29,D,WSH,177194,vincent-desharnais
 chatfja01,Jalen Chatfield,1996-05-16,D,CAR,177555,jalen-chatfield
 chychja01,Jakob Chychrun,1998-03-31,D,WSH,177557,jakob-chychrun
 debrial01,Alex DeBrincat,1997-12-18,RW,DET,177559,alex-debrincat
 gadjojo01,Jonah Gadjovich,1998-10-12,LW,FLA,177566,jonah-gadjovich
 katchbo01,Boris Katchouk,1998-06-18,LW,TBL,177578,boris-katchouk
-kyroujo01,Jordan Kyrou,1998-05-05,C,STL,177582,jordan-kyrou
+kyroujo01,Jordan Kyrou,1998-05-05,C,WSH,177582,jordan-kyrou
 middlke01,Keaton Middleton,1998-02-10,D,COL,177590,keaton-middleton
 miromda01,Daniil Miromanov,1997-07-11,D,CGY,177591,daniil-miromanov
 raddyta01,Taylor Raddysh,1998-02-18,RW,NYR,177601,taylor-raddysh
@@ -523,7 +523,7 @@ glassco01,Cody Glass,1999-04-01,C,NJD,179680,cody-glass
 coolede01,Devin Cooley,1997-05-25,G,CGY,179757,devin-cooley
 bouchev01,Evan Bouchard,1999-10-20,D,EDM,180272,evan-bouchard
 tippeow01,Owen Tippett,1999-02-16,RW,PHI,180592,owen-tippett
-kuzmean01,Andrei Kuzmenko,1996-02-04,F,LAK,180618,andrei-kuzmenko
+kuzmean01,Andrei Kuzmenko,1996-02-04,F,PIT,180618,andrei-kuzmenko
 samsoil01,Ilya Samsonov,1997-02-22,G,VEG,180628,ilya-samsonov
 gavrivl01,Vladislav Gavrikov,1995-11-21,D,NYR,180637,vladislav-gavrikov
 abolsro01,Rodrigo Abols,1996-01-05,C,VAN,180663,rodrigo-abols
@@ -568,7 +568,7 @@ sergami01,Mikhail Sergachev,1998-06-25,D,UTA,187455,mikhail-sergachev
 dipiemi01,Michael DiPietro,1999-06-09,G,BOS,187458,michael-dipietro
 thomaro01,Robert Thomas,1999-07-02,C,STL,187472,robert-thomas
 suzukni01,Nick Suzuki,1999-08-10,C,MTL,187477,nick-suzuki
-ahcanja01,Jack Ahcan,1997-05-18,D,COL,187479,jack-ahcan
+ahcanja01,Jack Ahcan,1997-05-18,D,NSH,187479,jack-ahcan
 andermi02,Michael Anderson,1999-05-25,D,LAK,187480,michael-anderson
 brysoja01,Jacob Bryson,1997-11-18,D,WPG,187489,jacob-bryson
 hughequ01,Quinn Hughes,1999-10-14,D,MIN,187519,quinn-hughes
@@ -651,7 +651,7 @@ meyerbe01,Ben Meyers,1998-11-15,F,SEA,196578,ben-meyers
 chytifi01,Filip Chytil,1999-09-05,C,VAN,196744,filip-chytil
 luukkuk01,Ukko-Pekka Luukkonen,1999-03-09,G,BUF,196751,ukko-pekka-luukkonen
 footeno01,Nolan Foote,2000-11-29,LW,FLA,196897,nolan-foote
-mcmicco01,Connor McMichael,2001-01-15,C,WSH,196952,connor-mcmichael
+mcmicco01,Connor McMichael,2001-01-15,C,STL,196952,connor-mcmichael
 byrambo01,Bowen Byram,2001-06-13,D,CHI,196997,bowen-byram
 prosviv01,Ivan Prosvetov,1999-03-05,G,PHX,196998,ivan-prosvetov
 roberni01,Nicholas Robertson,2001-09-11,LW,PIT,197139,nicholas-robertson
@@ -822,7 +822,7 @@ sandeja01,Jake Sanderson,2002-07-08,D,OTT,217366,jake-sanderson
 slaggla01,Landon Slaggert,2002-06-25,LW,CHI,217367,landon-slaggert
 beniema01,Matty Beniers,2002-11-05,C,SEA,217370,matty-beniers
 commedr01,Drew Commesso,2002-07-19,G,CHI,217414,drew-commesso
-mctavma01,Mason McTavish,2003-01-30,C,ANA,217518,mason-mctavish
+mctavma01,Mason McTavish,2003-01-30,C,STL,217518,mason-mctavish
 colansa01,Sam Colangelo,2001-12-26,RW,ANA,217617,sam-colangelo
 webbeca01,Cade Webber,2001-01-05,D,TOR,217618,cade-webber
 thompai01,Aidan Thompson,2002-02-18,C,NYR,217729,aidan-thompson
@@ -856,12 +856,12 @@ regenpa01,Pavol Regenda,1999-12-07,F,SJS,219667,pavol-regenda
 lacomja01,Jackson LaCombe,2001-01-09,D,ANA,219748,jackson-lacombe
 laferal01,Alex Laferriere,2001-10-28,RW,LAK,219754,alex-laferriere
 mancivi01,Victor Mancini,2002-05-26,D,VAN,219756,victor-mancini
-zellwol01,Olen Zellweger,2003-09-10,D,ANA,220134,olen-zellweger
+zellwol01,Olen Zellweger,2003-09-10,D,BUF,220134,olen-zellweger
 uchacka01,Kai Uchacz,2003-06-24,F,VEG,221731,kai-uchacz
 holtzal01,Alexander Holtz,2002-01-23,RW,VEG,222890,alexander-holtz
 bjornto01,Tobias Björnfot,2001-04-06,D,FLA,222896,tobias-bjornfot
 vorondi01,Dmitri Voronkov,2000-09-10,LW,CBJ,223335,dmitri-voronkov
-samosma01,Mackie Samoskevich,2002-11-15,RW,FLA,223446,mackie-samoskevich
+samosma01,Mackie Samoskevich,2002-11-15,RW,SEA,223446,mackie-samoskevich
 tverbry01,Ryan Tverberg,2002-01-30,C,TOR,223475,ryan-tverberg
 melanja01,Jacob Melanson,2003-04-22,RW,SEA,223681,jacob-melanson
 wilsbad01,Adam Wilsby,2000-08-07,D,NSH,223783,adam-wilsby
@@ -951,7 +951,7 @@ brunefr01,Frederic Brunet,2003-08-21,D,BOS,230637,frederic-brunet
 legauch01,Charles-Alexis Legault,2003-09-05,D,CAR,230661,charles-alexis-legault
 vilento01,Topias Vilen,2003-04-01,D,NJD,231037,topias-vilen
 kaspema01,Marco Kasper,2004-04-08,C,DET,231359,marco-kasper
-eklunwi01,William Eklund,2002-10-12,LW,SJS,231628,william-eklund
+eklunwi01,William Eklund,2002-10-12,LW,OTT,231628,william-eklund
 buiumsh01,Shai Buium,2003-03-26,D,DET,231730,shai-buium
 wiebeab01,Abram Wiebe,2003-08-28,D,CGY,231871,abram-wiebe
 heineem01,Emil Heineman,2001-11-16,LW,NYI,232198,emil-heineman
@@ -1373,3 +1373,9 @@ waltoki01,Kieron Walton,2006-04-22,C,WPG,262258,kieron-walton
 wytteet01,Ethan Wyttenbach,2007-02-10,LW,CGY,288199,ethan-wyttenbach
 ziemebr01,Brodie Ziemer,2006-02-22,F,BUF,262584,brodie-ziemer
 michaow01,Owen Michaels,2002-05-01,F,EDM,218702,owen-michaels
+warreno01,Noah Warren,2004-07-15,D,ANA,235334,noah-warren
+bauerty01,Tyrel Bauer,2002-03-23,D,WPG,209990,tyrel-bauer
+caulfju01,Judd Caulfield,2001-03-19,RW,ANA,209487,judd-caulfield
+deanza01,Zach Dean,2003-01-04,C,STL,227312,zach-dean
+johanan03,Anton Johansson,2004-06-10,D,DET,251683,anton-johansson
+trudewi01,William Trudeau,2002-10-11,D,NSH,227523,william-trudeau

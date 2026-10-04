@@ -61,7 +61,7 @@ function countActiveRoster(rosterFile) {
     const isPlayoffRoster = rosterPath.includes('playoff') || (roster.length > 0 && roster[0].hasOwnProperty('NHL'));
     
     // Read player info for position lookup
-    const playerInfoPath = path.resolve("src/data/static/player_info.csv");
+    const playerInfoPath = path.resolve("src/data/static/2026-27/player_info.csv");
     const playerInfo = readCsvFile(playerInfoPath);
     
     // Create a lookup map for player positions
