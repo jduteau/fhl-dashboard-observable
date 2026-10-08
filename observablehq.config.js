@@ -7,6 +7,13 @@ import stripBom from "strip-bom";
 const _seasonsRaw = csvParse(stripBom(readFileSync("src/data/static/seasons.csv", "utf-8")));
 const _seasons = _seasonsRaw.filter(s => s.stub !== "true").map(s => s.season);
 const _currentSeason = _seasonsRaw.find(s => s.current === "true")?.season || _seasons[_seasons.length - 1];
+
+// Evaluated when the config loads (i.e. at build time), so this is the build timestamp
+const _builtAt = new Date().toLocaleString("en-US", {
+  dateStyle: "long",
+  timeStyle: "short",
+  timeZoneName: "short"
+});
 export default {
   // The app’s title; used in the sidebar and webpage titles.
   title: "FHL Dashboard",
@@ -110,6 +117,9 @@ export default {
     <select id="fhl-season-select" style="font-size:0.8rem;padding:2px 6px;border:1px solid var(--theme-border,#ccc);border-radius:4px"></select>
   </span>
 </div>`,
+
+  // Same as the default footer, but showing the full build date and time
+  footer: `Built with <a href="https://observablehq.com/" target="_blank">Observable</a> on ${_builtAt}.`,
 
   // The path to the source root.
   root: "src",
