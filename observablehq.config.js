@@ -12,6 +12,7 @@ const _currentSeason = _seasonsRaw.find(s => s.current === "true")?.season || _s
 const _builtAt = new Date().toLocaleString("en-US", {
   dateStyle: "long",
   timeStyle: "short",
+  timeZone: "America/Edmonton",
 });
 export default {
   // The app’s title; used in the sidebar and webpage titles.
@@ -118,7 +119,7 @@ export default {
 </div>`,
 
   // Same as the default footer, but showing the full build date and time
-  footer: `Built with <a href="https://observablehq.com/" target="_blank">Observable</a> on ${_builtAt}.`,
+  footer: `Built with <a href="https://observablehq.com/" target="_blank">Observable</a> on ${_builtAt} (Mountain Time).`,
 
   // The path to the source root.
   root: "src",
