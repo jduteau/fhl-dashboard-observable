@@ -12,7 +12,6 @@ const _currentSeason = _seasonsRaw.find(s => s.current === "true")?.season || _s
 const _builtAt = new Date().toLocaleString("en-US", {
   dateStyle: "long",
   timeStyle: "short",
-  timeZoneName: "short"
 });
 export default {
   // The app’s title; used in the sidebar and webpage titles.
