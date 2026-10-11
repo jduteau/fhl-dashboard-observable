@@ -76,7 +76,7 @@ bjugsni01,Nick Bjugstad,1992-07-17,C,NJD,127782,nick-bjugstad
 blackco01,Colin Blackwell,1993-03-28,C,DAL,143113,colin-blackwell
 blackma01,Mackenzie Blackwood,1996-12-09,G,COL,162424,mackenzie-blackwood
 blakeja02,Jackson Blake,2003-08-03,RW,CAR,238085,jackson-blake
-blankni01,Nick Blankenburg,1998-05-12,D,COL,207892,nick-blankenburg
+blankni01,Nick Blankenburg,1998-05-12,D,TOR,207892,nick-blankenburg
 bleylth01,Thomas Bleyl,2007-12-01,D,NSH,290848,thomas-bleyl
 blomqjo01,Joel Blomqvist,2002-01-10,G,PIT,229784,joel-blomqvist
 bluegte01,Teddy Blueger,1994-08-15,C,TOR,155334,teddy-blueger
@@ -114,7 +114,7 @@ buiumsh01,Shai Buium,2003-03-26,D,DET,231730,shai-buium
 buiumze01,Zeev Buium,2005-12-07,D,VAN,248116,zeev-buium
 bumpal01,Alex Bump,2003-11-20,LW,PHI,247285,alex-bump
 buntimi01,Michael Bunting,1995-09-17,LW,PHI,170104,michael-bunting
-burakan01,André Burakovsky,1995-02-09,LW,CHI,152839,andre-burakovsky
+burakan01,André Burakovsky,1995-02-09,LW,OTT,152839,andre-burakovsky
 burnsbr01,Brent Burns,1985-03-09,D,COL,71733,brent-burns
 bussibr01,Brandon Bussi,1998-06-25,G,CAR,195617,brandon-bussi
 butda01,Danil But,2005-02-15,LW,UTA,265421,danil-but
@@ -376,7 +376,7 @@ hagenja01,James Hagens,2006-11-03,C,BOS,262568,james-hagens
 hagueni01,Nicolas Hague,1998-12-05,D,NSH,187433,nicolas-hague
 haighhu01,Hunter Haight,2004-04-04,C,MIN,248624,hunter-haight
 hakanwi01,William Hakansson,2007-10-08,D,CAR,272554,william-hakansson
-hallafi01,Filip Hallander,2000-06-29,C,PIT,200224,filip-hallander
+hallafi01,Filip Hallander,2000-06-29,C,EDM,200224,filip-hallander
 hallist01,Stephen Halliday,2002-07-02,C,OTT,211040,stephen-halliday
 hallta02,Taylor Hall,1991-11-14,LW,CAR,106818,taylor-hall
 halttka01,Kasper Halttunen,2005-06-07,RW,OTT,262072,kasper-halttunen
@@ -956,7 +956,7 @@ staaljo01,Jordan Staal,1988-09-10,C,CAR,80489,jordan-staal
 stamkst01,Steven Stamkos,1990-02-07,C,NSH,96607,steven-stamkos
 stanklo01,Logan Stankoven,2003-02-26,C,CAR,217763,logan-stankoven
 stanllo01,Logan Stanley,1998-05-26,D,NYI,177612,logan-stanley
-stastsp01,Spencer Stastney,2000-01-04,D,EDM,196146,spencer-stastney
+stastsp01,Spencer Stastney,2000-01-04,D,PIT,196146,spencer-stastney
 stechtr01,Troy Stecher,1994-04-07,D,TOR,139295,troy-stecher
 steelsa01,Sam Steel,1998-02-03,C,DAL,171350,sam-steel
 steeval02,Alex Steeves,1999-12-10,F,BOS,189542,alex-steeves
@@ -972,7 +972,7 @@ stonema01,Mark Stone,1992-05-13,RW,VEG,116184,mark-stone
 stramch01,Charlie Stramel,2004-10-15,C,MIN,238293,charlie-stramel
 stromdy01,Dylan Strome,1997-03-07,C,WSH,170174,dylan-strome
 stromry01,Ryan Strome,1993-07-11,C,CGY,122942,ryan-strome
-strubja01,Jayden Struble,2001-09-08,D,MTL,224707,jayden-struble
+strubja01,Jayden Struble,2001-09-08,D,NSH,224707,jayden-struble
 stuetti02,Tim Stützle,2002-01-15,LW,OTT,226509,tim-stutzle
 sundqos01,Oskar Sundqvist,1994-03-23,C,STL,155343,oskar-sundqvist
 sunieay01,Aydar Suniev,2004-11-16,LW,CGY,251765,aydar-suniev
@@ -1108,3 +1108,10 @@ stanlho01,Hoyt Stanley,2005-02-04,D,OTT,251800,hoyt-stanley
 sturmni01,Nico Sturm,1995-05-03,C,MIN,173468,nico-sturm
 tonindo01,Dominic Toninato,1994-03-09,C,CHI,154157,dominic-toninato
 driessh01,Sheldon Dries,1994-04-23,C,DET,132699,sheldon-dries
+granshe01,Helge Grans,2002-05-10,D,PHI,218310,helge-grans
+laffesa01,Sam Lafferty,1995-03-06,C/LW,FLA,175320,sam-lafferty
+lorenri01,Rieger Lorenz,2004-03-30,LW,MIN,232475,rieger-lorenz
+murrama03,Matthew Murray,1998-02-02,G,NSH,176241,matthew-murray
+sabousc01,Scott Sabourin,1992-07-30,F,TBL,122904,scott-sabourin
+wilsoga01,Garrett Wilson,1991-03-16,LW,PHI,110217,garrett-wilson
+wrighja03,Jared Wright,2002-11-22,RW,LAK,238744,jared-wright
