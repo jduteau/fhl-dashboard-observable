@@ -1,5 +1,5 @@
 import {csvFormat} from "d3-dsv";
-import { readCsvFile, currentSeason, latestStatsFile, latestRosterFile, mapPosition, calculateAge, getOverallStats } from "../components/loadfiles.js";
+import { readCsvFile, getContract, currentSeason, latestStatsFile, latestRosterFile, mapPosition, calculateAge, getOverallStats } from "../components/loadfiles.js";
 
 const basePath = `src/data/static/${currentSeason}`;
 const playerInfo = await readCsvFile(`${basePath}/player_info.csv`);
@@ -8,7 +8,7 @@ const contracts = await readCsvFile(`${basePath}/contracts.csv`);
 const playerData = playerInfo.map(info => {
 
   const roster = latestRosterFile.find(player => player.ID === info.ID);
-  const contract = contracts.find(c => c.ID === info.ID);
+  const contract = getContract(contracts, info.ID);
   const position = mapPosition(info.Pos);
   const playerStats = getOverallStats(position, latestStatsFile.find(s => s.hockeyRef === info.ID) || {});
   return {

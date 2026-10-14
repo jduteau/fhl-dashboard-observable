@@ -1,4 +1,4 @@
-import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
+import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
 
 function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) {
   const { season, availablePlayoffRounds } = sf;
@@ -19,7 +19,7 @@ function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) 
 
       team[roundKey]['ROSTER'] = roster.map(player => {
         const info = playerInfo.find(p => p.ID === player.ID);
-        const contract = contracts.find(c => c.ID === player.ID);
+        const contract = getContract(contracts, player.ID);
         const position = mapPosition(info.Pos);
         const currentPlayerStats = currentStats.find(s => s.hockeyRef === player.ID) || {};
         const previousPlayerStats = previousStats ? previousStats.find(s => s.hockeyRef === player.ID) || {} : null;
@@ -91,7 +91,7 @@ function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) 
       team['OVERALL'] = {};
       team['OVERALL']['ROSTER'] = overallRoster.map(player => {
         const info = playerInfo.find(p => p.ID === player.ID);
-        const contract = contracts.find(c => c.ID === player.ID);
+        const contract = getContract(contracts, player.ID);
         const position = mapPosition(info.Pos);
         const playerStats = getOverallStats(position, latestRound.statsFile.find(s => s.hockeyRef === player.ID) || {});
         return {

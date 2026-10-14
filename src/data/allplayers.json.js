@@ -1,4 +1,4 @@
-import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
+import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
 
 function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
   const { season, latestStatsFile, latestRosterFile, statsPeriods, statsData, availablePeriods, getOverallStats } = sf;
@@ -10,7 +10,7 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
     let player = {};
     const isDrafted = !!info.HockeyDB && draftedIds.has(String(info.HockeyDB).trim());
     const roster = latestRosterFile.find(p => p.ID === info.ID);
-    const contract = contracts.find(c => c.ID === info.ID);
+    const contract = getContract(contracts, info.ID);
     const position = mapPosition(info.Pos);
     const playerStats = getOverallStats(position, latestStatsFile.find(s => s.hockeyRef === info.ID) || {});
     const overallRating = playerStats.games_played ? playerStats.rating : 0;

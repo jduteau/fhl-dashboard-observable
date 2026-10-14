@@ -7,7 +7,7 @@ export async function readCsvFile(fileName) {
       // Convert numeric fields
       let keys = Object.keys(row);
       keys.forEach(key => {
-        if (["CASH", "Salary"].includes(key)) {
+        if (["CASH", "Salary", "Period"].includes(key)) {
           row[key] = +row[key];
         }
       });
@@ -343,3 +343,42 @@ export function getStatsForPeriod(position, currentStats, previousStats) {
 export const getOverallStats = _currentSeasonData.getOverallStats;
 
 
+
+
+// Contracts can change in-season (a waived player signed by another team gets a new contract).
+// contracts.csv may hold several rows per player; the optional Period column is the first
+// period a row applies to (blank = 1). Returns the row in effect for the given period
+// (default: the latest), or undefined if the player has no contract.
+export function getContract(contracts, id, period = Infinity) {
+  let best, earliest;
+  for (const c of contracts) {
+    if (c.ID !== id) continue;
+    const from = c.Period > 1 ? c.Period : 1;
+    if (!earliest || from < (earliest.Period > 1 ? earliest.Period : 1)) earliest = c;
+    if (from <= period && (!best || from >= (best.Period > 1 ? best.Period : 1))) best = c;
+  }
+  return best || earliest;
+}
+
+// One contract per player: the one in effect for the latest period
+export function latestContracts(contracts) {
+  return [...new Set(contracts.map(c => c.ID))].map(id => getContract(contracts, id));
+}
+
+// Cash charged to a team for one period: salary/25, with a minimum of 13
+export function periodCost(totalSalary) {
+  return totalSalary < 325 ? 13 : totalSalary / 25;
+}
+
+// A team's cash going into the latest period: its starting cash less the cost of every
+// earlier period, each priced from that period's roster and the contracts in effect then.
+// The latest period is still in progress, so it has not been charged yet.
+export function computeTeamCash(startCash, abbr, rosterPeriods, contracts) {
+  const latest = rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].period : 0;
+  return rosterPeriods.filter(rp => rp.period < latest).reduce((cash, rp) => {
+    const salary = rp.data
+      .filter(player => player.ABBR === abbr)
+      .reduce((sum, player) => sum + (getContract(contracts, player.ID, rp.period)?.Salary || 0), 0);
+    return Math.round((cash - periodCost(salary)) * 100) / 100;
+  }, startCash);
+}

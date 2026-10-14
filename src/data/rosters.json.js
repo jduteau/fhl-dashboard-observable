@@ -1,8 +1,9 @@
-import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
+import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
 
 function buildSeasonRosters(sf, teamInfo, owners, playerInfo, contracts) {
   const { season, statsData, rosterPeriods, latestStatsFile, latestRosterFile, availablePeriods, lastPeriodNum, getOverallStats } = sf;
   const teams = teamInfo.map(team => team.ABBR).sort();
+  const latestPeriod = rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].period : 0;
 
   const teamData = teamInfo.map(team => {
     const ownerInfo = owners.find(owner => owner.ABBR === team.ABBR);
@@ -12,7 +13,7 @@ function buildSeasonRosters(sf, teamInfo, owners, playerInfo, contracts) {
     const overallRoster = (rosterPeriods[lastPeriodNum]?.data || []).filter(player => player.ABBR === team.ABBR);
     team["OVERALL"]['ROSTER'] = overallRoster.map(player => {
       const info = playerInfo.find(p => p.ID === player.ID);
-      const contract = contracts.find(c => c.ID === player.ID);
+      const contract = getContract(contracts, player.ID, latestPeriod);
       const position = mapPosition(info.Pos);
       const playerStats = getOverallStats(position, latestStatsFile.find(s => s.hockeyRef === player.ID) || {});
       return {
@@ -72,7 +73,7 @@ function buildSeasonRosters(sf, teamInfo, owners, playerInfo, contracts) {
       const overallTeamStats = team["OVERALL"]['ROSTER'];
       team[periodInfo.period]['ROSTER'] = roster.map(player => {
         const info = playerInfo.find(p => p.ID === player.ID);
-        const contract = contracts.find(c => c.ID === player.ID);
+        const contract = getContract(contracts, player.ID, periodInfo.period);
         const position = mapPosition(info.Pos);
         const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {});
         const rating = overallTeamStats.find(p => p.PLAYER_ID === player.ID)?.Rating || 0;

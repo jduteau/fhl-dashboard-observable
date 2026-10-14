@@ -57,7 +57,9 @@ npm run deploy   # Deploy to Observable Cloud
 
 ### Data Processing
 - Use `readCsvFile()` and `readStatsFile()` from `loadfiles.js` for consistent CSV parsing
-- Numeric fields are auto-converted: `CASH`, `Salary`, and all `stats/*` fields
+- Numeric fields are auto-converted: `CASH`, `Salary`, `Period`, and all `stats/*` fields
+- Contracts: `contracts.csv` may have several rows per player. The optional `Period` column is the first period a row applies to (blank = 1), so a player waived and re-signed in-season gets a new row with the period of the signing. Look up with `getContract(contracts, id, period)`; omit `period` for the latest.
+- Team cash: when `autoCash` is `true` in `seasons.csv`, `team_cash.csv` holds each team's *starting* cash and `computeTeamCash()` subtracts each completed period's cost (salary/25, min 13) from that period's roster and contracts. Otherwise `team_cash.csv` is the final cash.
 - Position mapping through `mapPosition()`: converts NHL positions to F/D/G
 - Age calculation via `calculateAge()` using birth dates with September 15, 2025 cutoff
 - Period-specific stats via `getStatsForPeriod()`: calculates period differentials for all fantasy stats

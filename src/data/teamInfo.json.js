@@ -1,11 +1,13 @@
-import { readCsvFile, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge } from "../components/loadfiles.js";
+import { readCsvFile, getContract, computeTeamCash, seasonsConfig, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge } from "../components/loadfiles.js";
 
 function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks) {
   const { season, rosterPeriods, availablePeriods, lastPeriodNum } = sf;
+  // autoCash seasons: team_cash.csv is the starting cash and current cash is derived from the rosters
+  const autoCash = seasonsConfig.find(s => s.season === season)?.autoCash === "true";
 
   const teams = teamInfo.map(team => {
     const cashInfo = teamCash.find(cash => cash.ABBR === team.ABBR);
-    team['CASH'] = cashInfo.CASH;
+    team['CASH'] = autoCash ? computeTeamCash(cashInfo.CASH, team.ABBR, rosterPeriods, contracts) : cashInfo.CASH;
     const ownerInfo = owners.find(owner => owner.ABBR === team.ABBR);
     team['OWNER'] = ownerInfo.OWNER;
     team['EMAIL'] = ownerInfo.EMAIL;
@@ -18,7 +20,7 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
       const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
       team[periodInfo.period]['ROSTER'] = roster.map(player => {
         const info = playerInfo.find(p => p.ID === player.ID);
-        const contract = contracts.find(c => c.ID === player.ID);
+        const contract = getContract(contracts, player.ID, periodInfo.period);
         return {
           PLAYER_ID: player.ID,
           Name: info.Name,
