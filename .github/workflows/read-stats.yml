@@ -1,6 +1,9 @@
 name: Read Stats
 
 on:
+  # Run daily at 13:00 UTC (9am EDT / 8am EST).
+  schedule:
+    - cron: "0 13 * * *"
   # Run this workflow when triggered manually in GitHub's UI.
   workflow_dispatch:
     inputs:
