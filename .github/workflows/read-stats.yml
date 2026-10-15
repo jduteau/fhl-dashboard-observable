@@ -39,7 +39,6 @@ jobs:
         if: steps.resolve.outputs.period != ''
         run: |
           SEASON=${{ steps.resolve.outputs.season }}
-          cp fhl_stats_overall.json fhl_stats_overall_bak.json
           node ./FHLScripts/lib/readStatsIndex.js ${{ steps.resolve.outputs.year }} fhl_stats_overall
           mkdir -p src/data/static/${SEASON}/stats
           cp fhl_stats_overall.csv src/data/static/${SEASON}/stats/stats_p${{ steps.resolve.outputs.period }}.csv
