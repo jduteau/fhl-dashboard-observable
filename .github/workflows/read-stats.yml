@@ -47,6 +47,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add fhl_stats_overall.json fhl_stats_overall.csv src/data/static
+          git add src/data/static
           git diff --cached --quiet || git commit -m "Update stats for ${{ steps.resolve.outputs.season }} period ${{ steps.resolve.outputs.period }}"
           git push
