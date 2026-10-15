@@ -1,0 +1,53 @@
+name: Read Stats
+
+on:
+  # Run this workflow when triggered manually in GitHub's UI.
+  workflow_dispatch:
+    inputs:
+      season:
+        description: "Season override (default: current=true row in seasons.csv)"
+        required: false
+      period:
+        description: "Period override (default: period in progress per periods.csv)"
+        required: false
+
+jobs:
+  read-stats:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Resolve season and period
+        id: resolve
+        run: node .github/scripts/resolve-period.mjs "${{ inputs.season }}" "${{ inputs.period }}"
+      - uses: pnpm/action-setup@v4
+        if: steps.resolve.outputs.period != ''
+        with:
+          package_json_file: FHLScripts/package.json
+      - name: Build FHLScripts
+        if: steps.resolve.outputs.period != ''
+        working-directory: FHLScripts
+        run: |
+          pnpm install --frozen-lockfile
+          # lib/ is gitignored, so compile the TypeScript via projen first
+          pnpm exec projen compile
+      - name: Read stats
+        if: steps.resolve.outputs.period != ''
+        run: |
+          SEASON=${{ steps.resolve.outputs.season }}
+          cp fhl_stats_overall.json fhl_stats_overall_bak.json
+          node ./FHLScripts/lib/readStatsIndex.js ${{ steps.resolve.outputs.year }} fhl_stats_overall
+          mkdir -p src/data/static/${SEASON}/stats
+          cp fhl_stats_overall.csv src/data/static/${SEASON}/stats/stats_p${{ steps.resolve.outputs.period }}.csv
+      - name: Commit updated stats
+        if: steps.resolve.outputs.period != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fhl_stats_overall.json fhl_stats_overall.csv src/data/static
+          git diff --cached --quiet || git commit -m "Update stats for ${{ steps.resolve.outputs.season }} period ${{ steps.resolve.outputs.period }}"
+          git push
