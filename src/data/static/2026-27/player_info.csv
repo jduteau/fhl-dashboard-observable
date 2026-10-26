@@ -100,7 +100,7 @@ brindga01,Gavin Brindley,2004-10-05,C,COL,238086,gavin-brindley
 brinkbo01,Bobby Brink,2001-07-08,RW,MIN,213331,bobby-brink
 brobeph01,Philip Broberg,2001-06-25,D,STL,218397,philip-broberg
 brodijo01,Jonas Brodin,1993-07-12,D,MIN,127571,jonas-brodin
-brodzjo01,Jonny Brodzinski,1993-06-19,C,NYR,139946,jonny-brodzinski
+brodzjo01,Jonny Brodzinski,1993-06-19,C,WSH,139946,jonny-brodzinski
 brossla01,Laurent Brossoit,1993-03-23,G,ANA,118258,laurent-brossoit
 brownco02,Connor Brown,1994-01-14,RW,NJD,130232,connor-brown
 broztr01,Tristan Broz,2002-10-10,C,PIT,224612,tristan-broz
@@ -440,7 +440,7 @@ hugheja03,Jack Hughes,2001-05-14,C,NJD,209479,jack-hughes
 hughelu01,Luke Hughes,2003-09-09,D,NJD,228217,luke-hughes
 hughequ01,Quinn Hughes,1999-10-14,D,MIN,187519,quinn-hughes
 hughetj01,T.J. Hughes,2001-11-09,F,COL,223516,tj-hughes
-huntda01,Daemon Hunt,2002-05-15,D,MIN,209294,daemon-hunt
+huntda01,Daemon Hunt,2002-05-15,D,NSH,209294,daemon-hunt
 hurlbje01,Jeffrey Hurlbert,2008-04-11,F,DET,289266,jeffrey-hurlbert
 hussovi01,Ville Husso,1995-02-06,G,ANA,159892,ville-husso
 hutsoco01,Cole Hutson,2006-06-28,D,WSH,262571,cole-hutson
@@ -464,7 +464,7 @@ jarrytr01,Tristan Jarry,1995-04-29,G,EDM,145157,tristan-jarry
 jarvise01,Seth Jarvis,2002-02-01,C,CAR,211436,seth-jarvis
 jeannta01,Tanner Jeannot,1997-05-29,F,BOS,174618,tanner-jeannot
 jennebo01,Boone Jenner,1993-06-15,C,WSH,122877,boone-jenner
-jenseni02,Nick Jensen,1990-09-21,D,OTT,116513,nick-jensen
+jenseni02,Nick Jensen,1990-09-21,D,ANA,116513,nick-jensen
 jiricad01,Adam Jiricek,2006-06-28,D,STL,265618,adam-jiricek
 jiricda01,David Jiříček,2003-11-28,D,PHI,234936,david-jiricek
 johanal01,Albert Johansson,2001-01-04,D,DET,218279,albert-johansson
@@ -610,7 +610,7 @@ luostee01,Eetu Luostarinen,1998-09-02,C,FLA,197649,eetu-luostarinen
 luukkuk01,Ukko-Pekka Luukkonen,1999-03-09,G,BUF,196751,ukko-pekka-luukkonen
 lyonal01,Alex Lyon,1992-12-09,G,BUF,139929,alex-lyon
 lyselfa01,Fabian Lysell,2003-01-19,RW,BOS,238748,fabian-lysell
-lyubuil01,Ilya Lyubushkin,1994-04-06,D,DAL,171177,ilya-lyubushkin
+lyubuil01,Ilya Lyubushkin,1994-04-06,D,NSH,171177,ilya-lyubushkin
 maattol01,Olli Määttä,1994-08-22,D,MIN,145065,olli-maatta
 maccema01,Matias Maccelli,2000-10-14,LW,NYI,212466,matias-maccelli
 macewza01,Zack MacEwen,1996-07-08,C,TOR,175199,zack-macewen
@@ -666,7 +666,7 @@ mctavma01,Mason McTavish,2003-01-30,C,STL,217518,mason-mctavish
 medveal01,Alexei Medvedev,2007-09-10,G,VAN,284553,alexei-medvedev
 meierti01,Timo Meier,1996-10-08,RW,NJD,169615,timo-meier
 melanja01,Jacob Melanson,2003-04-22,RW,SEA,223681,jacob-melanson
-merceda01,Dawson Mercer,2001-10-27,C,NJD,208997,dawson-mercer
+merceda01,Dawson Mercer,2001-10-27,C,WPG,208997,dawson-mercer
 merille01,Leevi Merilainen,2002-08-13,G,VAN,230540,leevi-merilainen
 merkuge01,Georgii Merkulov,2000-10-10,F,BOS,229105,georgii-merkulov
 merzlel01,Elvis Merzļikins,1994-04-13,G,CBJ,175015,elvis-merzlikins
@@ -1126,5 +1126,21 @@ demkoth01,Thatcher Demko,1995-12-08,G,VAN,146146,thatcher-demko
 martisp01,Spencer Martin,1995-06-08,G,NYR,145070,spencer-martin
 chytifi01,Filip Chytil,1999-09-05,C,VAN,196744,filip-chytil
 ralphco01,Colin Ralph,2005-10-04,D,STL,273302,colin-ralph
-commedr01,Drew Commesso,2002-07-19,G,CHI,drew-commesso
+commedr01,Drew Commesso,2002-07-19,G,CHI,217414,drew-commesso
 chaffmi01,Mitchell Chaffee,1998-01-26,RW,NYI,187682,mitchell-chaffee
+knublco01,Cole Knuble,2004-07-01,C,PHI,239560,cole-knuble
+dowliju01,Justin Dowling,1990-10-01,C,NYR,99404,justin-dowling
+johanjo03,Jonas Johansson,1995-09-19,G,OTT,170670,jonas-johansson
+kaskial01,Aleksanteri Kaskimaki,2004-02-06,C,STL,251090,aleksanteri-kaskimaki
+kiersma01,Matt Kiersted,1998-04-14,D,MIN,181781,matt-kiersted
+lettivi01,Vinni Lettieri,1995-02-06,C,TOR,147864,vinni-lettieri
+blackco02,Colin Blackwell,1993-03-28,C,FLA,143113,colin-blackwell
+brindsk01,Skyler Brind'Amour,1999-07-27,C,CAR,200399,skyler-brindamour
+gauchja01,Jacob Gaucher,2001-03-09,F,PHI,209523,jacob-gaucher
+glendlu01,Luke Glendenning,1989-04-28,C,NYR,116638,luke-glendenning
+jonesbe01,Ben Jones,1999-02-26,F,CGY,176798,ben-jones
+macleky01,Kyle MacLean,1999-04-29,F,NYI,187403,kyle-maclean
+makarta01,Taylor Makar,2001-03-13,LW,COL,210429,taylor-makar
+mcdonhu02,Hunter Mcdonald,2002-05-11,D,PHI,227644,hunter-mcdonald
+mermida01,Dakota Mermis,1994-01-05,D,TOR,124561,dakota-mermis
+seminma01,Matthew Seminoff,2003-12-27,RW,DAL,227301,matthew-seminoff
