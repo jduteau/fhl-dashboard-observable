@@ -1,4 +1,4 @@
-ID,Salary,Contract
+ID,Salary,Contract,Period
 laczyta01,1,C-27
 acciano01,2,C-27
 ahose01,36,C-27
@@ -1094,3 +1094,8 @@ othmabr01,1,C-27,3
 commedr01,1,C-27,3
 chaffmi01,1,C-27,3
 warreno01,15,C-27,3
+mcilrdy01,1,C-27,4
+lorenri01,1,C-27,4
+macewza01,1,C-27,4
+perroda01,3,C-27,4
+grzelma01,1,C-27,4
