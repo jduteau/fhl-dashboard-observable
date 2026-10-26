@@ -115,7 +115,7 @@ Active Goalies: ${numGoalies}
             event.preventDefault();
             (this.realpass.value === this.password.value) ?
               // these IDs from the previous steps
-              emailjs.sendForm('service_ladx4fa', 'template_spwr299', this)
+              emailjs.sendForm('service_k8uynjg', 'template_spwr299', this)
                   .then(() => {
                       document.getElementById("email-confirmation").innerHTML = 'SUCCESS!';
                   }, (error) => {
