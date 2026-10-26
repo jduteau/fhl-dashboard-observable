@@ -26,6 +26,35 @@ export function readStatsFile(fileName) {
   });
 }
 
+// ---- Stat formulas: the single place where Toughness, DStat and GStat are defined ----
+// Each takes plain stat values (missing/null counts as 0). Change a formula here and it
+// changes everywhere.
+
+// Toughness = penalty minutes + hits
+export function calcToughness({ pim, hits }) {
+  return (pim || 0) + (hits || 0);
+}
+
+// DStat (skaters only): TOI / 20 for defensemen, TOI / 30 for forwards, plus blocks and takeaways, less giveaways
+export function calcDStat(position, { toi, blocks, take, give }) {
+  const toiDivisor = position === "D" ? 20 : 30;
+  return (toi || 0) / toiDivisor + (blocks || 0) + (take || 0) - (give || 0);
+}
+
+// GStat (goalies only): 2 per win, 1 per tie, 2 per shutout, 0.15 per shot against, less goals against
+export function calcGStat({ wins, ties, so, sa, ga }) {
+  return 2 * (wins || 0) + (ties || 0) + 2 * (so || 0) + 0.15 * (sa || 0) - (ga || 0);
+}
+
+// Pull the formula inputs out of a stats-file row ("stats/xxx" columns), or a name => value function
+export function statInputs(row) {
+  const get = typeof row === "function" ? row : (name) => row[`stats/${name}`];
+  return {
+    pim: get("pim"), hits: get("hits"), toi: get("toi"), blocks: get("blocks"), take: get("take"), give: get("give"),
+    wins: get("wins"), ties: get("ties"), so: get("so"), sa: get("sa"), ga: get("ga"),
+  };
+}
+
 // Internal helper: compute stat distributions from a stats array
 function computeDistributions(statsArray) {
   const goalDistribution = {};
@@ -36,8 +65,7 @@ function computeDistributions(statsArray) {
 
   statsArray.forEach(player => {
     if (player.pos === "G") {
-      const gstat = 2 * (player["stats/wins"] || 0) + (player["stats/ties"] || 0) +
-        2 * (player["stats/so"] || 0) + 0.15 * (player["stats/sa"] || 0) - (player["stats/ga"] || 0);
+      const gstat = calcGStat(statInputs(player));
       const roundedGstat = Math.round(gstat * 100) / 100;
       gstatDistribution[roundedGstat] = (gstatDistribution[roundedGstat] || 0) + 1;
     } else {
@@ -47,12 +75,10 @@ function computeDistributions(statsArray) {
       const assists = player["stats/assists"] || 0;
       assistDistribution[assists] = (assistDistribution[assists] || 0) + 1;
 
-      const toughness = (player["stats/pim"] || 0) + (player["stats/hits"] || 0);
+      const toughness = calcToughness(statInputs(player));
       toughnessDistribution[toughness] = (toughnessDistribution[toughness] || 0) + 1;
 
-      const toiDivisor = player.pos === "D" ? 20 : 30;
-      const dstat = (player["stats/blocks"] || 0) + (player["stats/take"] || 0) -
-        (player["stats/give"] || 0) + ((player["stats/toi"] || 0) / toiDivisor);
+      const dstat = calcDStat(player.pos, statInputs(player));
       const roundedDstat = Math.round(dstat * 1000) / 1000;
       dstatDistribution[roundedDstat] = (dstatDistribution[roundedDstat] || 0) + 1;
     }
@@ -87,19 +113,10 @@ function createGetOverallStats(distributions) {
   }
 
   return function getOverallStats(position, currentStats) {
-    let dstat = 0;
-    if (position === "D") {
-      dstat = (currentStats["stats/toi"] || 0) / 20 + (currentStats["stats/blocks"] || 0) + (currentStats["stats/take"] || 0) - (currentStats["stats/give"] || 0);
-    } else if (position !== "G") {
-      dstat = (currentStats["stats/toi"] || 0) / 30 + (currentStats["stats/blocks"] || 0) + (currentStats["stats/take"] || 0) - (currentStats["stats/give"] || 0);
-    }
-
-    let gstat = null;
-    if (position === "G") {
-      gstat = 2 * (currentStats["stats/wins"] || 0) + (currentStats["stats/ties"] || 0) + 2 * (currentStats["stats/so"] || 0) + 0.15 * (currentStats["stats/sa"] || 0) - (currentStats["stats/ga"] || 0);
-    }
-
-    const toughness = (position === "G") ? 0 : ((currentStats["stats/pim"] || 0) + (currentStats["stats/hits"] || 0));
+    const inputs = statInputs(currentStats);
+    const dstat = position === "G" ? 0 : calcDStat(position, inputs);
+    const gstat = position === "G" ? calcGStat(inputs) : null;
+    const toughness = position === "G" ? 0 : calcToughness(inputs);
 
     return {
       hockeyRef: currentStats.hockeyRef,
@@ -271,49 +288,17 @@ export function calculateAge(birthDateStr, season = currentSeason) {
 // Function to get stats for the selected period
 export function getStatsForPeriod(position, currentStats, previousStats) {
 
-  // Calculate current period dstat
-  let currentDstat = 0;
-  if (position === "G") {
-    currentDstat = 0;
-  } else if (position === "D") {
-    currentDstat = (currentStats["stats/toi"] || 0) / 20 + (currentStats["stats/blocks"] || 0) + (currentStats["stats/take"] || 0) - (currentStats["stats/give"] || 0);
-  } else { // Forward positions
-    currentDstat = (currentStats["stats/toi"] || 0) / 30 + (currentStats["stats/blocks"] || 0) + (currentStats["stats/take"] || 0) - (currentStats["stats/give"] || 0);
-  }
-  
-  // Calculate previous period dstat
-  let prevDstat = 0;
-  if (previousStats) {
-    if (position === "G") {
-      prevDstat = 0;
-    } else if (position === "D") {
-      prevDstat = (previousStats["stats/toi"] || 0) / 20 + (previousStats["stats/blocks"] || 0) + (previousStats["stats/take"] || 0) - (previousStats["stats/give"] || 0);
-    } else { // Forward positions
-      prevDstat = (previousStats["stats/toi"] || 0) / 30 + (previousStats["stats/blocks"] || 0) + (previousStats["stats/take"] || 0) - (previousStats["stats/give"] || 0);
-    }
-  }
-  
-  // Calculate current period gstat
-  let currentGstat = 0;
-  if (position === "G") {
-    currentGstat = 2 * (currentStats["stats/wins"] || 0) + (currentStats["stats/ties"] || 0) + 2 * (currentStats["stats/so"] || 0) + 0.15 * (currentStats["stats/sa"] || 0) - (currentStats["stats/ga"] || 0);
-  }
-  
-  // Calculate previous period gstat
-  let prevGstat = 0;
-  if (previousStats && position === "G") {
-    prevGstat = 2 * (previousStats["stats/wins"] || 0) + (previousStats["stats/ties"] || 0) + 2 * (previousStats["stats/so"] || 0) + 0.15 * (previousStats["stats/sa"] || 0) - (previousStats["stats/ga"] || 0);
-  }
-  
-  // Calculate current period toughness
-  let currentToughness = (position === "G") ? 0 : ((currentStats["stats/pim"] || 0) + (currentStats["stats/hits"] || 0));
-  
-  // Calculate previous period toughness
-  let prevToughness = 0;
-  if (previousStats && position !== "G") {
-    prevToughness = (previousStats["stats/pim"] || 0) + (previousStats["stats/hits"] || 0);
-  }
-  
+  const currentInputs = statInputs(currentStats);
+  const prevInputs = previousStats ? statInputs(previousStats) : null;
+  const isGoalie = position === "G";
+
+  const currentDstat = isGoalie ? 0 : calcDStat(position, currentInputs);
+  const prevDstat = prevInputs && !isGoalie ? calcDStat(position, prevInputs) : 0;
+  const currentGstat = isGoalie ? calcGStat(currentInputs) : 0;
+  const prevGstat = prevInputs && isGoalie ? calcGStat(prevInputs) : 0;
+  const currentToughness = isGoalie ? 0 : calcToughness(currentInputs);
+  const prevToughness = prevInputs && !isGoalie ? calcToughness(prevInputs) : 0;
+
   return {
     hockeyRef: currentStats.hockeyRef,
     team: currentStats.team,

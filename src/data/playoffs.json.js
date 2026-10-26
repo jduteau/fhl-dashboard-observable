@@ -1,4 +1,4 @@
-import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition } from "../components/loadfiles.js";
+import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, calcToughness, calcDStat, calcGStat, statInputs } from "../components/loadfiles.js";
 
 // Pure ranking functions used across all seasons
 
@@ -103,6 +103,7 @@ function calculateTeamStats(round, teamAbbr, prevRound, teamInfo) {
     const prev = prevStatsMap[player.hockeyRef] ? (prevStatsMap[player.hockeyRef][field] || 0) : 0;
     return curr - prev;
   };
+  const deltaInputs = (player) => statInputs((name) => stat(player, `stats/${name}`));
   let teamTotals = { goals: 0, assists: 0, points: 0, pim: 0, hits: 0, toughness: 0, blocks: 0, takeaways: 0, giveaways: 0, toi: 0, dstat: 0, gstat: 0, gp: 0, goalieGp: 0 };
   teamPlayers.forEach(player => {
     const rosterEntry = teamRoster.find(r => r.ID === player.hockeyRef);
@@ -113,18 +114,16 @@ function calculateTeamStats(round, teamAbbr, prevRound, teamInfo) {
     teamTotals.points += stat(player, "stats/goals") + stat(player, "stats/assists");
     teamTotals.pim += stat(player, "stats/pim");
     teamTotals.hits += stat(player, "stats/hits");
-    teamTotals.toughness += stat(player, "stats/pim") + stat(player, "stats/hits");
+    teamTotals.toughness += calcToughness(deltaInputs(player));
     teamTotals.blocks += stat(player, "stats/blocks");
     teamTotals.takeaways += stat(player, "stats/take");
     teamTotals.giveaways += stat(player, "stats/give");
     teamTotals.toi += stat(player, "stats/toi");
-    if (position === "D") {
-      teamTotals.dstat += stat(player, "stats/toi") / 20 + stat(player, "stats/blocks") + stat(player, "stats/take") - stat(player, "stats/give");
-    } else if (position === "F") {
-      teamTotals.dstat += stat(player, "stats/toi") / 30 + stat(player, "stats/blocks") + stat(player, "stats/take") - stat(player, "stats/give");
+    if (position === "D" || position === "F") {
+      teamTotals.dstat += calcDStat(position, deltaInputs(player));
     }
     if (position === "G") {
-      teamTotals.gstat += 2 * stat(player, "stats/wins") + stat(player, "stats/ties") + 2 * stat(player, "stats/so") + 0.15 * stat(player, "stats/sa") - stat(player, "stats/ga");
+      teamTotals.gstat += calcGStat(deltaInputs(player));
       teamTotals.goalieGp += stat(player, "stats/gp");
     }
     teamTotals.gp += stat(player, "stats/gp");
