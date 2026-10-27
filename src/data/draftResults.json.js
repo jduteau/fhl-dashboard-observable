@@ -1,5 +1,6 @@
-import { readCsvFile, allSeasons, seasons, currentSeason, mapPosition } from "../components/loadfiles.js";
+import { readCsvFile, allSeasons, seasons, currentSeason, mapPosition, loadSeasonData } from "../components/loadfiles.js";
 import { buildSeasonDraftOrder } from "../components/draftHelpers.js";
+import { loadDraftOrderRows } from "../components/draftOrderCompute.js";
 
 const allData = {};
 for (const season of seasons) {
@@ -11,7 +12,7 @@ for (const season of seasons) {
     continue;
   }
 
-  const draftOrderData = await readCsvFile(`src/data/static/${sourceSeason}/draft_order.csv`);
+  const draftOrderData = await loadDraftOrderRows(sourceSeason, await loadSeasonData(sourceSeason));
   const draftPicks = await readCsvFile(`src/data/static/${sourceSeason}/draft_picks.csv`);
   const teamInfo = await readCsvFile(`src/data/static/${season}/team_info.csv`);
   const playerInfo = await readCsvFile(`src/data/static/${season}/player_info.csv`);
