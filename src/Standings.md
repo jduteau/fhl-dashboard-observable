@@ -55,17 +55,14 @@ const _winners = [...new Set(_eligible.map(t => t.division))]
   .sort((a, b) => a.overallRank - b.overallRank);
 const _others = _eligible.filter(t => !_winners.includes(t)).slice(0, 16 - _winners.length);
 const _qualified = [..._winners, ..._others.sort((a, b) => a.overallRank - b.overallRank)];
-const playoffOrder = _qualified.map((t, i) => ({
-  seed: i + 1,
-  teamName: t.teamName,
-  division: t.division,
-  divWinner: _winners.includes(t) ? "Yes" : "",
-  record: `${t.wins}-${t.losses}-${t.ties}`,
-  points: t.points,
-  overallRank: t.overallRank,
-  bank: t.bank,
-  opponent: `${_qualified.length - i}`
-}));
+const _n = _qualified.length;
+const playoffMatchups = _qualified.slice(0, Math.floor(_n / 2)).map((t, i) => {
+  const o = _qualified[_n - 1 - i];
+  return {
+    seed: i + 1, teamName: t.teamName, division: t.division, divWinner: _winners.includes(t) ? "Yes" : "",
+    oppSeed: _n - i, oppName: o.teamName, oppDivision: o.division, oppDivWinner: _winners.includes(o) ? "Yes" : ""
+  };
+});
 ```
 <div class="tabs">
   <div class="tab-buttons">
@@ -150,12 +147,11 @@ const playoffOrder = _qualified.map((t, i) => ({
     </div>
     <h3>Proposed Playoff Order</h3>
     <p>Top 16 teams qualify (1 vs 16 matchups). Division winners are seeded 1-4; the rest are seeded by record. Teams with a negative bank balance are ineligible.</p>
-    ${Inputs.table(playoffOrder, {
-      columns: ["seed", "teamName", "division", "divWinner", "record", "points", "overallRank", "bank", "opponent"],
-      header: {seed: "Seed", teamName: "Team", division: "Division", divWinner: "Div Winner", record: "Record", points: "Points", overallRank: "Overall", bank: "Bank", opponent: "Plays Seed"},
-      format: {bank: x => x.toFixed(2)},
-      width: {seed: 40, teamName: 130, division: 90, divWinner: 70, record: 60, points: 50, overallRank: 60, bank: 60, opponent: 70},
-      rows: 17,
+    ${Inputs.table(playoffMatchups, {
+      columns: ["seed", "teamName", "division", "divWinner", "oppSeed", "oppName", "oppDivision"],
+      header: {seed: "Seed", teamName: "Team", division: "Division", divWinner: "Div Winner", oppSeed: "Seed", oppName: "Opponent", oppDivision: "Division"},
+      width: {seed: 40, teamName: 130, division: 90, divWinner: 70, oppSeed: 40, oppName: 130, oppDivision: 90},
+      rows: 9,
       select: false
     })}
     ${playoffIneligible.length ? html`<h4>Ineligible (negative bank balance)</h4>${Inputs.table(playoffIneligible, {
