@@ -11,6 +11,8 @@ const teamInfo = await FileAttachment("./data/standings.json").json();
 const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || teamInfo.currentSeason;
 const _sd = teamInfo.data[_season];
+const _cashInfo = await FileAttachment("./data/teamInfo.json").json();
+const _cash = Object.fromEntries(_cashInfo.data[_season].teams.map(t => [t.ABBR, t.CASH]));
 
 const periodSelector = Inputs.select(_sd.availablePeriods, {label: "Select Period:", value: _sd.availablePeriods[_sd.availablePeriods.length-1]});
 const selectedPeriod = Generators.input(periodSelector);
@@ -38,6 +40,32 @@ Object.keys(divisionStandings).forEach(division => {
     team.divisionRank = index + 1;
   });
 });
+
+// Proposed playoff order: 16 teams, division winners seeded 1-4, rest by record.
+// Teams with a negative bank balance are ineligible; the best eligible team in a division is its winner.
+const _ranked = _sd.rankings.overallStandings.map(t => ({
+  ...t,
+  division: _sd.teams.find(x => x.ABBR === t.team).DIVISION,
+  bank: +_cash[t.team]
+}));
+const _eligible = _ranked.filter(t => t.bank >= 0);
+const playoffIneligible = _ranked.filter(t => t.bank < 0);
+const _winners = [...new Set(_eligible.map(t => t.division))]
+  .map(d => _eligible.find(t => t.division === d))
+  .sort((a, b) => a.overallRank - b.overallRank);
+const _others = _eligible.filter(t => !_winners.includes(t)).slice(0, 16 - _winners.length);
+const _qualified = [..._winners, ..._others.sort((a, b) => a.overallRank - b.overallRank)];
+const playoffOrder = _qualified.map((t, i) => ({
+  seed: i + 1,
+  teamName: t.teamName,
+  division: t.division,
+  divWinner: _winners.includes(t) ? "Yes" : "",
+  record: `${t.wins}-${t.losses}-${t.ties}`,
+  points: t.points,
+  overallRank: t.overallRank,
+  bank: t.bank,
+  opponent: `${_qualified.length - i}`
+}));
 ```
 <div class="tabs">
   <div class="tab-buttons">
@@ -120,6 +148,22 @@ Object.keys(divisionStandings).forEach(division => {
         </div>
       `)}
     </div>
+    <h3>Proposed Playoff Order</h3>
+    <p>Top 16 teams qualify (1 vs 16 matchups). Division winners are seeded 1-4; the rest are seeded by record. Teams with a negative bank balance are ineligible.</p>
+    ${Inputs.table(playoffOrder, {
+      columns: ["seed", "teamName", "division", "divWinner", "record", "points", "overallRank", "bank", "opponent"],
+      header: {seed: "Seed", teamName: "Team", division: "Division", divWinner: "Div Winner", record: "Record", points: "Points", overallRank: "Overall", bank: "Bank", opponent: "Plays Seed"},
+      format: {bank: x => x.toFixed(2)},
+      width: {seed: 40, teamName: 130, division: 90, divWinner: 70, record: 60, points: 50, overallRank: 60, bank: 60, opponent: 70},
+      rows: 17,
+      select: false
+    })}
+    ${playoffIneligible.length ? html`<h4>Ineligible (negative bank balance)</h4>${Inputs.table(playoffIneligible, {
+      columns: ["teamName", "division", "overallRank", "bank"],
+      header: {teamName: "Team", division: "Division", overallRank: "Overall", bank: "Bank"},
+      format: {bank: x => x.toFixed(2)},
+      select: false
+    })}` : ""}
   </div>
   
   <div id="rankings-tab" class="tab-content">
