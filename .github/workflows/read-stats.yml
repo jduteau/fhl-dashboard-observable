@@ -45,6 +45,10 @@ jobs:
           node ./FHLScripts/lib/readStatsIndex.js ${{ steps.resolve.outputs.year }} fhl_stats_overall
           mkdir -p src/data/static/${SEASON}/stats
           cp fhl_stats_overall.csv src/data/static/${SEASON}/stats/stats_p${{ steps.resolve.outputs.period }}.csv
+      - name: Add new players to player_info.csv
+        if: steps.resolve.outputs.period != ''
+        continue-on-error: true
+        run: node .github/scripts/update-player-info.mjs "${{ steps.resolve.outputs.season }}" "${{ steps.resolve.outputs.period }}"
       - name: Commit updated stats
         if: steps.resolve.outputs.period != ''
         run: |
