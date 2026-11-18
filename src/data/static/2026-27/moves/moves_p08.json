@@ -3,5 +3,14 @@
     "promote": [],
     "demote": [],
     "submittedAt": "2026-11-18T23:47:45.490Z"
+  },
+  "VEG": {
+    "promote": [
+      "ovechal01"
+    ],
+    "demote": [
+      "sherwki01"
+    ],
+    "submittedAt": "2026-11-18T23:57:00.903Z"
   }
 }
