@@ -8,7 +8,6 @@ function buildSeasonPlayoffRosters(sf, teamInfo, owners, playerInfo, contracts) 
   const teamData = teamInfo.map(team => {
     const ownerInfo = owners.find(owner => owner.ABBR === team.ABBR);
     team['EMAIL'] = ownerInfo.EMAIL;
-    team['PW'] = ownerInfo.PW;
 
     availablePlayoffRounds.forEach((round, index) => {
       const roundKey = `R${round.round.toString().padStart(2, '0')}`;

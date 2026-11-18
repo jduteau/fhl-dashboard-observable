@@ -1,0 +1,8 @@
+name = "fhl-roster-moves"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+GITHUB_REPO = "jduteau/fhl-dashboard-observable"
+# Origin only (no path) of the GitHub Pages site, e.g. https://jduteau.github.io
+ALLOWED_ORIGIN = "https://jduteau.github.io"

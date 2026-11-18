@@ -8,7 +8,6 @@ function buildSeasonRosters(sf, teamInfo, owners, playerInfo, contracts) {
   const teamData = teamInfo.map(team => {
     const ownerInfo = owners.find(owner => owner.ABBR === team.ABBR);
     team['EMAIL'] = ownerInfo.EMAIL;
-    team['PW'] = ownerInfo.PW;
     team["OVERALL"] = {};
     const overallRoster = (rosterPeriods[lastPeriodNum]?.data || []).filter(player => player.ABBR === team.ABBR);
     team["OVERALL"]['ROSTER'] = overallRoster.map(player => {

@@ -3,10 +3,10 @@ name: Deploy
 on:
   # Run this workflow whenever a new commit is pushed to main.
   push: {branches: [master]}
-  # Run this workflow after Read Stats completes (pushes made with GITHUB_TOKEN
+  # Run this workflow after Read Stats or Apply Roster Moves completes (pushes made with GITHUB_TOKEN
   # don't trigger the push event above).
   workflow_run:
-    workflows: ["Read Stats"]
+    workflows: ["Read Stats", "Apply Roster Moves"]
     types: [completed]
   # Run this workflow once per day, at 10:15 UTC
   # schedule: [{cron: "15 10 * * *"}]
@@ -15,7 +15,7 @@ on:
 
 jobs:
   deploy:
-    # For workflow_run, only deploy if Read Stats succeeded.
+    # For workflow_run, only deploy if the triggering workflow succeeded.
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
