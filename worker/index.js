@@ -2,7 +2,31 @@
 // against owners.csv in the repo, and triggers the "Apply Roster Moves" GitHub workflow.
 //
 // Secrets/vars (see worker/README.md):  GITHUB_TOKEN (secret), GITHUB_REPO, ALLOWED_ORIGIN
-import { csvParse } from "d3-dsv";
+// Minimal CSV parser (handles quoted fields). d3-dsv can't be used: it relies on
+// `new Function`, which Cloudflare Workers disallow.
+function csvParse(text) {
+  const rows = [];
+  let row = [], field = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') q = false;
+      else field += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); field = "";
+      if (row.some((v) => v !== "")) rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  const [head, ...body] = rows;
+  const cols = head.map((h) => h.trim());
+  return body.map((r) => Object.fromEntries(cols.map((h, i) => [h, (r[i] ?? "").trim()])));
+}
 
 const json = (body, status, origin) =>
   new Response(JSON.stringify(body), {
@@ -23,6 +47,17 @@ const gh = (env, path, init = {}) =>
 
 export default {
   async fetch(request, env) {
+    try {
+      return await handle(request, env);
+    } catch (e) {
+      console.error(e);
+      return json({ error: `Server error: ${e.message}` }, 500, env.ALLOWED_ORIGIN);
+    }
+  },
+};
+
+async function handle(request, env) {
+  {
     const origin = env.ALLOWED_ORIGIN;
     if (request.method === "OPTIONS")
       return new Response(null, {
@@ -57,5 +92,5 @@ export default {
     });
     if (dispatch.status !== 204) return json({ error: "Could not submit moves" }, 502, origin);
     return json({ ok: true }, 202, origin);
-  },
-};
+  }
+}

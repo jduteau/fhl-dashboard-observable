@@ -6,7 +6,7 @@ Flow: Roster page -> this Worker (checks password vs `owners.csv`) -> `repositor
 ## Setup (once)
 1. Create a fine-grained GitHub token for this repo only, with **Contents: Read and write**
    (needed for `repository_dispatch` and reading `owners.csv`).
-2. `cd worker && npm i d3-dsv && npx wrangler secret put GITHUB_TOKEN` (paste the token)
+2. `cd worker && npx wrangler secret put GITHUB_TOKEN` (paste the token)
 3. Confirm `ALLOWED_ORIGIN` in `wrangler.toml` matches the Pages origin, then `npx wrangler deploy`.
 4. Put the Worker URL in `src/Roster.md` (`WORKER_URL`).
 

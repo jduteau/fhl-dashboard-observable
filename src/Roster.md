@@ -44,22 +44,46 @@ const tableOptions = {
 };
 ```
 
-## Current roster (period ${currentPeriod}) — view only
-
 ```js
-display(Inputs.table(roster, tableOptions));
+// Tabs (same look as the Teams page). Visibility is keyed on body[data-tab] so panels keep
+// their state while switching and survive team changes.
+document.body.dataset.tab ||= "current";
+const tabButton = (id, label) => {
+  const b = html`<button class="tab-button">${label}</button>`;
+  b.dataset.id = id;
+  b.onclick = () => { document.body.dataset.tab = id; };
+  return b;
+};
+display(html`<style>
+  body[data-tab="current"] .tab-next, body[data-tab="next"] .tab-current {display: none;}
+  body[data-tab="current"] .tab-button[data-id="current"], body[data-tab="next"] .tab-button[data-id="next"] {
+    color: #0066cc; border-bottom-color: #0066cc; background-color: #f0f8ff;
+  }
+  .tabs {margin: 20px 0;}
+  .tab-buttons {display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;}
+  .tab-button {background: none; border: none; padding: 12px 24px; cursor: pointer; font-size: 16px; font-weight: 500; color: #666; border-bottom: 3px solid transparent; transition: all 0.2s ease;}
+  .tab-button:hover {color: #333; background-color: #f5f5f5;}
+</style>`);
+display(html`<div class="tabs"><div class="tab-buttons">${tabButton("current", `Current Roster (Period ${currentPeriod})`)}${tabButton("next", `Next Period (${nextPeriod})`)}</div></div>`);
 ```
 
-## Next period (${nextPeriod}) — select reserves
-
-${isCurrentSeason ? html`Tick the players who should be on the **reserve** list for period ${nextPeriod}, then submit. Submitting again replaces your earlier submission.` : html`<em>Roster moves can only be made for the current season.</em>`}
+```js
+display(html`<div class="tab-current"><p><em>View only.</em></p>${Inputs.table(roster, {...tableOptions, select: false})}</div>`);
+```
 
 ```js
 // Start from the last submission (if any), otherwise from the current roster.
 const pending = movesData.moves[nextPeriod]?.[selectedTeam];
 const startReserve = roster.filter((p) =>
   pending ? (p.Reserve === "R" ? !pending.promote.includes(p.PLAYER_ID) : pending.demote.includes(p.PLAYER_ID)) : p.Reserve === "R");
-const selection = view(Inputs.table(roster, {...tableOptions, value: startReserve}));
+const selTable = Inputs.table(roster, {...tableOptions, columns: tableOptions.columns.filter((c) => c !== "Reserve"), value: startReserve});
+const selection = Generators.input(selTable);
+display(html`<div class="tab-next">
+  ${isCurrentSeason
+    ? html`<p>A checked box means the player is on the <strong>reserve</strong> list. Check the players who should be reserves for period ${nextPeriod}, then submit. Submitting again replaces your earlier submission.</p>`
+    : html`<p><em>Roster moves can only be made for the current season.</em></p>`}
+  ${selTable}
+</div>`);
 ```
 
 ```js
@@ -79,20 +103,21 @@ const errors = [
 ].filter(Boolean);
 ```
 
-<pre>
-${selectedTeam} roster moves for period ${nextPeriod}
+```js
+display(html`<div class="tab-next">
+<pre>${selectedTeam} roster moves for period ${nextPeriod}
 Promote: ${promoteIds.map(nameOf).join(", ")}
-Demote:  ${demoteIds.map(nameOf).join(", ")}
-</pre>
-
+Demote:  ${demoteIds.map(nameOf).join(", ")}</pre>
 ${errors.map((e) => html`<div><strong>FIX YOUR ROSTER - ${e}</strong></div>`)}
-
-Active Forwards: ${numForwards} · Active Defence: ${numDefence} · Active Goalies: ${numGoalies}
-
+<p>Active Forwards: ${numForwards} · Active Defence: ${numDefence} · Active Goalies: ${numGoalies}</p>
 ${pending ? html`<p>Last submitted ${new Date(pending.submittedAt).toLocaleString()}.</p>` : ""}
+</div>`);
+```
 
 ```js
 const passwordInput = html`<input type="password" placeholder="Team password" autocomplete="off">`;
+passwordInput.value = window._fhlPw ?? "";
+passwordInput.oninput = () => { window._fhlPw = passwordInput.value; };
 const status = html`<div></div>`;
 const submit = html`<button ${(!isCurrentSeason || errors.length) ? "disabled" : ""}>Submit moves</button>`;
 submit.onclick = async () => {
@@ -109,5 +134,5 @@ submit.onclick = async () => {
       : `FAILED: ${body.error ?? res.status}`;
   } catch (e) { status.textContent = `FAILED: ${e}`; }
 };
-display(html`<div>${passwordInput} ${submit}${status}</div>`);
+display(html`<div class="tab-next">${passwordInput} ${submit}${status}</div>`);
 ```
