@@ -12,5 +12,14 @@
       "sherwki01"
     ],
     "submittedAt": "2026-11-18T23:57:00.903Z"
+  },
+  "TBL": {
+    "promote": [
+      "quillja01"
+    ],
+    "demote": [
+      "garlaco01"
+    ],
+    "submittedAt": "2026-11-19T16:15:24.890Z"
   }
 }
