@@ -7,10 +7,18 @@ const EMAILJS_URL = "https://api.emailjs.com/api/v1.0/email/send";
 export const emailConfigured = (env) =>
   Boolean(env.EMAILJS_SERVICE_ID && env.EMAILJS_TEMPLATE_ID && env.EMAILJS_PUBLIC_KEY && env.EMAILJS_PRIVATE_KEY);
 
+// A single plain address (no names, lists or whitespace). EmailJS answers "recipients address is corrupted" otherwise.
+const VALID_ADDRESS = /^[^\s@,;<>()"]+@[^\s@,;<>()"]+\.[^\s@,;<>()"]+$/;
+
 // Sends one email through the shared EmailJS template, which has the variables
 // {{to_email}} {{to_name}} {{subject}} {{message}}. Resolves to true if EmailJS accepted it.
-export async function sendEmail(env, { to, toName, subject, message }) {
+// `label` names the recipient in the logs (a team abbreviation or "league"); addresses are never logged.
+export async function sendEmail(env, { to, toName, subject, message, label = "recipient" }) {
   if (!emailConfigured(env) || !to) return false;
+  if (!VALID_ADDRESS.test(to)) {
+    console.error(`Not emailing ${label}: the address on file is not a single valid email address`);
+    return false;
+  }
   try {
     const res = await fetch(EMAILJS_URL, {
       method: "POST",
@@ -24,12 +32,12 @@ export async function sendEmail(env, { to, toName, subject, message }) {
       }),
     });
     if (!res.ok) {
-      console.error(`EmailJS rejected an email (HTTP ${res.status}): ${(await res.text()).slice(0, 200)}`);
+      console.error(`EmailJS rejected an email to ${label} (HTTP ${res.status}): ${(await res.text()).slice(0, 200)}`);
       return false;
     }
     return true;
   } catch (e) {
-    console.error(`EmailJS request failed: ${e.message}`);
+    console.error(`EmailJS request failed for ${label}: ${e.message}`);
     return false;
   }
 }
@@ -61,7 +69,7 @@ export function buildEmails(event, trade, owners, names, siteUrl = "", leagueEma
 
   const mail = (toAbbr, subject, body) => {
     const o = owner(toAbbr);
-    return o?.EMAIL ? [{ to: o.EMAIL, toName: o.OWNER, subject, message: `Hello ${o.OWNER},\n\n${body}\n\n- FHL Dashboard` }] : [];
+    return o?.EMAIL ? [{ to: o.EMAIL.trim(), toName: o.OWNER, label: toAbbr, subject, message: `Hello ${o.OWNER},\n\n${body}\n\n- FHL Dashboard` }] : [];
   };
 
   switch (event) {
@@ -82,7 +90,7 @@ export function buildEmails(event, trade, owners, names, siteUrl = "", leagueEma
       // The whole league is told too (one email to the league address). It carries no lineup advice and no private note.
       const who = (abbr) => `${abbr}${owner(abbr)?.OWNER ? ` (${owner(abbr).OWNER})` : ""}`;
       const league = leagueEmail ? [{
-        to: leagueEmail, toName: "FHL League", subject: `FHL trade: ${trade.from} and ${trade.to}`,
+        to: leagueEmail.trim(), toName: "FHL League", label: "league", subject: `FHL trade: ${trade.from} and ${trade.to}`,
         message: `Trade agreed between ${who(trade.from)} and ${who(trade.to)}, taking effect in period ${trade.period}:\n\n${block}\n\n` +
           `All agreed trades are listed on the Trades page:${link("Trades")}\n- FHL Dashboard`,
       }] : [];

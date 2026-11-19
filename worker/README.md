@@ -46,6 +46,13 @@ until EmailJS is set up:
    (never commit it or paste it in chat). The service id and public key are already in `wrangler.toml`.
 5. `npx wrangler deploy`.
 
+Troubleshooting (`npx wrangler tail` shows the Worker logs; they name the recipient's team, never the address):
+- **"recipients address is corrupted" (HTTP 422)** for every email: the template's *To Email* field isn't `{{to_email}}`.
+  Don't point `EMAILJS_TEMPLATE_ID` at the old roster-form template, whose fields are different; create the trade
+  template described above (To Email `{{to_email}}`, Subject `{{subject}}`, content `{{message}}`).
+- **"Not emailing XYZ: the address on file is not a single valid email address"**: that team's `EMAIL` in `owners.csv`
+  (or `LEAGUE_EMAIL`) is empty-looking, has several addresses, or a `Name <addr>` form. Use exactly one plain address.
+
 ### From accepted trade to new roster
 1. When the second GM accepts, the Worker sends a `trade-approved` dispatch. It always carries **all** accepted trades for
    the upcoming period (GitHub keeps only one queued run per workflow, so a single trade per run could be lost).

@@ -409,3 +409,34 @@ test("emails: a failing league email does not affect the trade or the GM emails"
   assert.deepEqual(sentTo(), ["a@x.com", "b@x.com"]); // both GMs were still told
   assert.equal(ok(await list(A)).trades[0].status, "ACCEPTED");
 });
+
+test("emails: a malformed address is skipped (and named by team, never by address) without affecting the others", async () => {
+  enableEmail();
+  env.LEAGUE_EMAIL = "league@x.com";
+  files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,\"b@x.com; other@x.com\",pwB\nCAR,C,c@x.com,pwC\n";
+  const logged = [];
+  const realError = console.error;
+  console.error = (...a) => logged.push(a.join(" "));
+  try {
+    const { id } = ok(await propose(A, oneForOne)); // goes to BOS, whose address is two addresses in one field
+    assert.equal(emails.length, 0);
+    assert.ok(logged.some((l) => /Not emailing BOS/.test(l)));
+    // an accept then still reaches ANA and the league
+    ok(await respond(B, id, "accept"));
+    assert.deepEqual(sentTo(), ["a@x.com", "league@x.com"]);
+  } finally {
+    console.error = realError;
+  }
+  assert.ok(logged.every((l) => !/@/.test(l))); // addresses never appear in the logs
+});
+
+test("emails: an EmailJS rejection is logged with the recipient's team", async () => {
+  enableEmail();
+  emailStatus = 422;
+  const logged = [];
+  const realError = console.error;
+  console.error = (...a) => logged.push(a.join(" "));
+  try { ok(await propose(A, oneForOne)); } finally { console.error = realError; }
+  assert.ok(logged.some((l) => /rejected an email to BOS \(HTTP 422\)/.test(l)));
+  assert.ok(logged.every((l) => !/@/.test(l)));
+});

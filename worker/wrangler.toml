@@ -11,7 +11,7 @@ ALLOWED_ORIGIN = "https://jduteau.github.io,http://127.0.0.1:3000,http://localho
 # Trade emails through EmailJS (see README). Service id and public key are the same ones the old Roster page used
 # (the public key is public by design). EMAILJS_TEMPLATE_ID is the new trade-email template: until it is filled in, and
 # the EMAILJS_PRIVATE_KEY secret is set, no emails are sent. SITE_URL is the dashboard address used for links.
-EMAILJS_SERVICE_ID = "service_ladx4fa"
+EMAILJS_SERVICE_ID = "service_k8uynjg"
 EMAILJS_PUBLIC_KEY = "m2JaSdtXv7JaHBl7r"
 EMAILJS_TEMPLATE_ID = "template_spwr299"
 SITE_URL = "https://jduteau.github.io/fhl-dashboard-observable/"
