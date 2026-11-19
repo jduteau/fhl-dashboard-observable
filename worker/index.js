@@ -20,10 +20,10 @@ const originFor = (request, env) => {
 };
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, execCtx) {
     const origin = originFor(request, env);
     try {
-      return await handle(request, env, origin);
+      return await handle(request, env, origin, execCtx);
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.message }, e.status, origin);
       console.error(e);
@@ -32,7 +32,7 @@ export default {
   },
 };
 
-async function handle(request, env, origin) {
+async function handle(request, env, origin, execCtx) {
   if (request.method === "OPTIONS")
     return new Response(null, {
       headers: {
@@ -51,7 +51,7 @@ async function handle(request, env, origin) {
 
   const path = new URL(request.url).pathname.replace(/\/+$/, "");
   if (path.startsWith("/trades/")) {
-    const result = await handleTrades(path.slice("/trades/".length), m, env);
+    const result = await handleTrades(path.slice("/trades/".length), m, env, execCtx);
     return json(result, 200, origin);
   }
   return handleMoves(m, env, origin);

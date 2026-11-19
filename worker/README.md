@@ -32,6 +32,20 @@ team is about to receive can be traded onward in a later trade, while one it alr
 When a trade is accepted, other open proposals in which the same team gives any of the same assets become VOID.
 The dashboard (Compare Teams, Trades, Roster) shows the same post-trade state from the trade log.
 
+### Trade emails (EmailJS)
+The Worker emails the GMs involved (addresses from `owners.csv`): a proposal or counter-offer goes to the other GM, an
+accepted trade goes to both (with a reminder to check their lineup), a decline goes to the proposer and a withdrawal to
+the recipient. If `LEAGUE_EMAIL` (in `wrangler.toml`) is set to a league-wide address, an accepted trade is also announced
+there (one email per trade; it has no lineup advice and never includes the private note). Emails are sent after the response, and a failure is logged but never affects the trade. Nothing is sent
+until EmailJS is set up:
+1. In EmailJS, **Account > Security**: allow API calls from non-browser applications (the Worker is not a browser).
+2. Create a template (e.g. "FHL Trades") with To Email `{{to_email}}`, Subject `{{subject}}` and HTML content
+   `<div style="white-space: pre-line; font-family: sans-serif;">{{message}}</div>` (`{{to_name}}` is also available).
+3. Put the template's id in `EMAILJS_TEMPLATE_ID` in `wrangler.toml`.
+4. `cd worker && npx wrangler secret put EMAILJS_PRIVATE_KEY` and paste the private key from **Account > General**
+   (never commit it or paste it in chat). The service id and public key are already in `wrangler.toml`.
+5. `npx wrangler deploy`.
+
 ### From accepted trade to new roster
 1. When the second GM accepts, the Worker sends a `trade-approved` dispatch. It always carries **all** accepted trades for
    the upcoming period (GitHub keeps only one queued run per workflow, so a single trade per run could be lost).

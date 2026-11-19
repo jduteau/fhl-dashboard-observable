@@ -5,6 +5,7 @@
 // PROPOSED when that period's roster file appears is expired. Accepting requires only the *other* GM:
 // proposing counts as the proposer's approval.
 import { csvParse, ghFile, gh, authenticate, HttpError } from "./lib.js";
+import { makeMailer } from "./email.js";
 
 const SEASON = /^\d{4}-\d{2}$/;
 const TEAM = /^[A-Z]{2,4}$/;
@@ -22,16 +23,17 @@ const bad = (message) => new HttpError(400, message);
 const keyOf = (i) => `${i.kind}|${i.ref}|${i.pick_season}`;
 const sqlTrue = "t.status = 'ACCEPTED'";
 
-export async function handleTrades(action, body, env) {
+export async function handleTrades(action, body, env, execCtx) {
   if (!SEASON.test(body.season ?? "") || !TEAM.test(body.team ?? "") || typeof body.password !== "string")
     throw bad("Invalid request");
   if (!env.DB) throw new HttpError(500, "Trade database is not configured");
   const ctx = await loadContext(env, body.season); // also rejects non-current seasons before we look for their owners.csv
   const owners = await authenticate(env, body.season, body.team, body.password);
+  const mail = makeMailer(env, owners, execCtx); // trade emails; best-effort and a no-op until EmailJS is configured
   switch (action) {
-    case "propose": return propose(body, env, ctx, owners);
+    case "propose": return propose(body, env, ctx, owners, mail);
     case "list": return list(body, env, ctx);
-    case "respond": return respond(body, env, ctx);
+    case "respond": return respond(body, env, ctx, mail);
     case "republish": return republish(env, ctx);
     default: throw new HttpError(404, "Unknown trades endpoint");
   }
@@ -181,7 +183,7 @@ async function list(body, env, ctx) {
   return { period: ctx.period, trades: trades.map((t) => present(t, items.filter((i) => i.trade_id === t.id), ctx)) };
 }
 
-async function propose(body, env, ctx, owners) {
+async function propose(body, env, ctx, owners, mail) {
   const from = body.team;
   const to = body.to;
   if (!TEAM.test(to ?? "") || to === from || !owners.some((o) => o.ABBR === to)) throw bad("Invalid trade partner");
@@ -225,10 +227,15 @@ async function propose(body, env, ctx, owners) {
     ...giveItems.map((it) => insertItem(it, from, to)),
     ...getItems.map((it) => insertItem(it, to, from)),
   ]);
+  const side = (items) => ({
+    players: items.filter((i) => i.kind === "player").map((i) => i.ref),
+    picks: items.filter((i) => i.kind === "pick").map((i) => ({ pick: i.ref, season: i.pick_season })),
+  });
+  await mail(countered ? "countered" : "proposed", { id, season: ctx.season, period: ctx.period, from, to, note, give: side(giveItems), get: side(getItems) });
   return { ok: true, id, period: ctx.period };
 }
 
-async function respond(body, env, ctx) {
+async function respond(body, env, ctx, mail) {
   const { team } = body;
   if (!TRADE_ID.test(body.id ?? "")) throw bad("Invalid trade id");
   if (!["accept", "decline", "withdraw"].includes(body.decision)) throw bad("Invalid decision");
@@ -239,19 +246,26 @@ async function respond(body, env, ctx) {
   if (trade.period <= ctx.latest) throw new HttpError(409, "This proposal expired when the new period started");
 
   const now = new Date().toISOString();
-  const finish = async (status) => {
+  // What the notification emails need to know about this trade (the proposer's private note only goes to the other GM).
+  const mailInfo = (items) => ({
+    id: trade.id, season: trade.season, period: trade.period, from: trade.from_team, to: trade.to_team, note: trade.note,
+    ...sides(trade, items),
+  });
+  const finish = async (status, event) => {
     const r = await env.DB.prepare("UPDATE trades SET status = ?, responded_at = ? WHERE id = ? AND status = 'PROPOSED'")
       .bind(status, now, trade.id).run();
     if (!r.meta.changes) throw new HttpError(409, "This trade was just changed");
+    const { results } = await env.DB.prepare("SELECT * FROM trade_items WHERE trade_id = ?").bind(trade.id).all();
+    await mail(event, mailInfo(results));
     return { ok: true, status };
   };
 
   if (body.decision === "withdraw") {
     if (trade.from_team !== team) throw new HttpError(403, "Only the proposer can withdraw a trade");
-    return finish("WITHDRAWN");
+    return finish("WITHDRAWN", "withdrawn");
   }
   if (trade.to_team !== team) throw new HttpError(403, "Only the other GM can respond to a proposal");
-  if (body.decision === "decline") return finish("DECLINED");
+  if (body.decision === "decline") return finish("DECLINED", "declined");
 
   // Accept: re-check everything against current data, then commit atomically.
   const { results: items } = await env.DB.prepare("SELECT * FROM trade_items WHERE trade_id = ?").bind(trade.id).all();
@@ -290,6 +304,7 @@ async function respond(body, env, ctx) {
   ).bind(now, trade.season, trade.period, trade.id, trade.id).run();
 
   const { published } = await publishAccepted(env, trade.season, trade.period);
+  await mail("accepted", mailInfo(items));
   return { ok: true, status: "ACCEPTED", published };
 }
 

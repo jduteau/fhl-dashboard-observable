@@ -30,23 +30,27 @@ function d1(db) {
 const players = (team, n) => Array.from({ length: n }, (_, i) => `${team.toLowerCase()}${String(i + 1).padStart(2, "0")}`);
 const rosterCsv = (teams) => "ID,ABBR,RESERVE\n" + Object.entries(teams).flatMap(([t, n]) => players(t, n).map((id) => `${id},${t},`)).join("\n") + "\n";
 
-let files, dispatches, env;
+let files, dispatches, env, emails, emailStatus;
 const baseFiles = () => ({
   "src/data/static/seasons.csv": "season,label,current\n2026-27,2026-27,true\n2027-28,2027-28,false\n",
   "src/data/static/2026-27/owners.csv": "﻿ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,b@x.com,pwB\nCAR,C,c@x.com,pwC\n",
   "src/data/static/2026-27/rosters/rosters_p07.csv": rosterCsv({ ANA: 21, BOS: 20, CAR: 20 }),
   "src/data/static/2026-27/draft_picks.csv": "PICK,OWNER\nANA1,ANA\nBOS1,BOS\nCAR1,CAR\nWPG2,ANA\n",
   "src/data/static/2027-28/draft_picks.csv": "PICK,OWNER\nANA1,ANA\nBOS1,BOS\n",
+  "src/data/static/2026-27/player_info.csv": "ID,Name,Pos\nana01,Anna One,F\nana02,Anna Two,D\nbos01,Bo Sone,F\ncar01,Cara One,G\n",
 });
 
 beforeEach(() => {
   files = baseFiles();
   dispatches = [];
+  emails = [];
+  emailStatus = 200;
   const db = new DatabaseSync(":memory:");
   db.exec(schema);
   env = { DB: d1(db), GITHUB_REPO: "test/repo", GITHUB_TOKEN: "t", ALLOWED_ORIGIN: ORIGIN };
   globalThis.fetch = async (url, init = {}) => {
     const path = new URL(url).pathname.replace("/repos/test/repo/", "");
+    if (String(url).startsWith("https://api.emailjs.com/")) { emails.push(JSON.parse(init.body)); return new Response("OK", { status: emailStatus }); }
     if (path === "dispatches") { dispatches.push(JSON.parse(init.body)); return new Response(null, { status: 204 }); }
     const file = path.replace(/^contents\//, "");
     if (file in files) return new Response(files[file]);
@@ -56,8 +60,8 @@ beforeEach(() => {
   };
 });
 
-const post = async (path, body, origin = ORIGIN) => {
-  const res = await worker.fetch(new Request(`https://worker.example${path}`, { method: "POST", headers: { origin }, body: JSON.stringify(body) }), env);
+const post = async (path, body, origin = ORIGIN, execCtx) => {
+  const res = await worker.fetch(new Request(`https://worker.example${path}`, { method: "POST", headers: { origin }, body: JSON.stringify(body) }), env, execCtx);
   return { status: res.status, body: await res.json() };
 };
 const as = (team, pw) => ({ season: "2026-27", team, password: pw });
@@ -281,4 +285,127 @@ test("rejects non-current seasons and malformed requests", async () => {
   assert.equal((await propose({ ...A, season: "2027-28" }, oneForOne)).status, 400);
   assert.equal((await post("/trades/propose", { team: "ANA" })).status, 400);
   assert.equal((await post("/trades/bogus", A)).status, 404);
+});
+
+// ---- Emails (EmailJS) ----------------------------------------------------------------------
+
+const enableEmail = () => Object.assign(env, {
+  EMAILJS_SERVICE_ID: "service_x", EMAILJS_TEMPLATE_ID: "template_x", EMAILJS_PUBLIC_KEY: "pub_x", EMAILJS_PRIVATE_KEY: "priv_x",
+  SITE_URL: "https://site.example/dash/",
+});
+const sentTo = () => emails.map((e) => e.template_params.to_email).sort();
+
+test("emails: nothing is sent (and nothing breaks) until EmailJS is configured", async () => {
+  const { id } = ok(await propose(A, oneForOne));
+  ok(await respond(B, id, "accept"));
+  assert.equal(emails.length, 0);
+});
+
+test("emails: a proposal goes only to the other GM, with names, note and link, and no secrets", async () => {
+  enableEmail();
+  ok(await propose(A, { to: "BOS", give: { players: ["ana01"], picks: [{ pick: "WPG2", season: "2026-27" }] }, get: { players: ["bos01"] }, note: "fair deal?" }));
+  assert.equal(emails.length, 1);
+  const e = emails[0];
+  assert.deepEqual([e.service_id, e.template_id, e.user_id, e.accessToken], ["service_x", "template_x", "pub_x", "priv_x"]);
+  assert.deepEqual(Object.keys(e.template_params).sort(), ["message", "subject", "to_email", "to_name"]);
+  assert.equal(e.template_params.to_email, "b@x.com");
+  assert.equal(e.template_params.to_name, "B");
+  assert.equal(e.template_params.subject, "FHL trade proposal from ANA");
+  const m = e.template_params.message;
+  for (const text of ["Anna One", "WPG2 (2026-27)", "Bo Sone", 'Note from ANA: "fair deal?"', "https://site.example/dash/Trades", "period 8"]) assert.ok(m.includes(text), text);
+  assert.ok(!m.includes("ana01") && !m.includes("pwA") && !m.includes("pwB") && !m.includes("a@x.com") && !m.includes("priv_x"));
+});
+
+test("emails: accept notifies both GMs (no private note); decline goes to the proposer; withdraw to the recipient", async () => {
+  enableEmail();
+  const t1 = ok(await propose(A, { ...oneForOne, note: "secret note" })).id;
+  emails.length = 0;
+  ok(await respond(B, t1, "accept"));
+  assert.deepEqual(sentTo(), ["a@x.com", "b@x.com"]);
+  assert.ok(emails.every((e) => e.template_params.subject.startsWith("FHL trade agreed with")));
+  assert.ok(emails.every((e) => /period 8/.test(e.template_params.message) && /lineup/.test(e.template_params.message) && /Roster/.test(e.template_params.message)));
+  assert.ok(emails.every((e) => !e.template_params.message.includes("secret note")));
+
+  emails.length = 0;
+  const t2 = ok(await propose(A, { to: "CAR", give: { players: ["ana05"] }, get: { players: ["car05"] } })).id;
+  emails.length = 0;
+  ok(await respond(C, t2, "decline"));
+  assert.deepEqual(sentTo(), ["a@x.com"]);
+  assert.match(emails[0].template_params.subject, /declined by CAR/);
+
+  const t3 = ok(await propose(A, { to: "CAR", give: { players: ["ana06"] }, get: { players: ["car06"] } })).id;
+  emails.length = 0;
+  ok(await respond(A, t3, "withdraw"));
+  assert.deepEqual(sentTo(), ["c@x.com"]);
+  assert.match(emails[0].template_params.subject, /withdrawn by ANA/);
+});
+
+test("emails: a counter-offer goes to the original proposer and says it replaces their proposal", async () => {
+  enableEmail();
+  const t1 = ok(await propose(A, oneForOne)).id;
+  emails.length = 0;
+  ok(await propose(B, { to: "ANA", give: { players: ["bos01"] }, get: { players: ["ana01", "ana02"] }, counters: t1 }));
+  assert.deepEqual(sentTo(), ["a@x.com"]);
+  assert.match(emails[0].template_params.subject, /counter-offer from BOS/);
+  assert.match(emails[0].template_params.message, /replaces your earlier proposal/);
+});
+
+test("emails: a failing EmailJS never fails or blocks the trade action", async () => {
+  enableEmail();
+  emailStatus = 500;
+  const { id } = ok(await propose(A, oneForOne));
+  assert.equal(ok(await respond(B, id, "accept")).status, "ACCEPTED");
+  assert.equal(ok(await list(A)).trades[0].status, "ACCEPTED");
+});
+
+test("emails: sent after the response when the platform provides waitUntil; a GM with no email address is skipped", async () => {
+  enableEmail();
+  const pending = [];
+  const execCtx = { waitUntil: (p) => pending.push(p) };
+  const r = await post("/trades/propose", { ...A, ...oneForOne }, ORIGIN, execCtx);
+  assert.equal(r.status, 200);
+  assert.equal(pending.length, 1);
+  await Promise.all(pending);
+  assert.equal(emails.length, 1);
+
+  files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,,pwB\nCAR,C,c@x.com,pwC\n";
+  emails.length = 0;
+  ok(await propose(A, { to: "BOS", give: { players: ["ana02"] }, get: { players: ["bos02"] } }));
+  assert.equal(emails.length, 0); // BOS has no email on file
+});
+
+test("emails: an accepted trade is also announced to the league address, and only an accepted trade", async () => {
+  enableEmail();
+  env.LEAGUE_EMAIL = "league@x.com";
+  const t1 = ok(await propose(A, { ...oneForOne, note: "secret note" })).id;
+  assert.deepEqual(sentTo(), ["b@x.com"]); // proposing does not go to the league
+  emails.length = 0;
+  ok(await respond(B, t1, "accept"));
+  assert.deepEqual(sentTo(), ["a@x.com", "b@x.com", "league@x.com"]);
+  const league = emails.find((e) => e.template_params.to_email === "league@x.com").template_params;
+  assert.equal(league.to_name, "FHL League");
+  assert.equal(league.subject, "FHL trade: ANA and BOS");
+  for (const text of ["ANA (A) and BOS (B)", "period 8", "Anna One", "Bo Sone", "https://site.example/dash/Trades"]) assert.ok(league.message.includes(text), text);
+  assert.ok(!/secret note|lineup|pwA|pwB|a@x\.com|b@x\.com/.test(league.message));
+
+  // declines and withdrawals stay between the two GMs
+  const t2 = ok(await propose(A, { to: "CAR", give: { players: ["ana05"] }, get: { players: ["car05"] } })).id;
+  emails.length = 0;
+  ok(await respond(C, t2, "decline"));
+  assert.ok(!sentTo().includes("league@x.com"));
+});
+
+test("emails: a failing league email does not affect the trade or the GM emails", async () => {
+  enableEmail();
+  env.LEAGUE_EMAIL = "league@x.com";
+  const t1 = ok(await propose(A, oneForOne)).id;
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).startsWith("https://api.emailjs.com/") && JSON.parse(init.body).template_params.to_email === "league@x.com") return new Response("bad", { status: 422 });
+    return realFetch(url, init);
+  };
+  emails.length = 0; // forget the proposal email; the wrapper above rejects the league email before it is recorded
+  assert.equal(ok(await respond(B, t1, "accept")).status, "ACCEPTED");
+  assert.deepEqual(sentTo(), ["a@x.com", "b@x.com"]); // both GMs were still told
+  assert.equal(ok(await list(A)).trades[0].status, "ACCEPTED");
 });
