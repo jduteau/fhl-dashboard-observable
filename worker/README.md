@@ -25,20 +25,29 @@ Request shapes (`season` must be the current season; `give` = what the proposer 
 - list: `{season, team, password}` -> `{period, trades:[{id, from, to, status, give, get, ...}]}`
 - respond: `{season, team, password, id, decision: "accept"|"decline"|"withdraw"}`
 
-Rules enforced server-side: each side must own what it gives (latest roster + `draft_picks.csv`, current and
-next season), both rosters must end with 20-36 players, assets in an accepted trade are locked, and a proposal
-expires when the next period's roster file is created.
+Rules enforced server-side: each side must own what it gives, both rosters must end with 20-36 players, and a
+proposal expires when the next period's roster file is created. Ownership is the latest roster + `draft_picks.csv`
+(current and next season) **with the already-accepted trades for the period applied in order**, so a player or pick a
+team is about to receive can be traded onward in a later trade, while one it already gave away can't be offered again.
+When a trade is accepted, other open proposals in which the same team gives any of the same assets become VOID.
+The dashboard (Compare Teams, Trades, Roster) shows the same post-trade state from the trade log.
 
 ### From accepted trade to new roster
 1. When the second GM accepts, the Worker sends a `trade-approved` dispatch. It always carries **all** accepted trades for
    the upcoming period (GitHub keeps only one queued run per workflow, so a single trade per run could be lost).
 2. The **Record Trades** workflow (`.github/workflows/record-trades.yml`) merges them by id into
    `src/data/static/<season>/trades/trades_pNN.json` (this is the public trade log) and triggers a deploy.
-3. When the commissioner runs **Apply Roster Moves** (materialize) for the next period, it applies roster moves first,
-   then the trades: players change team in `rosters_pNN.csv` (keeping their active/reserve status) and traded picks
-   change owner in the `draft_picks.csv` files. Each trade is re-checked (ownership, 20-36 players) and skipped with a
-   warning in the run log if it can no longer happen; `appliedAt` / `skipped` are written into the trades file.
-4. If a trade is accepted but never shows up in the trade log (the workflow failed), either GM can press **Re-send**
+3. The **Roster page's Next Period tab** shows the roster *after* the agreed trades (players sent away are gone,
+   acquired players are added with their current active/reserve status), and a submitted lineup is validated against that
+   post-trade roster (exactly 20 active, 6-7 D, 2 G). So a GM sets the lineup for the roster they will really have.
+4. When the commissioner runs **Apply Roster Moves** (materialize) for the next period, it applies the trades first:
+   players change team in `rosters_pNN.csv` and traded picks change owner in the `draft_picks.csv` files. Each trade is
+   re-checked (ownership, 20-36 players) and skipped with a warning in the run log if it can no longer happen;
+   `appliedAt` / `skipped` are written into the trades file. Then each team's lineup moves are applied. If a trade was
+   agreed *after* a GM submitted (so their submission names players they no longer have), the moves that no longer fit
+   are ignored with a warning, and if the rest isn't a legal lineup the team keeps its current lineup; the Roster page
+   warns that GM to re-check and resubmit.
+5. If a trade is accepted but never shows up in the trade log (the workflow failed), either GM can press **Re-send**
    on the Trades page (`POST /trades/republish`), which re-dispatches every accepted trade for the period.
 
 Tests (no Cloudflare account needed):

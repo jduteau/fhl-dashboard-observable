@@ -74,14 +74,32 @@ async function loadOwnership(env, ctx) {
   return { playerOwner, pickOwner, sizes };
 }
 
-// Items of trades both GMs already accepted for this period (assets are locked; players move teams).
+// Items of trades both GMs already accepted for this period, oldest trade first (they take effect in this order).
 async function acceptedItems(env, ctx) {
   const { results } = await env.DB.prepare(
     `SELECT i.kind, i.ref, i.pick_season, i.giver, i.receiver FROM trade_items i
      JOIN trades t ON t.id = i.trade_id
-     WHERE ${sqlTrue} AND t.season = ? AND t.period = ?`
+     WHERE ${sqlTrue} AND t.season = ? AND t.period = ?
+     ORDER BY t.responded_at, t.created_at, t.id`
   ).bind(ctx.season, ctx.period).all();
   return results;
+}
+
+// Ownership once the already-accepted trades for the period have happened. A trade is checked against THIS, not the
+// roster file, so an asset a team is about to receive can be traded onward, and one it already gave away can't be
+// offered again.
+function effectiveOwnership(own, accepted) {
+  const eff = { playerOwner: new Map(own.playerOwner), pickOwner: new Map(own.pickOwner), sizes: new Map(own.sizes) };
+  for (const it of accepted) {
+    if (it.kind === "player") {
+      eff.playerOwner.set(it.ref, it.receiver);
+      eff.sizes.set(it.giver, (eff.sizes.get(it.giver) ?? 0) - 1);
+      eff.sizes.set(it.receiver, (eff.sizes.get(it.receiver) ?? 0) + 1);
+    } else {
+      eff.pickOwner.set(`${it.pick_season}|${it.ref}`, it.receiver);
+    }
+  }
+  return eff;
 }
 
 // ---- Validation --------------------------------------------------------------------------
@@ -100,29 +118,22 @@ function parseSide(side, label) {
   ];
 }
 
-// Throws unless `from` really owns `give`, `to` really owns `get`, nothing is locked by another accepted
-// trade, and both rosters stay within MIN_ROSTER..MAX_ROSTER players.
-function validateTrade(own, accepted, from, to, give, get) {
-  const locked = new Set(accepted.map(keyOf));
-  const flows = [...accepted];
+// Throws unless `from` really owns `give`, `to` really owns `get` (per `own`, the ownership after already-accepted
+// trades), and both rosters stay within MIN_ROSTER..MAX_ROSTER players.
+function validateTrade(own, from, to, give, get) {
+  const delta = new Map();
   for (const [giver, receiver, items] of [[from, to, give], [to, from, get]]) {
     for (const it of items) {
       if (it.kind === "player") {
         if (own.playerOwner.get(it.ref) !== giver) throw bad(`${it.ref} is not on ${giver}'s roster`);
+        delta.set(giver, (delta.get(giver) ?? 0) - 1);
+        delta.set(receiver, (delta.get(receiver) ?? 0) + 1);
       } else {
         const owner = own.pickOwner.get(`${it.pick_season}|${it.ref}`);
         if (owner === undefined) throw bad(`Pick ${it.ref} (${it.pick_season}) does not exist`);
         if (owner !== giver) throw bad(`${giver} does not own ${it.ref} (${it.pick_season})`);
       }
-      if (locked.has(keyOf(it))) throw new HttpError(409, `${it.ref} is already part of an accepted trade for this period`);
-      flows.push({ ...it, giver, receiver });
     }
-  }
-  const delta = new Map();
-  for (const f of flows) {
-    if (f.kind !== "player") continue;
-    delta.set(f.giver, (delta.get(f.giver) ?? 0) - 1);
-    delta.set(f.receiver, (delta.get(f.receiver) ?? 0) + 1);
   }
   for (const team of [from, to]) {
     const size = (own.sizes.get(team) ?? 0) + (delta.get(team) ?? 0);
@@ -189,14 +200,14 @@ async function propose(body, env, ctx, owners) {
       throw bad("That proposal can't be countered");
   }
 
-  const [own, accepted, open] = await Promise.all([
+  const [baseOwn, accepted, open] = await Promise.all([
     loadOwnership(env, ctx),
     acceptedItems(env, ctx),
     env.DB.prepare("SELECT COUNT(*) AS n FROM trades WHERE from_team = ? AND season = ? AND period = ? AND status = 'PROPOSED'")
       .bind(from, ctx.season, ctx.period).first(),
   ]);
   if (open.n >= MAX_OPEN) throw new HttpError(429, "Too many open proposals; withdraw some first");
-  validateTrade(own, accepted, from, to, giveItems, getItems);
+  validateTrade(effectiveOwnership(baseOwn, accepted), from, to, giveItems, getItems);
 
   const now = new Date().toISOString();
   if (countered) {
@@ -244,34 +255,37 @@ async function respond(body, env, ctx) {
 
   // Accept: re-check everything against current data, then commit atomically.
   const { results: items } = await env.DB.prepare("SELECT * FROM trade_items WHERE trade_id = ?").bind(trade.id).all();
-  const [own, accepted] = await Promise.all([loadOwnership(env, ctx), acceptedItems(env, ctx)]);
+  const [baseOwn, accepted] = await Promise.all([loadOwnership(env, ctx), acceptedItems(env, ctx)]);
+  const own = effectiveOwnership(baseOwn, accepted);
   try {
-    validateTrade(own, accepted, trade.from_team, trade.to_team,
+    validateTrade(own, trade.from_team, trade.to_team,
       items.filter((i) => i.giver === trade.from_team), items.filter((i) => i.giver === trade.to_team));
   } catch (e) {
-    // A 409 means an asset got locked by another accepted trade; a 400 means ownership/roster size changed.
-    // Either way this proposal can no longer happen as written.
+    // Ownership or roster size changed since it was proposed (e.g. a team already gave the asset away in another
+    // accepted trade), so this proposal can no longer happen as written.
     if (e instanceof HttpError) await env.DB.prepare("UPDATE trades SET status = 'VOID', responded_at = ? WHERE id = ? AND status = 'PROPOSED'").bind(now, trade.id).run();
     throw e;
   }
 
-  // Single statement so two simultaneous accepts of trades sharing an asset can't both succeed.
+  // Single statement so two simultaneous accepts can't both succeed when the same team gives the same asset in both.
+  // (Same asset with a DIFFERENT giver is fine: that's an asset being traded onward after it was acquired.)
   const r = await env.DB.prepare(
     `UPDATE trades SET status = 'ACCEPTED', responded_at = ?
      WHERE id = ? AND status = 'PROPOSED' AND NOT EXISTS (
        SELECT 1 FROM trade_items a
-       JOIN trade_items b ON b.kind = a.kind AND b.ref = a.ref AND b.pick_season = a.pick_season AND b.trade_id <> a.trade_id
+       JOIN trade_items b ON b.kind = a.kind AND b.ref = a.ref AND b.pick_season = a.pick_season
+                         AND b.giver = a.giver AND b.trade_id <> a.trade_id
        JOIN trades t ON t.id = b.trade_id AND ${sqlTrue} AND t.period = trades.period
        WHERE a.trade_id = trades.id)`
   ).bind(now, trade.id).run();
   if (!r.meta.changes) throw new HttpError(409, "This trade conflicts with one that was just accepted");
 
-  // Other open proposals that include any of these assets can't happen any more.
+  // Other open proposals in which the same team gives any of these assets can't happen any more.
   await env.DB.prepare(
     `UPDATE trades SET status = 'VOID', responded_at = ?
      WHERE status = 'PROPOSED' AND season = ? AND period = ? AND id <> ? AND EXISTS (
        SELECT 1 FROM trade_items a JOIN trade_items b
-         ON b.kind = a.kind AND b.ref = a.ref AND b.pick_season = a.pick_season AND b.trade_id = ?
+         ON b.kind = a.kind AND b.ref = a.ref AND b.pick_season = a.pick_season AND b.giver = a.giver AND b.trade_id = ?
        WHERE a.trade_id = trades.id)`
   ).bind(now, trade.season, trade.period, trade.id, trade.id).run();
 
@@ -284,7 +298,7 @@ async function respond(body, env, ctx) {
 // workflow merges by id, so repeats are harmless. Private notes are not included (the trade log is public).
 async function publishAccepted(env, season, period) {
   const { results: trades } = await env.DB.prepare(
-    "SELECT * FROM trades WHERE status = 'ACCEPTED' AND season = ? AND period = ? ORDER BY responded_at, id"
+    "SELECT * FROM trades WHERE status = 'ACCEPTED' AND season = ? AND period = ? ORDER BY responded_at, created_at, id"
   ).bind(season, period).all();
   if (!trades.length) return { published: true, count: 0 };
   const { results: items } = await env.DB.prepare(

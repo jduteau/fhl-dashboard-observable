@@ -7,7 +7,7 @@ toc: false
 
 ```js
 import {playerLinksFormat} from "./components/playerLink.js";
-import {pickLabel} from "./components/trades.js";
+import {pickLabel, agreedTrades, applyAgreedTrades} from "./components/trades.js";
 
 // Deployed Cloudflare Worker (see worker/README.md)
 const WORKER_URL = "https://fhl-roster-moves.fhldashboard.workers.dev";
@@ -74,22 +74,40 @@ display(html`<div class="tab-current"><p><em>View only.</em></p>${Inputs.table(r
 ```
 
 ```js
-// Start from the last submission (if any), otherwise from the current roster.
+// The roster for the next period = the current roster with the trades both GMs already agreed to applied: players
+// sent away are gone, players acquired are added (keeping their current active/reserve status until you change it).
+// This is also the roster the lineup you submit is checked against.
+const allAgreed = isCurrentSeason ? agreedTrades(tradesData, _season, nextPeriod) : [];
+const teamTrades = allAgreed.filter((t) => t.from === selectedTeam || t.to === selectedTeam);
+const mySide = (t) => t.from === selectedTeam ? {other: t.to, send: t.give, receive: t.get} : {other: t.from, send: t.get, receive: t.give};
+// Applied across the whole league so chains work (a player acquired in one trade and sent on in another).
+const nextRoster = applyAgreedTrades({
+  abbrs: _sd.teams,
+  rosterOf: (abbr) => _sd.teamData.find((x) => x.ABBR === abbr)[currentPeriod].ROSTER,
+  picksOf: () => [],
+  trades: allAgreed
+}).roster.get(selectedTeam);
+const acquired = nextRoster.filter((p) => p.Acquired);
+
+// Start from the last submission (if any), otherwise from the next-period roster as it stands.
 const pending = movesData.moves[nextPeriod]?.[selectedTeam];
-const startReserve = roster.filter((p) =>
+const nextIds = new Set(nextRoster.map((p) => p.PLAYER_ID));
+const stalePending = pending && [...pending.promote, ...pending.demote].some((id) => !nextIds.has(id));
+const startReserve = nextRoster.filter((p) =>
   pending ? (p.Reserve === "R" ? !pending.promote.includes(p.PLAYER_ID) : pending.demote.includes(p.PLAYER_ID)) : p.Reserve === "R");
-const selTable = Inputs.table(roster, {...tableOptions, columns: tableOptions.columns.filter((c) => c !== "Reserve"), value: startReserve});
+const nextColumns = [...tableOptions.columns.filter((c) => c !== "Reserve"), ...(acquired.length ? ["Acquired"] : [])];
+const selTable = Inputs.table(nextRoster, {...tableOptions, columns: nextColumns, header: {...tableOptions.header, Acquired: "Trade"}, value: startReserve});
 const selection = Generators.input(selTable);
-// Trades both GMs already agreed to take effect AFTER these roster moves, in the same new roster.
-const teamTrades = (tradesData.data[_season] ?? []).filter((t) => t.period === nextPeriod && (t.from === selectedTeam || t.to === selectedTeam));
+
 const assetText = (side) => [...side.players.map((p) => p.name), ...side.picks.map(pickLabel)].join(", ") || "nothing";
 const tradeNote = teamTrades.length ? html`<div class="card">
   <strong>Agreed trades taking effect in period ${nextPeriod}</strong>
-  ${teamTrades.map((t) => html`<div>${t.from === selectedTeam ? `With ${t.to}: you send ${assetText(t.give)}; you receive ${assetText(t.get)}.` : `With ${t.from}: you send ${assetText(t.get)}; you receive ${assetText(t.give)}.`}</div>`)}
-  <div style="font-size:0.9em;"><em>Traded players keep their current active/reserve status, and you can only change your lineup again next period. Moves below apply to the players you have now.</em></div>
+  ${teamTrades.map((t) => { const {other, send, receive} = mySide(t); return html`<div>With ${other}: you send ${assetText(send)}; you receive ${assetText(receive)}.</div>`; })}
+  <div style="font-size:0.9em;"><em>The roster below already includes these trades. Players you acquire keep their current active/reserve status until you change it here.</em></div>
 </div>` : "";
+const staleNote = stalePending ? html`<div class="card" style="border-color:#b45309;"><strong>⚠ Review your lineup.</strong> Your last submission (${new Date(pending.submittedAt).toLocaleString()}) names players who are no longer on your roster because of an agreed trade. Fix the lineup below and submit again, otherwise those moves are ignored.</div>` : "";
 display(html`<div class="tab-next">
-  ${tradeNote}
+  ${tradeNote}${staleNote}
   ${isCurrentSeason
     ? html`<p>A checked box means the player is on the <strong>reserve</strong> list. Check the players who should be reserves for period ${nextPeriod}, then submit. Submitting again replaces your earlier submission.</p>`
     : html`<p><em>Roster moves can only be made for the current season.</em></p>`}
@@ -99,10 +117,10 @@ display(html`<div class="tab-next">
 
 ```js
 const isRes = (p) => selection.some((s) => s.PLAYER_ID === p.PLAYER_ID);
-const promoteIds = roster.filter((p) => p.Reserve === "R" && !isRes(p)).map((p) => p.PLAYER_ID);
-const demoteIds = roster.filter((p) => p.Reserve !== "R" && isRes(p)).map((p) => p.PLAYER_ID);
-const nameOf = (id) => roster.find((p) => p.PLAYER_ID === id).Name;
-const active = roster.filter((p) => !isRes(p));
+const promoteIds = nextRoster.filter((p) => p.Reserve === "R" && !isRes(p)).map((p) => p.PLAYER_ID);
+const demoteIds = nextRoster.filter((p) => p.Reserve !== "R" && isRes(p)).map((p) => p.PLAYER_ID);
+const nameOf = (id) => nextRoster.find((p) => p.PLAYER_ID === id).Name;
+const active = nextRoster.filter((p) => !isRes(p));
 const numForwards = active.filter((p) => p.Position === "F").length;
 const numDefence = active.filter((p) => p.Position === "D").length;
 const numGoalies = active.filter((p) => p.Position === "G").length;

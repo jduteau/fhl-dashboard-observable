@@ -11,7 +11,7 @@ period's rosters. Proposals are private: you only see the ones that involve your
 and an unanswered proposal expires when the next period starts.
 
 ```js
-import {callTrades, pickLabel, evaluateTrade} from "./components/trades.js";
+import {callTrades, pickLabel, evaluateTrade, nextPeriodOf, agreedTrades, applyAgreedTrades} from "./components/trades.js";
 
 const rosters = await FileAttachment("./data/rosters.json").json();
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
@@ -24,8 +24,19 @@ const isCurrentSeason = _season === rosters.currentSeason;
 const logTrades = tradesData.data[_season] ?? []; // accepted trades recorded in the repo (public)
 const loggedIds = new Set(logTrades.map((t) => t.id));
 
-const rosterOf = (abbr) => _rsd.teamData.find((t) => t.ABBR === abbr).OVERALL.ROSTER;
-const teamOf = (abbr) => _tisd.teams.find((t) => t.ABBR === abbr);
+// Budgets and roster sizes are checked against the league as it will be after the trades already agreed to, because that
+// is what the Worker validates against (an asset acquired in an agreed trade can be traded again).
+const _eff = applyAgreedTrades({
+  abbrs: _rsd.teams,
+  rosterOf: (abbr) => _rsd.teamData.find((t) => t.ABBR === abbr).OVERALL.ROSTER,
+  picksOf: () => [],
+  trades: isCurrentSeason ? agreedTrades(tradesData, _season, nextPeriodOf(_rsd)) : []
+});
+const rosterOf = (abbr) => _eff.roster.get(abbr);
+const teamOf = (abbr) => {
+  const t = _tisd.teams.find((x) => x.ABBR === abbr);
+  return {...t, LatestSalary: t.LatestSalary + _eff.salaryDelta.get(abbr)};
+};
 const playerById = new Map(_rsd.teamData.flatMap((t) => t.OVERALL.ROSTER.map((p) => [p.PLAYER_ID, p])));
 const playerText = (id) => {
   const p = playerById.get(id);

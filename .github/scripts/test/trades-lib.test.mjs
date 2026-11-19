@@ -1,7 +1,7 @@
 // Run with: node --test .github/scripts/test/trades-lib.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanTrade, mergeTrades, applyTrades, updatePicksText } from "../trades-lib.mjs";
+import { cleanTrade, mergeTrades, applyTrades, updatePicksText, reconcileMoves } from "../trades-lib.mjs";
 
 const uuid = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
 const players = (team, n) => Array.from({ length: n }, (_, i) => `${team.toLowerCase()}${String(i + 1).padStart(2, "0")}`);
@@ -97,4 +97,34 @@ test("updatePicksText only touches traded picks and preserves CRLF/BOM", () => {
   const out = updatePicksText(text, new Map([["WPG2", "BOS"], ["ANA1", "ANA"]]));
   assert.equal(out, "﻿PICK,OWNER\r\nANA1,ANA\r\nBOS1,BOS\r\nWPG2,BOS\r\n");
   assert.equal(updatePicksText("PICK,OWNER\nANA1,ANA\n", new Map([["ANA1", "BOS"]])), "PICK,OWNER\nANA1,BOS\n");
+});
+
+test("reconcileMoves keeps moves that still fit the post-trade roster and reports the rest", () => {
+  const rows = [
+    { ID: "a1", ABBR: "ANA", RESERVE: "R" },   // reserve on ANA
+    { ID: "a2", ABBR: "ANA", RESERVE: "" },    // active on ANA
+    { ID: "b1", ABBR: "ANA", RESERVE: "R" },   // acquired by ANA in a trade, still reserve
+    { ID: "c1", ABBR: "BOS", RESERVE: "R" },   // another team's player
+  ];
+  const r = reconcileMoves(rows, "ANA", ["a1", "b1", "gone1", "a2", "c1"], ["a2", "a1", "gone2"]);
+  assert.deepEqual(r.promote, ["a1", "b1"]);   // a2 is already active, c1/gone1 aren't ANA reserves
+  assert.deepEqual(r.demote, ["a2"]);          // a1 is a reserve, gone2 doesn't exist
+  assert.deepEqual(r.dropped.sort(), ["a1", "a2", "c1", "gone1", "gone2"].sort());
+  assert.deepEqual(reconcileMoves(rows, "ANA", ["a1"], ["a2"]), { promote: ["a1"], demote: ["a2"], dropped: [] });
+});
+
+test("applyTrades replays a chain in order: an asset acquired in one trade can be traded onward in a later one", () => {
+  const rows = league({ ANA: 21, BOS: 20, CAR: 20 });
+  const p = picks();
+  const t1 = trade(1, { give: { players: ["ana01"], picks: [{ pick: "WPG2", season: "2026-27" }] }, get: { players: ["bos01"] } });
+  const t2 = trade(2, { from: "BOS", to: "CAR", give: { players: ["ana01"], picks: [{ pick: "WPG2", season: "2026-27" }] }, get: { players: ["car01"] } });
+  const res = applyTrades(rows, [t2, t1], p); // given out of order; applied by acceptedAt
+  assert.deepEqual(res.applied, [uuid(1), uuid(2)]);
+  assert.equal(rows.find((r) => r.ID === "ana01").ABBR, "CAR");
+  assert.equal(rows.find((r) => r.ID === "bos01").ABBR, "ANA");
+  assert.equal(rows.find((r) => r.ID === "car01").ABBR, "BOS");
+  assert.equal(p.get("2026-27").get("WPG2"), "CAR");
+  // if the first trade were missing, the onward trade can't happen
+  const lone = applyTrades(league({ ANA: 21, BOS: 20, CAR: 20 }), [trade(2, { from: "BOS", to: "CAR", give: { players: ["ana01"] } })], picks());
+  assert.equal(lone.skipped.length, 1);
 });

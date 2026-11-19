@@ -65,6 +65,7 @@ const A = as("ANA", "pwA"), B = as("BOS", "pwB"), C = as("CAR", "pwC");
 const propose = (who, extra) => post("/trades/propose", { ...who, ...extra });
 const list = (who) => post("/trades/list", who);
 const respond = (who, id, decision) => post("/trades/respond", { ...who, id, decision });
+const tick = () => new Promise((r) => setTimeout(r, 3)); // dependent steps never share a millisecond in real life
 const ok = (r) => { assert.equal(r.status, 200, JSON.stringify(r.body)); return r.body; };
 const oneForOne = { to: "BOS", give: { players: ["ana01"] }, get: { players: ["bos01"] } };
 
@@ -200,7 +201,7 @@ test("decline and withdraw", async () => {
   assert.equal(ok(await respond(B, t2, "decline")).status, "DECLINED");
 });
 
-test("accepting a trade voids other open proposals using the same assets and locks them", async () => {
+test("accepting a trade voids other open proposals in which the same team gives the same assets", async () => {
   const t1 = ok(await propose(A, oneForOne)).id;
   const t2 = ok(await propose(C, { to: "ANA", give: { players: ["car01"] }, get: { players: ["ana01"] } })).id; // also wants ana01
   const t3 = ok(await propose(A, { to: "CAR", give: { players: ["ana05"] }, get: { players: ["car05"] } })).id; // unrelated
@@ -208,8 +209,39 @@ test("accepting a trade voids other open proposals using the same assets and loc
   const byId = Object.fromEntries(ok(await list(A)).trades.map((t) => [t.id, t.status]));
   assert.deepEqual(byId, { [t1]: "ACCEPTED", [t2]: "VOID", [t3]: "PROPOSED" });
   assert.equal((await respond(A, t2, "accept")).status, 409);
-  // can't propose with a locked asset either
-  assert.equal((await propose(C, { to: "ANA", give: {}, get: { players: ["ana01"] } })).status, 409);
+  // ANA already gave ana01 away, so nobody can get it from ANA any more
+  const again = await propose(C, { to: "ANA", give: {}, get: { players: ["ana01"] } });
+  assert.equal(again.status, 400);
+  assert.match(again.body.error, /ana01 is not on ANA's roster/);
+});
+
+test("assets acquired in an accepted trade can be traded onward; assets given away can't be offered again", async () => {
+  // T1: ANA sends ana01 + pick WPG2 to BOS for bos01
+  const t1 = ok(await propose(A, { to: "BOS", give: { players: ["ana01"], picks: [{ pick: "WPG2", season: "2026-27" }] }, get: { players: ["bos01"] } })).id;
+  ok(await respond(B, t1, "accept"));
+  await tick();
+
+  // ANA no longer owns what it gave away
+  assert.match((await propose(A, { to: "CAR", give: { players: ["ana01"] }, get: { players: ["car01"] } })).body.error, /ana01 is not on ANA/);
+  assert.match((await propose(A, { to: "CAR", give: { picks: [{ pick: "WPG2", season: "2026-27" }] }, get: {} })).body.error, /ANA does not own WPG2/);
+  // BOS no longer owns bos01...
+  assert.match((await propose(B, { to: "CAR", give: { players: ["bos01"] }, get: { players: ["car01"] } })).body.error, /bos01 is not on BOS/);
+  // ...but BOS now owns ana01 and WPG2, and can trade them on. Roster sizes count T1: BOS is back at 20, so 1-for-0 would leave 19.
+  assert.match((await propose(B, { to: "CAR", give: { players: ["ana01"] }, get: {} })).body.error, /BOS would have 19/);
+  const t2 = ok(await propose(B, { to: "CAR", give: { players: ["ana01"], picks: [{ pick: "WPG2", season: "2026-27" }] }, get: { players: ["car01"] } })).id;
+  // ANA can now trade the player it received
+  const t3 = ok(await propose(A, { to: "CAR", give: { players: ["bos01"] }, get: { players: ["car02"] } })).id;
+
+  ok(await respond(C, t2, "accept"));
+  await tick();
+  ok(await respond(C, t3, "accept"));
+  const byId = Object.fromEntries(ok(await list(A)).trades.map((t) => [t.id, t.status]));
+  assert.deepEqual(byId, { [t1]: "ACCEPTED", [t3]: "ACCEPTED" }); // T1 is untouched by the onward trade
+  // the dispatch lists them oldest first, so the Record Trades / materialize steps replay the chain in order
+  assert.deepEqual(dispatches.at(-1).client_payload.trades.map((t) => t.id), [t1, t2, t3]);
+  // CAR now owns ana01, WPG2 and bos01; BOS is out of them again
+  assert.match((await propose(B, { to: "CAR", give: { players: ["ana01"] }, get: {} })).body.error, /ana01 is not on BOS/);
+  ok(await propose(C, { to: "ANA", give: { players: ["ana01"] }, get: { players: ["ana02"] } })); // CAR can pass it on (1-for-1 keeps it at 20)
 });
 
 test("roster size accounts for other accepted trades", async () => {

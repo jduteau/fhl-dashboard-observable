@@ -124,3 +124,15 @@ export function updatePicksText(text, ownerByPick) {
     })
     .join("");
 }
+
+// Roster moves are submitted against the roster as it looks after the agreed trades. If a trade was agreed AFTER a GM
+// submitted (so the roster they saw has since changed), some of their moves can name players who are no longer on the
+// team, or who are no longer in the state the move assumes. Keep the moves that still make sense and report the rest.
+//   rows: the post-trade roster rows [{ID, ABBR, RESERVE}]
+export function reconcileMoves(rows, team, promote, demote) {
+  const mine = new Map(rows.filter((r) => r.ABBR === team).map((r) => [r.ID, r]));
+  const keptPromote = promote.filter((id) => mine.get(id)?.RESERVE === "R");
+  const keptDemote = demote.filter((id) => mine.has(id) && mine.get(id).RESERVE !== "R");
+  const dropped = [...promote.filter((id) => !keptPromote.includes(id)), ...demote.filter((id) => !keptDemote.includes(id))];
+  return { promote: keptPromote, demote: keptDemote, dropped };
+}

@@ -7,17 +7,31 @@ toc: false
 
 ```js
 import {playerLinksFormat} from "./components/playerLink.js";
-import {callTrades, pickLabel, evaluateTrade} from "./components/trades.js";
+import {callTrades, pickLabel, evaluateTrade, nextPeriodOf, agreedTrades, applyAgreedTrades} from "./components/trades.js";
 
 // Load the data files
 const rosters = await FileAttachment("./data/rosters.json").json();
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
+const tradesData = await FileAttachment("./data/trades.json").json();
 const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || rosters.currentSeason;
 const _rsd = rosters.data[_season];
 const _tisd = teamInfo.data[_season];
 
 const isCurrentSeason = _season === rosters.currentSeason;
+
+// Trades both GMs already agreed to (they take effect in the next period's rosters) are applied here, so players and
+// picks a team is about to receive can be traded again, and ones it is about to send away can't be offered twice.
+const _nextPeriod = nextPeriodOf(_rsd);
+const _agreed = isCurrentSeason ? agreedTrades(tradesData, _season, _nextPeriod) : [];
+const _eff = applyAgreedTrades({
+  abbrs: _rsd.teams,
+  rosterOf: (abbr) => _rsd.teamData.find((t) => t.ABBR === abbr)["OVERALL"].ROSTER,
+  picksOf: (abbr) => { const t = _tisd.teams.find((x) => x.ABBR === abbr); return [...t.CURRENT_PICK_LIST, ...t.NEXT_PICK_LIST]; },
+  trades: _agreed
+});
+// Team info with the salary total the agreed trades will leave the team with (budget maths starts from that)
+const _effTeam = (t) => ({...t, LatestSalary: t.LatestSalary + _eff.salaryDelta.get(t.ABBR)});
 
 // Optional prefill from the URL (used by "Counter" on the Trades page):
 //   team1, team2, p1/p2 = player ids team 1/2 send, k1/k2 = picks team 1/2 send as "ANA1:2026-27,..."
@@ -34,7 +48,7 @@ const selectedTeam2 = view(team2Selector);
 function createRosterTable(roster, preselectedIds = new Set()) {
   return Inputs.table(roster, {
       value: roster.filter((p) => preselectedIds.has(p.PLAYER_ID)),
-      columns: ["Name", "PLAYER_ID", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
+      columns: ["Name", "PLAYER_ID", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam", ...(roster.some((p) => p.Acquired) ? ["Acquired"] : [])],
       header: {
         Name: "Player Name",
         PLAYER_ID: "Links",
@@ -47,7 +61,8 @@ function createRosterTable(roster, preselectedIds = new Set()) {
         Toughness: "T",
         DStat: "D/GS",
         Rating: "Rate",
-        NHLTeam: "NHL"
+        NHLTeam: "NHL",
+        Acquired: "Trade"
       },
       format: {
         PLAYER_ID: playerLinksFormat,
@@ -80,8 +95,8 @@ function createRosterTable(roster, preselectedIds = new Set()) {
 ```js
 const team1 = _tisd.teams.find((t) => t.ABBR === selectedTeam1);
 const team2 = _tisd.teams.find((t) => t.ABBR === selectedTeam2);
-const team1Roster = _rsd.teamData.find((t) => t.ABBR === selectedTeam1)["OVERALL"].ROSTER;
-const team2Roster = _rsd.teamData.find((t) => t.ABBR === selectedTeam2)["OVERALL"].ROSTER;
+const team1Roster = _eff.roster.get(selectedTeam1);
+const team2Roster = _eff.roster.get(selectedTeam2);
 ```
 
 ```js
@@ -99,8 +114,8 @@ const parsePick = (p) => {
   return {origin: m?.[1], round: m ? Number(m[2]) : 0};
 };
 // One row per draft year: "2026-27  [] ANA1  [] ANA2  [] WPG2". Behaves as an input whose value is the array of checked picks.
-const createPickSelector = (team, preselected = new Set()) => {
-  const picks = [...team.CURRENT_PICK_LIST, ...team.NEXT_PICK_LIST]
+const createPickSelector = (teamPicks, preselected = new Set()) => {
+  const picks = [...teamPicks]
     .sort((a, b) => a.DraftSeason.localeCompare(b.DraftSeason) || parsePick(a).round - parsePick(b).round || a.PICK.localeCompare(b.PICK));
   if (!picks.length) return html`<em>No picks</em>`;
   const boxes = new Map();
@@ -112,7 +127,7 @@ const createPickSelector = (team, preselected = new Set()) => {
       box.checked = preselected.has(`${pick.PICK}:${pick.DraftSeason}`);
       boxes.set(box, pick);
       // Picks are labelled by their id: original team + round (e.g. ANA1, WPG2)
-      row.append(html`<label style="display:inline-flex; gap:0.3rem; align-items:center; width:auto;">${box}${pick.PICK}</label>`);
+      row.append(html`<label style="display:inline-flex; gap:0.3rem; align-items:center; width:auto;">${box}${pick.PICK}${pick.Acquired ? html`<small style="opacity:0.65;">(${pick.Acquired})</small>` : ""}</label>`);
     }
     form.append(row);
   }
@@ -123,8 +138,8 @@ const createPickSelector = (team, preselected = new Set()) => {
 };
 // Generators.input reads the value without displaying the input here (it is shown in the team card instead)
 const pickValues = (input) => (input.matches?.("form") ? Generators.input(input) : Generators.observe((notify) => notify([])));
-const team1PickInput = createPickSelector(team1, _list("k1"));
-const team2PickInput = createPickSelector(team2, _list("k2"));
+const team1PickInput = createPickSelector(_eff.picks.get(selectedTeam1), _list("k1"));
+const team2PickInput = createPickSelector(_eff.picks.get(selectedTeam2), _list("k2"));
 ```
 
 ```js
@@ -137,8 +152,18 @@ const team1Trades = tradeAssets(team1Selections, team1PickSelections);
 const team2Trades = tradeAssets(team2Selections, team2PickSelections);
 
 const {budget1: team1NewBudget, budget2: team2NewBudget, size1: team1NewSize, size2: team2NewSize, warnings, blockers} = evaluateTrade({
-  tisd: _tisd, team1, team2, roster1: team1Roster, roster2: team2Roster, out1: team1Selections, out2: team2Selections
+  tisd: _tisd, team1: _effTeam(team1), team2: _effTeam(team2), roster1: team1Roster, roster2: team2Roster, out1: team1Selections, out2: team2Selections
 });
+```
+
+```js
+if (_agreed.length) display(html`<div class="card" style="max-width:60em;">
+  Rosters and picks below already include the ${_agreed.length} trade${_agreed.length === 1 ? "" : "s"} both GMs agreed to, which take effect in period ${_nextPeriod}
+  (${_agreed.map((t) => `${t.from} ⇄ ${t.to}`).join(", ")}). Assets a team is about to receive are marked <em>Trade / from XYZ</em> and can be traded again;
+  assets it is about to send away are no longer listed.
+</div>`);
+// Plain text (not html) so it can sit inside the inline expressions of the team cards below.
+const afterTrades = (team) => _eff.salaryDelta.get(team.ABBR) ? ` (→ $ ${_effTeam(team).LatestSalary} after agreed trades)` : "";
 ```
 
 <pre>
@@ -193,14 +218,14 @@ display(html`<div class="card" style="max-width:50em;">
 <div class="grid grid-cols-2">
   <div class="card">
     ${team1Selector}
-    <p>CASH: $ ${team1.CASH} Budget: $ ${team1.Budget.toFixed(2)} Salaries: $ ${team1.LatestSalary}</p>
+    <p>CASH: $ ${team1.CASH} Budget: $ ${team1.Budget.toFixed(2)} Salaries: $ ${team1.LatestSalary}${afterTrades(team1)}</p>
     <p><strong>Picks to trade:</strong></p>
     ${team1PickInput}
     ${team1Table}
   </div>
   <div class="card">
     ${team2Selector}
-    <p>CASH: $ ${team2.CASH} Budget: $ ${team2.Budget.toFixed(2)} Salaries: $ ${team2.LatestSalary}</p>
+    <p>CASH: $ ${team2.CASH} Budget: $ ${team2.Budget.toFixed(2)} Salaries: $ ${team2.LatestSalary}${afterTrades(team2)}</p>
     <p><strong>Picks to trade:</strong></p>
     ${team2PickInput}
     ${team2Table}

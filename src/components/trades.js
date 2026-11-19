@@ -45,3 +45,48 @@ export function evaluateTrade({tisd, team1, team2, roster1, roster2, out1, out2}
   }
   return {budget1, budget2, size1, size2, warnings, blockers};
 }
+
+// The period trades take effect in: one after the latest roster (rosters.json lists the periods, then "OVERALL").
+export function nextPeriodOf(rostersSeasonData) {
+  const periods = rostersSeasonData.availablePeriods;
+  return Number(periods[periods.length - 2]) + 1;
+}
+
+// Trades both GMs agreed to that haven't been applied to a roster file yet (from trades.json): this is the state the
+// league is heading for, so every page that shows rosters or picks for trading should show it.
+export function agreedTrades(tradesData, season, nextPeriod) {
+  return (tradesData.data[season] ?? []).filter((t) => t.period === nextPeriod && !t.skipped);
+}
+
+// Applies the agreed trades, oldest first, to the current rosters and pick lists, so an asset acquired in one trade can
+// be traded again in the next one.
+//   abbrs: team abbreviations; rosterOf(abbr) -> player rows (with PLAYER_ID, Position, Reserve, Salary);
+//   picksOf(abbr) -> [{PICK, DraftSeason}]
+// Returns {roster: Map(abbr -> rows), picks: Map(abbr -> picks), salaryDelta: Map(abbr -> number)}. Rows and picks that
+// changed team are copies tagged `Acquired: "from XYZ"`; the inputs are not modified.
+export function applyAgreedTrades({abbrs, rosterOf, picksOf, trades}) {
+  const roster = new Map(abbrs.map((a) => [a, [...rosterOf(a)]]));
+  const picks = new Map(abbrs.map((a) => [a, [...picksOf(a)]]));
+  const salaryDelta = new Map(abbrs.map((a) => [a, 0]));
+  const take = (list, match) => { const i = list.findIndex(match); return i < 0 ? null : list.splice(i, 1)[0]; };
+
+  for (const t of [...trades].sort((a, b) => a.acceptedAt.localeCompare(b.acceptedAt))) {
+    for (const [giver, receiver, side] of [[t.from, t.to, t.give], [t.to, t.from, t.get]]) {
+      if (!roster.has(giver) || !roster.has(receiver)) continue;
+      for (const {id} of side.players) {
+        const row = take(roster.get(giver), (p) => p.PLAYER_ID === id);
+        if (!row) continue; // not where the trade says (stale data): leave it alone rather than invent a roster
+        roster.get(receiver).push({...row, Acquired: `from ${giver}`});
+        salaryDelta.set(giver, salaryDelta.get(giver) - (row.Salary || 0));
+        salaryDelta.set(receiver, salaryDelta.get(receiver) + (row.Salary || 0));
+      }
+      for (const p of side.picks) {
+        const pick = take(picks.get(giver), (x) => x.PICK === p.pick && x.DraftSeason === p.season);
+        if (pick) picks.get(receiver).push({...pick, Acquired: `from ${giver}`});
+      }
+    }
+  }
+  const order = {D: 1, F: 2, G: 3};
+  for (const rows of roster.values()) rows.sort((a, b) => (order[a.Position] ?? 9) - (order[b.Position] ?? 9) || (a.Reserve === "R") - (b.Reserve === "R"));
+  return {roster, picks, salaryDelta};
+}
