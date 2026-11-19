@@ -157,10 +157,12 @@ const {budget1: team1NewBudget, budget2: team2NewBudget, size1: team1NewSize, si
 ```
 
 ```js
+// Short note: the total count, and only the trades that involve the two selected teams (the ones that explain what is shown).
+const _relevant = _agreed.filter((t) => [t.from, t.to].some((abbr) => abbr === selectedTeam1 || abbr === selectedTeam2));
 if (_agreed.length) display(html`<div class="card" style="max-width:60em;">
-  Rosters and picks below already include the ${_agreed.length} trade${_agreed.length === 1 ? "" : "s"} both GMs agreed to, which take effect in period ${_nextPeriod}
-  (${_agreed.map((t) => `${t.from} ⇄ ${t.to}`).join(", ")}). Assets a team is about to receive are marked <em>Trade / from XYZ</em> and can be traded again;
-  assets it is about to send away are no longer listed.
+  Rosters and picks below already include the ${_agreed.length} trade${_agreed.length === 1 ? "" : "s"} both GMs agreed to, which take effect in period ${_nextPeriod}.
+  Assets a team is about to receive are marked <em>Trade / from XYZ</em> and can be traded again; assets it is about to send away are no longer listed.
+  ${_relevant.length ? html`<div>Involving ${selectedTeam1} or ${selectedTeam2}: ${_relevant.map((t) => `${t.from} ⇄ ${t.to}`).join(", ")}.</div>` : ""}
 </div>`);
 // Plain text (not html) so it can sit inside the inline expressions of the team cards below.
 const afterTrades = (team) => _eff.salaryDelta.get(team.ABBR) ? ` (→ $ ${_effTeam(team).LatestSalary} after agreed trades)` : "";
