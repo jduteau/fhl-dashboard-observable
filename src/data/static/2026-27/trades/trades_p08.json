@@ -1,0 +1,29 @@
+{
+  "trades": [
+    {
+      "id": "8192b1e3-d8f2-4ac7-a760-f1a7bb18bd1d",
+      "from": "CHI",
+      "to": "TBL",
+      "give": {
+        "players": [
+          "coronma01",
+          "dorofpa01"
+        ],
+        "picks": [
+          {
+            "pick": "CHI1",
+            "season": "2026-27"
+          }
+        ]
+      },
+      "get": {
+        "players": [
+          "colembl01",
+          "mackina01"
+        ],
+        "picks": []
+      },
+      "acceptedAt": "2026-11-19T02:06:44.327Z"
+    }
+  ]
+}
