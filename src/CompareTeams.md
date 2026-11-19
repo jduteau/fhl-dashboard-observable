@@ -7,6 +7,7 @@ toc: false
 
 ```js
 import {playerLinksFormat} from "./components/playerLink.js";
+import {callTrades, pickLabel, evaluateTrade} from "./components/trades.js";
 
 // Load the data files
 const rosters = await FileAttachment("./data/rosters.json").json();
@@ -16,14 +17,23 @@ const _season = _params.get("season") || rosters.currentSeason;
 const _rsd = rosters.data[_season];
 const _tisd = teamInfo.data[_season];
 
-const team1Selector = Inputs.select(_rsd.teams, {label: "Select Team 1:"});
+const isCurrentSeason = _season === rosters.currentSeason;
+
+// Optional prefill from the URL (used by "Counter" on the Trades page):
+//   team1, team2, p1/p2 = player ids team 1/2 send, k1/k2 = picks team 1/2 send as "ANA1:2026-27,..."
+const _team = (key) => _rsd.teams.includes(_params.get(key)) ? _params.get(key) : undefined;
+const _list = (key) => new Set((_params.get(key) ?? "").split(",").filter(Boolean));
+
+// Team 1 is the proposing team; team 2 receives the proposal.
+const team1Selector = Inputs.select(_rsd.teams, {label: "Select Team 1 (proposing):", value: _team("team1") ?? window._fhlTeam});
 const selectedTeam1 = Generators.input(team1Selector);
 
-const team2Selector = Inputs.select(_rsd.teams, {label: "Select Team 2:"});
+const team2Selector = Inputs.select(_rsd.teams, {label: "Select Team 2:", value: _team("team2")});
 const selectedTeam2 = view(team2Selector);
 
-function createRosterTable(roster) {
+function createRosterTable(roster, preselectedIds = new Set()) {
   return Inputs.table(roster, {
+      value: roster.filter((p) => preselectedIds.has(p.PLAYER_ID)),
       columns: ["Name", "PLAYER_ID", "Position", "Salary", "Contract", "GamesPlayed", "Goals", "Assists", "Toughness", "DStat", "Rating", "NHLTeam"],
       header: {
         Name: "Player Name",
@@ -75,8 +85,8 @@ const team2Roster = _rsd.teamData.find((t) => t.ABBR === selectedTeam2)["OVERALL
 ```
 
 ```js
-const team1Table = createRosterTable(team1Roster);
-const team2Table = createRosterTable(team2Roster);
+const team1Table = createRosterTable(team1Roster, _list("p1"));
+const team2Table = createRosterTable(team2Roster, _list("p2"));
 
 const team1Selections = view(team1Table);
 const team2Selections = view(team2Table);
@@ -88,11 +98,8 @@ const parsePick = (p) => {
   const m = /^([A-Z]+)(\d+)$/.exec(p.PICK);
   return {origin: m?.[1], round: m ? Number(m[2]) : 0};
 };
-// Picks are labelled by their id: original team + round (e.g. ANA1, WPG2)
-const roundLabel = (p) => p.PICK;
-const pickLabel = (p) => `${roundLabel(p)} (${p.DraftSeason})`;
 // One row per draft year: "2026-27  [] ANA1  [] ANA2  [] WPG2". Behaves as an input whose value is the array of checked picks.
-const createPickSelector = (team) => {
+const createPickSelector = (team, preselected = new Set()) => {
   const picks = [...team.CURRENT_PICK_LIST, ...team.NEXT_PICK_LIST]
     .sort((a, b) => a.DraftSeason.localeCompare(b.DraftSeason) || parsePick(a).round - parsePick(b).round || a.PICK.localeCompare(b.PICK));
   if (!picks.length) return html`<em>No picks</em>`;
@@ -102,8 +109,10 @@ const createPickSelector = (team) => {
     const row = html`<div style="display:flex; flex-wrap:wrap; gap:0.25rem 1rem; align-items:center;"><strong style="min-width:4.5rem;">${season}</strong></div>`;
     for (const pick of picks.filter((p) => p.DraftSeason === season)) {
       const box = html`<input type="checkbox">`;
+      box.checked = preselected.has(`${pick.PICK}:${pick.DraftSeason}`);
       boxes.set(box, pick);
-      row.append(html`<label style="display:inline-flex; gap:0.3rem; align-items:center; width:auto;">${box}${roundLabel(pick)}</label>`);
+      // Picks are labelled by their id: original team + round (e.g. ANA1, WPG2)
+      row.append(html`<label style="display:inline-flex; gap:0.3rem; align-items:center; width:auto;">${box}${pick.PICK}</label>`);
     }
     form.append(row);
   }
@@ -114,8 +123,8 @@ const createPickSelector = (team) => {
 };
 // Generators.input reads the value without displaying the input here (it is shown in the team card instead)
 const pickValues = (input) => (input.matches?.("form") ? Generators.input(input) : Generators.observe((notify) => notify([])));
-const team1PickInput = createPickSelector(team1);
-const team2PickInput = createPickSelector(team2);
+const team1PickInput = createPickSelector(team1, _list("k1"));
+const team2PickInput = createPickSelector(team2, _list("k2"));
 ```
 
 ```js
@@ -127,13 +136,9 @@ const tradeAssets = (players, picks) => [...players.map((player) => player.Name)
 const team1Trades = tradeAssets(team1Selections, team1PickSelections);
 const team2Trades = tradeAssets(team2Selections, team2PickSelections);
 
-const team1SalariesOut = team1Selections.map((player) => player.Salary).reduce(function(prev,cur) { return prev + cur; }, 0);
-const team2SalariesOut = team2Selections.map((player) => player.Salary).reduce(function(prev,cur) { return prev + cur; }, 0);
-
-const team1NewSalaryPerPeriod = (team1.LatestSalary - team1SalariesOut + team2SalariesOut) / 25;
-const team2NewSalaryPerPeriod = (team2.LatestSalary - team2SalariesOut + team1SalariesOut) / 25;
-const team1NewBudget = team1.CASH - (team1NewSalaryPerPeriod < 13 ? 13 : team1NewSalaryPerPeriod) * (25 - _tisd.lastPeriodNum);
-const team2NewBudget = team2.CASH - (team2NewSalaryPerPeriod < 13 ? 13 : team2NewSalaryPerPeriod) * (25 - _tisd.lastPeriodNum);
+const {budget1: team1NewBudget, budget2: team2NewBudget, size1: team1NewSize, size2: team2NewSize, warnings, blockers} = evaluateTrade({
+  tisd: _tisd, team1, team2, roster1: team1Roster, roster2: team2Roster, out1: team1Selections, out2: team2Selections
+});
 ```
 
 <pre>
@@ -143,9 +148,47 @@ ${team2Trades}
 To ${selectedTeam2}
 ${team1Trades}
 
-New ${selectedTeam1} Budget: ${team1NewBudget.toFixed(2)}
-New ${selectedTeam2} Budget: ${team2NewBudget.toFixed(2)}
+New ${selectedTeam1} Budget: ${team1NewBudget.toFixed(2)}   Players: ${team1NewSize}
+New ${selectedTeam2} Budget: ${team2NewBudget.toFixed(2)}   Players: ${team2NewSize}
 </pre>
+${warnings.map((w) => html`<div style="color:#b45309;">⚠ ${w}</div>`)}
+${blockers.map((b) => html`<div style="color:#b91c1c;">✖ ${b}</div>`)}
+
+```js
+// Propose the trade above: team 1 (the proposing GM) -> team 2. The other GM then accepts/declines on the Trades page.
+const counterId = (_params.get("counter") && _params.get("team1") === selectedTeam1 && _params.get("team2") === selectedTeam2) ? _params.get("counter") : null;
+const hasAssets = team1Selections.length + team1PickSelections.length + team2Selections.length + team2PickSelections.length > 0;
+const proposeError = !isCurrentSeason ? "Trades can only be proposed for the current season."
+  : selectedTeam1 === selectedTeam2 ? "Pick two different teams."
+  : !hasAssets ? "Select at least one player or pick."
+  : blockers.length ? "Fix the roster sizes above first." : "";
+
+const pwInput = html`<input type="password" placeholder="${selectedTeam1} password" autocomplete="off">`;
+pwInput.value = window._fhlPw ?? "";
+pwInput.oninput = () => { window._fhlPw = pwInput.value; };
+const noteInput = html`<input type="text" maxlength="500" placeholder="Note to ${selectedTeam2} (optional)" style="width:20em;">`;
+const proposeStatus = html`<div></div>`;
+const proposeButton = html`<button ${proposeError ? "disabled" : ""}>${counterId ? "Send counter-offer" : "Propose this trade"}</button>`;
+proposeButton.onclick = async () => {
+  proposeStatus.textContent = "Submitting…";
+  const side = (players, picks) => ({players: players.map((p) => p.PLAYER_ID), picks: picks.map((p) => ({pick: p.PICK, season: p.DraftSeason}))});
+  const r = await callTrades("propose", {
+    season: _season, team: selectedTeam1, password: pwInput.value, to: selectedTeam2,
+    give: side(team1Selections, team1PickSelections), get: side(team2Selections, team2PickSelections),
+    note: noteInput.value || undefined, counters: counterId ?? undefined
+  });
+  if (!r.ok) { proposeStatus.textContent = `FAILED: ${r.error}`; return; }
+  window._fhlTeam = selectedTeam1;
+  proposeStatus.replaceChildren(html`Proposed for period ${r.data.period}. ${selectedTeam2}'s GM can accept or decline it on the <a href="./Trades">Trades</a> page, where you can also withdraw it.`);
+};
+display(html`<div class="card" style="max-width:50em;">
+  <strong>Propose this trade</strong>: ${selectedTeam1} proposes to ${selectedTeam2}. It only happens if ${selectedTeam2}'s GM accepts, and then takes effect in the next period's rosters.
+  ${counterId ? html`<p><em>This is a counter-offer: sending it replaces ${selectedTeam2}'s earlier proposal.</em></p>` : ""}
+  ${proposeError ? html`<p><em>${proposeError}</em></p>` : ""}
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">${pwInput} ${noteInput} ${proposeButton}</div>
+  ${proposeStatus}
+</div>`);
+```
 
 <div class="grid grid-cols-2">
   <div class="card">

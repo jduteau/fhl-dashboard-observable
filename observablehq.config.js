@@ -38,6 +38,7 @@ export default {
     {name: "Team Roster", path: "/Roster"},
     {name: "Overall Stats", path: "/Overall"},
     {name: "Compare Teams", path: "/CompareTeams"},
+    {name: "Trades", path: "/Trades"},
     {name: "Stats Visualizations", path: "/StatViz"},
     {name: "Playoffs", path: "/Playoffs"},
     {name: "Playoff Statistics", path: "/PlayoffStats"},
