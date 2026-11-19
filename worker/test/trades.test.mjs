@@ -137,17 +137,58 @@ test("rosters must stay between 20 and 36 players", async () => {
 });
 
 test("only the other GM can accept; accepting dispatches the trade to GitHub", async () => {
-  const { id } = ok(await propose(A, oneForOne));
+  const { id } = ok(await propose(A, { ...oneForOne, note: "private chatter" }));
   assert.equal((await respond(A, id, "accept")).status, 403); // proposer can't approve their own
   const r = ok(await respond(B, id, "accept"));
   assert.equal(r.status, "ACCEPTED");
   assert.equal(r.published, true);
   assert.equal(dispatches.length, 1);
+  const payload = dispatches[0].client_payload;
   assert.equal(dispatches[0].event_type, "trade-approved");
-  assert.deepEqual(dispatches[0].client_payload.give.players, ["ana01"]);
-  assert.equal(dispatches[0].client_payload.note, undefined); // private chatter is not published
+  assert.deepEqual([payload.season, payload.period], ["2026-27", 8]);
+  assert.equal(payload.trades.length, 1);
+  assert.deepEqual(payload.trades[0].give.players, ["ana01"]);
+  assert.deepEqual(payload.trades[0].get.players, ["bos01"]);
+  assert.equal(payload.trades[0].from, "ANA");
+  assert.ok(payload.trades[0].acceptedAt);
+  assert.ok(!JSON.stringify(payload).includes("private chatter")); // notes are private; the trade log is public
   assert.equal(ok(await list(A)).trades[0].status, "ACCEPTED");
   assert.equal((await respond(B, id, "accept")).status, 409); // not twice
+  assert.equal(dispatches.length, 1);
+});
+
+test("every dispatch carries ALL accepted trades for the period, so a dropped workflow run loses nothing", async () => {
+  const t1 = ok(await propose(A, oneForOne)).id;
+  const t2 = ok(await propose(A, { to: "CAR", give: { players: ["ana05"] }, get: { players: ["car05"] } })).id;
+  const t3 = ok(await propose(A, { to: "CAR", give: { players: ["ana07"] }, get: {} })).id; // never accepted
+  ok(await respond(B, t1, "accept"));
+  ok(await respond(C, t2, "accept"));
+  assert.deepEqual(dispatches[0].client_payload.trades.map((t) => t.id), [t1]);
+  assert.deepEqual(dispatches[1].client_payload.trades.map((t) => t.id).sort(), [t1, t2].sort());
+  assert.ok(!dispatches[1].client_payload.trades.some((t) => t.id === t3));
+});
+
+test("republish re-sends accepted trades (any authenticated GM), and is a no-op when there are none", async () => {
+  assert.deepEqual(ok(await post("/trades/republish", C)), { ok: true, count: 0 });
+  assert.equal(dispatches.length, 0);
+  const { id } = ok(await propose(A, oneForOne));
+  ok(await respond(B, id, "accept"));
+  assert.deepEqual(ok(await post("/trades/republish", C)), { ok: true, count: 1 });
+  assert.equal(dispatches.length, 2);
+  assert.equal(dispatches[1].client_payload.trades[0].id, id);
+  assert.equal((await post("/trades/republish", as("CAR", "wrong"))).status, 401);
+});
+
+test("an accept whose dispatch fails stays accepted and can be re-sent", async () => {
+  const { id } = ok(await propose(A, oneForOne));
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => (String(url).endsWith("/dispatches") ? new Response("nope", { status: 500 }) : realFetch(url, init));
+  const r = ok(await respond(B, id, "accept"));
+  assert.equal(r.status, "ACCEPTED");
+  assert.equal(r.published, false);
+  assert.equal((await post("/trades/republish", B)).status, 502);
+  globalThis.fetch = realFetch;
+  assert.deepEqual(ok(await post("/trades/republish", B)), { ok: true, count: 1 });
 });
 
 test("decline and withdraw", async () => {

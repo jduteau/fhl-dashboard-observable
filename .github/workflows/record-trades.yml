@@ -1,0 +1,41 @@
+name: Record Trades
+
+on:
+  # Triggered by the Cloudflare Worker (worker/trades.js) when the second GM accepts a trade. The payload holds ALL
+  # accepted trades for the upcoming period, so it doesn't matter if GitHub drops a queued run (see record-trades.mjs).
+  repository_dispatch:
+    types: [trade-approved]
+
+# Serialize runs; kept separate from "Apply Roster Moves" so a trade can never replace a queued roster-moves run
+# (GitHub keeps only one pending run per concurrency group).
+concurrency:
+  group: record-trades
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Record accepted trades
+        env:
+          TRADES: ${{ toJson(github.event.client_payload) }}
+        run: node .github/scripts/record-trades.mjs
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/static
+          git diff --cached --quiet && exit 0
+          git commit -m "Trades (repository_dispatch)"
+          # Another workflow may have pushed meanwhile; retry the rebase+push a few times.
+          for i in 1 2 3 4 5; do
+            git pull --rebase && git push && exit 0
+            sleep $((i * 5))
+          done
+          exit 1

@@ -7,12 +7,14 @@ toc: false
 
 ```js
 import {playerLinksFormat} from "./components/playerLink.js";
+import {pickLabel} from "./components/trades.js";
 
 // Deployed Cloudflare Worker (see worker/README.md)
 const WORKER_URL = "https://fhl-roster-moves.fhldashboard.workers.dev";
 
 const teamInfo = await FileAttachment("./data/rosters.json").json();
 const movesData = await FileAttachment("./data/moves.json").json();
+const tradesData = await FileAttachment("./data/trades.json").json();
 const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || teamInfo.currentSeason;
 const _sd = teamInfo.data[_season];
@@ -78,7 +80,16 @@ const startReserve = roster.filter((p) =>
   pending ? (p.Reserve === "R" ? !pending.promote.includes(p.PLAYER_ID) : pending.demote.includes(p.PLAYER_ID)) : p.Reserve === "R");
 const selTable = Inputs.table(roster, {...tableOptions, columns: tableOptions.columns.filter((c) => c !== "Reserve"), value: startReserve});
 const selection = Generators.input(selTable);
+// Trades both GMs already agreed to take effect AFTER these roster moves, in the same new roster.
+const teamTrades = (tradesData.data[_season] ?? []).filter((t) => t.period === nextPeriod && (t.from === selectedTeam || t.to === selectedTeam));
+const assetText = (side) => [...side.players.map((p) => p.name), ...side.picks.map(pickLabel)].join(", ") || "nothing";
+const tradeNote = teamTrades.length ? html`<div class="card">
+  <strong>Agreed trades taking effect in period ${nextPeriod}</strong>
+  ${teamTrades.map((t) => html`<div>${t.from === selectedTeam ? `With ${t.to}: you send ${assetText(t.give)}; you receive ${assetText(t.get)}.` : `With ${t.from}: you send ${assetText(t.get)}; you receive ${assetText(t.give)}.`}</div>`)}
+  <div style="font-size:0.9em;"><em>Traded players keep their current active/reserve status, and you can only change your lineup again next period. Moves below apply to the players you have now.</em></div>
+</div>` : "";
 display(html`<div class="tab-next">
+  ${tradeNote}
   ${isCurrentSeason
     ? html`<p>A checked box means the player is on the <strong>reserve</strong> list. Check the players who should be reserves for period ${nextPeriod}, then submit. Submitting again replaces your earlier submission.</p>`
     : html`<p><em>Roster moves can only be made for the current season.</em></p>`}

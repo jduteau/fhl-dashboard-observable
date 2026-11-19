@@ -32,6 +32,7 @@ export async function handleTrades(action, body, env) {
     case "propose": return propose(body, env, ctx, owners);
     case "list": return list(body, env, ctx);
     case "respond": return respond(body, env, ctx);
+    case "republish": return republish(env, ctx);
     default: throw new HttpError(404, "Unknown trades endpoint");
   }
 }
@@ -136,17 +137,21 @@ function validateTrade(own, accepted, from, to, give, get) {
 const effectiveStatus = (t, ctx) =>
   t.period > ctx.latest ? t.status : t.status === "PROPOSED" ? "EXPIRED" : t.status === "ACCEPTED" ? "APPLIED" : t.status;
 
-function present(t, items, ctx) {
+// give = what the proposer (from_team) sends; get = what the proposer receives.
+function sides(t, items) {
   const side = (giver) => ({
     players: items.filter((i) => i.giver === giver && i.kind === "player").map((i) => i.ref),
     picks: items.filter((i) => i.giver === giver && i.kind === "pick").map((i) => ({ pick: i.ref, season: i.pick_season })),
   });
+  return { give: side(t.from_team), get: side(t.to_team) };
+}
+
+function present(t, items, ctx) {
   return {
     id: t.id, season: t.season, period: t.period, from: t.from_team, to: t.to_team,
     status: effectiveStatus(t, ctx), note: t.note, counters: t.counters,
     createdAt: t.created_at, respondedAt: t.responded_at,
-    give: side(t.from_team), // what the proposer sends
-    get: side(t.to_team), // what the proposer receives
+    ...sides(t, items),
   };
 }
 
@@ -270,19 +275,45 @@ async function respond(body, env, ctx) {
        WHERE a.trade_id = trades.id)`
   ).bind(now, trade.season, trade.period, trade.id, trade.id).run();
 
-  // Hand the (now public) trade to the repo workflow. If this fails the trade stays ACCEPTED, published = 0.
-  const side = (giver) => ({
-    players: items.filter((i) => i.giver === giver && i.kind === "player").map((i) => i.ref),
-    picks: items.filter((i) => i.giver === giver && i.kind === "pick").map((i) => ({ pick: i.ref, season: i.pick_season })),
-  });
+  const { published } = await publishAccepted(env, trade.season, trade.period);
+  return { ok: true, status: "ACCEPTED", published };
+}
+
+// Sends the "Record Trades" workflow ALL accepted trades for the period (not just the newest one): GitHub keeps only
+// one queued run per workflow, so a run can be dropped, and the next run must be able to make up for it. The
+// workflow merges by id, so repeats are harmless. Private notes are not included (the trade log is public).
+async function publishAccepted(env, season, period) {
+  const { results: trades } = await env.DB.prepare(
+    "SELECT * FROM trades WHERE status = 'ACCEPTED' AND season = ? AND period = ? ORDER BY responded_at, id"
+  ).bind(season, period).all();
+  if (!trades.length) return { published: true, count: 0 };
+  const { results: items } = await env.DB.prepare(
+    `SELECT i.* FROM trade_items i JOIN trades t ON t.id = i.trade_id
+     WHERE t.status = 'ACCEPTED' AND t.season = ? AND t.period = ? ORDER BY i.kind DESC, i.pick_season, i.ref`
+  ).bind(season, period).all();
   const dispatch = await gh(env, "dispatches", {
     method: "POST",
     body: JSON.stringify({
       event_type: "trade-approved",
-      client_payload: { id: trade.id, season: trade.season, period: trade.period, from: trade.from_team, to: trade.to_team, give: side(trade.from_team), get: side(trade.to_team), acceptedAt: now },
+      client_payload: {
+        season, period,
+        trades: trades.map((t) => ({
+          id: t.id, from: t.from_team, to: t.to_team, acceptedAt: t.responded_at,
+          ...sides(t, items.filter((i) => i.trade_id === t.id)),
+        })),
+      },
     }),
   });
   const published = dispatch.status === 204;
-  if (published) await env.DB.prepare("UPDATE trades SET published = 1 WHERE id = ?").bind(trade.id).run();
-  return { ok: true, status: "ACCEPTED", published };
+  if (published)
+    await env.DB.prepare("UPDATE trades SET published = 1 WHERE status = 'ACCEPTED' AND season = ? AND period = ?").bind(season, period).run();
+  return { published, count: trades.length };
+}
+
+// Any authenticated GM can ask for the accepted trades to be sent to the league record again (the trade page offers
+// this when an accepted trade hasn't shown up in the public trade log).
+async function republish(env, ctx) {
+  const { published, count } = await publishAccepted(env, ctx.season, ctx.period);
+  if (!published) throw new HttpError(502, "Could not reach the league record; try again in a minute");
+  return { ok: true, count };
 }

@@ -15,11 +15,14 @@ import {callTrades, pickLabel, evaluateTrade} from "./components/trades.js";
 
 const rosters = await FileAttachment("./data/rosters.json").json();
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
+const tradesData = await FileAttachment("./data/trades.json").json();
 const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || rosters.currentSeason;
 const _rsd = rosters.data[_season];
 const _tisd = teamInfo.data[_season];
 const isCurrentSeason = _season === rosters.currentSeason;
+const logTrades = tradesData.data[_season] ?? []; // accepted trades recorded in the repo (public)
+const loggedIds = new Set(logTrades.map((t) => t.id));
 
 const rosterOf = (abbr) => _rsd.teamData.find((t) => t.ABBR === abbr).OVERALL.ROSTER;
 const teamOf = (abbr) => _tisd.teams.find((t) => t.ABBR === abbr);
@@ -38,6 +41,19 @@ passwordInput.oninput = () => { window._fhlPw = passwordInput.value; };
 const loadButton = html`<button>Show my trades</button>`;
 const status = html`<div style="margin:0.5rem 0;"></div>`;
 const inbox = html`<div></div>`;
+
+// Public: every trade both GMs agreed to. "Agreed" trades happen when the next period's roster is created.
+const logAssets = (side) => [...side.players.map((p) => p.name), ...side.picks.map(pickLabel)].join(", ") || "nothing";
+const logStatus = (t) => t.skipped ? html`<em style="color:#b91c1c;">Not applied: ${t.skipped}</em>`
+  : t.appliedAt ? html`<em>Completed (in period ${t.period}'s rosters)</em>`
+  : html`<em>Agreed; takes effect in period ${t.period}'s rosters</em>`;
+const tradeLog = logTrades.length
+  ? html`<div>${logTrades.map((t) => html`<div class="card" style="max-width:50em;">
+      <div><strong>${t.from} ⇄ ${t.to}</strong> · agreed ${new Date(t.acceptedAt).toLocaleDateString()} · ${logStatus(t)}</div>
+      <div>${t.to} receives: ${logAssets(t.give)}</div>
+      <div>${t.from} receives: ${logAssets(t.get)}</div>
+    </div>`)}</div>`
+  : html`<p><em>No trades yet this season.</em></p>`;
 
 const section = (title, trades, build, open = true) => {
   if (!trades.length && open) return html`<h3>${title} (0)</h3>`;
@@ -103,6 +119,20 @@ function tradeCard(t, me, period) {
     }
   }
 
+  if (t.status === "ACCEPTED" || t.status === "APPLIED") {
+    const recorded = loggedIds.has(t.id);
+    const resend = html`<button>Re-send</button>`;
+    resend.onclick = async () => {
+      resend.disabled = true;
+      const r = await callTrades("republish", {season: _season, team: me, password: passwordInput.value});
+      await load(r.ok ? "Re-sent to the league record; the trade log updates in a few minutes." : `FAILED: ${r.error}`);
+    };
+    buttons.append(recorded
+      ? html`<span style="font-size:0.9em;">✓ Recorded in the league trade log below</span>`
+      : html`<span style="font-size:0.9em;">Not in the league trade log yet (this can take a few minutes after accepting).</span>`);
+    if (!recorded) buttons.append(resend);
+  }
+
   const label = {PROPOSED: "", ACCEPTED: "Accepted", APPLIED: "Completed", DECLINED: "Declined", WITHDRAWN: "Withdrawn", COUNTERED: "Countered", VOID: "Void (an asset went to another trade)", EXPIRED: "Expired"}[t.status];
   return html`<div class="card" style="max-width:50em;">
     <div><strong>${mine ? `You → ${other}` : `${other} → You`}</strong> · takes effect in period ${t.period} · proposed ${new Date(t.createdAt).toLocaleString()}${label ? html` · <em>${label}</em>` : ""}${t.counters ? " · counter-offer" : ""}</div>
@@ -144,5 +174,7 @@ loadButton.onclick = () => load();
 display(html`<div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end;">${teamSelector} ${passwordInput} ${loadButton}</div>`);
 display(status);
 display(inbox);
+display(html`<h2>League trade log</h2>`);
+display(tradeLog);
 if (window._fhlTeam && window._fhlPw) load(); // arriving from Compare Teams: load straight away
 ```

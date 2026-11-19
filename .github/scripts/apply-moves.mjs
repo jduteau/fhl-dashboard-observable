@@ -3,12 +3,15 @@
 //   node apply-moves.mjs                       validate $MOVES (JSON) and store it in
 //                                              src/data/static/<season>/moves/moves_pNN.json
 //   node apply-moves.mjs materialize [season] [period]
-//                                              write rosters_pNN.csv = previous roster + stored moves
+//                                              write rosters_pNN.csv = previous roster + stored moves, then the accepted trades in
+//                                              src/data/static/<season>/trades/trades_pNN.json (see record-trades.mjs); traded
+//                                              picks are rewritten in the draft_picks.csv files
 //
 // $MOVES = {season, period, team, promote:[playerId], demote:[playerId]}
 //   promote = reserve -> active, demote = active -> reserve (relative to the latest roster file)
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from "fs";
 import { csvParse } from "d3-dsv";
+import { applyTrades, updatePicksText } from "./trades-lib.mjs";
 
 const root = "src/data/static";
 const read = (p) => csvParse(readFileSync(p, "utf-8").replace(/^﻿/, ""));
@@ -20,6 +23,7 @@ const currentSeason = () => read(`${root}/seasons.csv`).find((s) => s.current ==
 const latestRosterPeriod = (season) =>
   Math.max(...readdirSync(`${root}/${season}/rosters`).map((f) => /^rosters_p(\d+)\.csv$/.exec(f)?.[1]).filter(Boolean).map(Number));
 const movesPath = (season, period) => `${root}/${season}/moves/moves_p${pad(period)}.json`;
+const tradesPath = (season, period) => `${root}/${season}/trades/trades_p${pad(period)}.json`;
 const loadMoves = (season, period) => (existsSync(movesPath(season, period)) ? JSON.parse(readFileSync(movesPath(season, period), "utf-8")) : {});
 
 // Returns the new full roster after applying one team's moves to its base roster, or throws.
@@ -64,9 +68,34 @@ if (mode === "materialize") {
     try { for (const r of applyToTeam(baseRows, team, m.promote, m.demote, playerInfo)) changed.set(r.ID + "|" + r.ABBR, r.RESERVE); }
     catch (e) { console.warn(`Skipping invalid moves for ${team}: ${e.message}`); }
   }
-  const lines = ["ID,ABBR,RESERVE", ...baseRows.map((r) => `${r.ID},${r.ABBR},${changed.get(r.ID + "|" + r.ABBR) ?? r.RESERVE}`)];
+  const rows = baseRows.map((r) => ({ ID: r.ID, ABBR: r.ABBR, RESERVE: changed.get(r.ID + "|" + r.ABBR) ?? r.RESERVE }));
+
+  // Trades come AFTER the moves: each GM set their lineup against the roster they could see, and a traded player
+  // keeps whatever active/reserve designation they have.
+  const tradesFile = tradesPath(season, period);
+  let tradeSummary = "";
+  if (existsSync(tradesFile)) {
+    const stored = JSON.parse(readFileSync(tradesFile, "utf-8"));
+    const trades = stored.trades ?? [];
+    const pickSeasons = [...new Set(trades.flatMap((t) => [...(t.give?.picks ?? []), ...(t.get?.picks ?? [])].map((p) => p.season)))];
+    const picksBySeason = new Map(pickSeasons.map((s) => [s, new Map(existsSync(`${root}/${s}/draft_picks.csv`) ? read(`${root}/${s}/draft_picks.csv`).map((r) => [r.PICK, r.OWNER]) : [])]));
+    const before = new Map([...picksBySeason].map(([s, m]) => [s, new Map(m)]));
+
+    const { applied, skipped } = applyTrades(rows, trades, picksBySeason);
+    for (const { id, reason } of skipped) console.warn(`::warning::Trade ${id} NOT applied: ${reason}`);
+
+    for (const [s, owners] of picksBySeason) {
+      const moved = new Map([...owners].filter(([pick, owner]) => before.get(s).get(pick) !== owner));
+      const f = `${root}/${s}/draft_picks.csv`;
+      if (moved.size && existsSync(f)) writeFileSync(f, updatePicksText(readFileSync(f, "utf-8"), moved));
+    }
+    writeFileSync(tradesFile, JSON.stringify({ ...stored, trades }, null, 2) + "\n");
+    tradeSummary = `; trades: ${applied.length} applied, ${skipped.length} skipped`;
+  }
+
+  const lines = ["ID,ABBR,RESERVE", ...rows.map((r) => `${r.ID},${r.ABBR},${r.RESERVE}`)];
   writeFileSync(`${root}/${season}/rosters/rosters_p${pad(period)}.csv`, lines.join("\n") + "\n");
-  console.log(`Wrote rosters_p${pad(period)}.csv with moves for ${Object.keys(moves).length} team(s)`);
+  console.log(`Wrote rosters_p${pad(period)}.csv with moves for ${Object.keys(moves).length} team(s)${tradeSummary}`);
 } else {
   const m = JSON.parse(process.env.MOVES || fail("MOVES env var missing"));
   const season = currentSeason();

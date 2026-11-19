@@ -29,7 +29,20 @@ Rules enforced server-side: each side must own what it gives (latest roster + `d
 next season), both rosters must end with 20-36 players, assets in an accepted trade are locked, and a proposal
 expires when the next period's roster file is created.
 
-Tests (no Cloudflare account needed): `node --test worker/test/trades.test.mjs`
+### From accepted trade to new roster
+1. When the second GM accepts, the Worker sends a `trade-approved` dispatch. It always carries **all** accepted trades for
+   the upcoming period (GitHub keeps only one queued run per workflow, so a single trade per run could be lost).
+2. The **Record Trades** workflow (`.github/workflows/record-trades.yml`) merges them by id into
+   `src/data/static/<season>/trades/trades_pNN.json` (this is the public trade log) and triggers a deploy.
+3. When the commissioner runs **Apply Roster Moves** (materialize) for the next period, it applies roster moves first,
+   then the trades: players change team in `rosters_pNN.csv` (keeping their active/reserve status) and traded picks
+   change owner in the `draft_picks.csv` files. Each trade is re-checked (ownership, 20-36 players) and skipped with a
+   warning in the run log if it can no longer happen; `appliedAt` / `skipped` are written into the trades file.
+4. If a trade is accepted but never shows up in the trade log (the workflow failed), either GM can press **Re-send**
+   on the Trades page (`POST /trades/republish`), which re-dispatches every accepted trade for the period.
+
+Tests (no Cloudflare account needed):
+`node --test worker/test/trades.test.mjs .github/scripts/test/trades-lib.test.mjs`
 
 ## Commissioner: start a new period
 Run the **Apply Roster Moves** workflow manually (Actions tab). It writes `rosters_pNN.csv`
