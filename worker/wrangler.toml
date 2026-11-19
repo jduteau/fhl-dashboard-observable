@@ -6,3 +6,9 @@ compatibility_date = "2025-01-01"
 GITHUB_REPO = "jduteau/fhl-dashboard-observable"
 # Origin only (no path) of the GitHub Pages site, e.g. https://jduteau.github.io
 ALLOWED_ORIGIN = "https://jduteau.github.io"
+
+# Trade proposals (see schema.sql). Create with `npx wrangler d1 create fhl-trades`, then paste its id here.
+[[d1_databases]]
+binding = "DB"
+database_name = "fhl-trades"
+database_id = "be3a0438-a199-4728-a8cb-15165546276f"
