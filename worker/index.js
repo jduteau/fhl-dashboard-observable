@@ -10,20 +10,29 @@
 import { json, gh, authenticate, HttpError } from "./lib.js";
 import { handleTrades } from "./trades.js";
 
+// ALLOWED_ORIGIN is a comma-separated list (the Pages site, plus local preview origins for development).
+// The request's own origin is echoed back when it is on the list, otherwise the first entry is returned (and the
+// request is refused), so CORS headers always name exactly one origin.
+const originFor = (request, env) => {
+  const allowed = env.ALLOWED_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean);
+  const requested = request.headers.get("origin");
+  return allowed.includes(requested) ? requested : allowed[0];
+};
+
 export default {
   async fetch(request, env) {
+    const origin = originFor(request, env);
     try {
-      return await handle(request, env);
+      return await handle(request, env, origin);
     } catch (e) {
-      if (e instanceof HttpError) return json({ error: e.message }, e.status, env.ALLOWED_ORIGIN);
+      if (e instanceof HttpError) return json({ error: e.message }, e.status, origin);
       console.error(e);
-      return json({ error: `Server error: ${e.message}` }, 500, env.ALLOWED_ORIGIN);
+      return json({ error: `Server error: ${e.message}` }, 500, origin);
     }
   },
 };
 
-async function handle(request, env) {
-  const origin = env.ALLOWED_ORIGIN;
+async function handle(request, env, origin) {
   if (request.method === "OPTIONS")
     return new Response(null, {
       headers: {

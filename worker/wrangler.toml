@@ -4,8 +4,9 @@ compatibility_date = "2025-01-01"
 
 [vars]
 GITHUB_REPO = "jduteau/fhl-dashboard-observable"
-# Origin only (no path) of the GitHub Pages site, e.g. https://jduteau.github.io
-ALLOWED_ORIGIN = "https://jduteau.github.io"
+# Origins (no paths) allowed to call the Worker, comma-separated: the GitHub Pages site first, then the local
+# `npm run dev` preview (Observable Framework serves on port 3000, on either host name).
+ALLOWED_ORIGIN = "https://jduteau.github.io,http://127.0.0.1:3000,http://localhost:3000"
 
 # Trade proposals (see schema.sql). Create with `npx wrangler d1 create fhl-trades`, then paste its id here.
 [[d1_databases]]

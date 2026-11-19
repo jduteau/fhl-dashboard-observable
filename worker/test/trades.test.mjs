@@ -73,6 +73,21 @@ test("auth: wrong password and bad origin are rejected", async () => {
   assert.equal((await post("/trades/list", A, "https://evil.example")).status, 403);
 });
 
+test("CORS: every configured origin is echoed back; unknown origins are refused", async () => {
+  env.ALLOWED_ORIGIN = `${ORIGIN}, http://localhost:3000`;
+  const call = (origin) => worker.fetch(new Request("https://worker.example/trades/list", { method: "POST", headers: { origin }, body: JSON.stringify(A) }), env);
+  for (const o of [ORIGIN, "http://localhost:3000"]) {
+    const r = await call(o);
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("access-control-allow-origin"), o);
+  }
+  const bad = await call("https://evil.example");
+  assert.equal(bad.status, 403);
+  assert.equal(bad.headers.get("access-control-allow-origin"), ORIGIN);
+  const preflight = await worker.fetch(new Request("https://worker.example/trades/list", { method: "OPTIONS", headers: { origin: "http://localhost:3000" } }), env);
+  assert.equal(preflight.headers.get("access-control-allow-origin"), "http://localhost:3000");
+});
+
 test("existing roster-moves endpoint still works at the root path", async () => {
   const r = await post("/", { ...A, period: 8, promote: [], demote: [] });
   assert.equal(r.status, 202);
