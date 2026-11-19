@@ -1,6 +1,6 @@
 import { readCsvFile, getContract, computeTeamCash, seasonsConfig, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge } from "../components/loadfiles.js";
 
-function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks) {
+function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks, nextSeason) {
   const { season, rosterPeriods, availablePeriods, lastPeriodNum } = sf;
   // autoCash seasons: team_cash.csv is the starting cash and current cash is derived from the rosters
   const autoCash = seasonsConfig.find(s => s.season === season)?.autoCash === "true";
@@ -14,6 +14,10 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
     team['LOCATION'] = ownerInfo.LOCATION;
     team['CURRENT_PICKS'] = currentPicks.filter(pick => pick.OWNER === team.ABBR).reduce((acc, pick) => acc + `${pick.PICK} `, "");
     team['NEXT_PICKS'] = nextPicks.filter(pick => pick.OWNER === team.ABBR).reduce((acc, pick) => acc + `${pick.PICK} `, "");
+
+    // Structured pick lists (used by trade selection). PICK ids repeat across seasons (e.g. "ANA1"), so each carries its draft season.
+    team['CURRENT_PICK_LIST'] = currentPicks.filter(pick => pick.OWNER === team.ABBR).map(pick => ({ PICK: pick.PICK, DraftSeason: season }));
+    team['NEXT_PICK_LIST'] = nextPicks.filter(pick => pick.OWNER === team.ABBR).map(pick => ({ PICK: pick.PICK, DraftSeason: nextSeason }));
 
     rosterPeriods.forEach(periodInfo => {
       team[periodInfo.period] = {};
@@ -86,7 +90,7 @@ for (const season of seasons) {
       nextPicks = [];
     }
   }
-  allData[season] = buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks);
+  allData[season] = buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks, allSeasons[nextSeasonIndex]);
 }
 
 process.stdout.write(JSON.stringify({ seasons, currentSeason, data: allData }));
