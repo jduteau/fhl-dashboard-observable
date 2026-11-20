@@ -6,6 +6,8 @@ toc: false
 # Team Management
 
 ```js
+import {MIN_PERIOD_COST} from "./components/leagueRules.js";
+
 // Load the data files
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
 const draftOrder = await FileAttachment("./data/draftOrder.json").json();
@@ -55,7 +57,7 @@ const _nextDraftYear = _currentDraftYear + 1;
         LatestSalary: x => x.toLocaleString("en-US"),
         SalaryPerPeriod: (x, i, data) => {
           const value = x.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
-          return x < 13 ? html`<span style="background-color: yellow;">13.00</span>` : value;
+          return x < MIN_PERIOD_COST ? html`<span style="background-color: yellow;">${MIN_PERIOD_COST.toFixed(2)}</span>` : value;
         },
         Budget: (x, i, data) => {
           const value = x.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});

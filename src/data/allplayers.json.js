@@ -1,7 +1,8 @@
-import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
+import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod, periodLookup } from "../components/loadfiles.js";
 
 function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
-  const { season, latestStatsFile, latestRosterFile, statsPeriods, statsData, availablePeriods, getOverallStats } = sf;
+  const { season, latestStatsIndex, latestRosterIndex, statsPeriods, statsData, availablePeriods, getOverallStats } = sf;
+  const stats = periodLookup(statsData);
   const teams = ["All", ...teamInfo.map(team => team.ABBR).sort(), "FA"];
 
   const draftedIds = new Set(drafted.map(d => String(d.hockeydb).trim()));
@@ -9,10 +10,10 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
   const playerData = playerInfo.map(info => {
     let player = {};
     const isDrafted = !!info.HockeyDB && draftedIds.has(String(info.HockeyDB).trim());
-    const roster = latestRosterFile.find(p => p.ID === info.ID);
+    const roster = latestRosterIndex.get(info.ID);
     const contract = getContract(contracts, info.ID);
     const position = mapPosition(info.Pos);
-    const playerStats = getOverallStats(position, latestStatsFile.find(s => s.hockeyRef === info.ID) || {});
+    const playerStats = getOverallStats(position, latestStatsIndex.get(info.ID) || {});
     const overallRating = playerStats.games_played ? playerStats.rating : 0;
     player.OVERALL = {
       PLAYER_ID: info.ID,
@@ -48,9 +49,7 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
       Rating: overallRating
     };
     statsPeriods.forEach(periodInfo => {
-      const currentStats = statsData[periodInfo.period];
-      const previousStats = (periodInfo.period > 1) ? statsData[periodInfo.period - 1] : [];
-      const periodPlayerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === info.ID) || {}, previousStats.find(s => s.hockeyRef === info.ID) || {});
+      const periodPlayerStats = getStatsForPeriod(position, stats.stats(periodInfo.period).get(info.ID) || {}, stats.previous(periodInfo.period).get(info.ID) || {});
       player[periodInfo.period] = {
         PLAYER_ID: info.ID,
         FHL: roster?.ABBR || 'FA',

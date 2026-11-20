@@ -11,7 +11,7 @@ const ZERO = { goals: 0, assists: 0, pim: 0, hits: 0, toi: 0, gp: 0, wins: 0, sa
 
 // spec(i, period) -> cumulative stats {f: {...}, g: {...}, r?: {...}} for team i at the END of that period.
 // f = the active forward, g = the active goalie, r = a reserve forward (must never count).
-function league(spec, periods = [1]) {
+function league(spec, periods = [1], { rosterOnlyPeriods = [], dropPlayer = null } = {}) {
   const teamInfo = [], playerInfo = [], rosters = [];
   const statsData = {};
   for (let i = 0; i < N; i++) {
@@ -30,7 +30,10 @@ function league(spec, periods = [1]) {
     statsData[period] = rows;
     rosters.push({ period, data: roster });
   }
-  const sf = { statsData, rosterPeriods: rosters, availablePeriods: periods.map(String) };
+  // Rosters for periods that have no stats yet (the upcoming period's lineup)
+  for (const period of rosterOnlyPeriods) rosters.push({ period, data: rosters[rosters.length - 1].data });
+  if (dropPlayer) playerInfo.splice(playerInfo.findIndex((p) => p.ID === dropPlayer), 1);
+  const sf = { season: "test", statsData, rosterPeriods: rosters, availablePeriods: periods.map(String) };
   return buildSeasonStandings(sf, teamInfo, playerInfo);
 }
 
@@ -197,4 +200,15 @@ test("with no stats at all, no periods and an all-zero overall table", () => {
   assert.deepEqual(r.availablePeriods, []);
   assert.equal(r.rankings.periods.length, 0);
   assert.ok(r.rankings.overallStandings.every((t) => t.points === 0 && t.wins === 0));
+});
+
+test("a roster file whose period has no stats yet (the upcoming period) is skipped, not a crash", () => {
+  const r = league(ordered, [1], { rosterOnlyPeriods: [2] });
+  assert.equal(r.rankings.periods.length, 1);
+  assert.deepEqual(r.availablePeriods, ["1"]);
+  assert.equal(entry(r, 0, abbr(31)).overallRank, 1);
+});
+
+test("a rostered player missing from player_info.csv fails with a message that names them", () => {
+  assert.throws(() => league(ordered, [1], { dropPlayer: "f5" }), /1 rostered player\(s\) are missing from player_info\.csv: f5 \(in test rosters_p01\.csv\)/);
 });

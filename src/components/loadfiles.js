@@ -1,4 +1,8 @@
-import {readFileSync} from "fs";
+import {readFileSync, readdirSync, existsSync} from "fs";
+import {periodCost, DSTAT_TOI_DIVISOR, GSTAT_WEIGHTS} from "./leagueRules.js";
+
+// Re-exported so existing importers keep working; the rule itself lives in leagueRules.js
+export {periodCost};
 import stripBom from "strip-bom";
 import {csvParse} from "d3-dsv";
 
@@ -37,13 +41,14 @@ export function calcToughness({ pim, hits }) {
 
 // DStat (skaters only): TOI / 20 for defensemen, TOI / 30 for forwards, plus blocks and takeaways, less giveaways
 export function calcDStat(position, { toi, blocks, take, give }) {
-  const toiDivisor = position === "D" ? 20 : 30;
+  const toiDivisor = position === "D" ? DSTAT_TOI_DIVISOR.D : DSTAT_TOI_DIVISOR.other;
   return (toi || 0) / toiDivisor + (blocks || 0) + (take || 0) - (give || 0);
 }
 
 // GStat (goalies only): 2 per win, 1 per tie, 2 per shutout, 0.15 per shot against, less goals against
 export function calcGStat({ wins, ties, so, sa, ga }) {
-  return 2 * (wins || 0) + (ties || 0) + 2 * (so || 0) + 0.15 * (sa || 0) - (ga || 0);
+  const w = GSTAT_WEIGHTS;
+  return w.win * (wins || 0) + w.tie * (ties || 0) + w.shutout * (so || 0) + w.shotAgainst * (sa || 0) - (ga || 0);
 }
 
 // Pull the formula inputs out of a stats-file row ("stats/xxx" columns), or a name => value function
@@ -144,71 +149,132 @@ function createGetOverallStats(distributions) {
   };
 }
 
-// Load all data files for a given season directory
-export async function loadSeasonData(season) {
+// ---- Lookup helpers ----
+
+// Rows keyed by a column. The FIRST row wins on duplicates, exactly like Array.find, so swapping a find() for a
+// lookup never changes which row is used.
+export function indexBy(rows, key) {
+  const map = new Map();
+  for (const row of rows) if (!map.has(row[key])) map.set(row[key], row);
+  return map;
+}
+
+const EMPTY_INDEX = new Map();
+const lookups = new WeakMap();
+
+// Per-period lookups over a statsData object ({period: rows}): stats(period) is a hockeyRef -> row Map for that period;
+// previous(period) is the same for the nearest EARLIER period that has a stats file (empty before the first one), which
+// is what a period's stats are measured against. Cached per statsData object.
+export function periodLookup(statsData) {
+  let lookup = lookups.get(statsData);
+  if (lookup) return lookup;
+  const periods = Object.keys(statsData).map(Number).sort((x, y) => x - y);
+  const byPeriod = new Map(periods.map(p => [p, indexBy(statsData[p], "hockeyRef")]));
+  lookup = {
+    periods,
+    stats: (period) => byPeriod.get(Number(period)) ?? EMPTY_INDEX,
+    previous: (period) => {
+      const earlier = periods.filter(p => p < Number(period));
+      return earlier.length ? byPeriod.get(earlier[earlier.length - 1]) : EMPTY_INDEX;
+    },
+  };
+  lookups.set(statsData, lookup);
+  return lookup;
+}
+
+// Throws one clear error naming every rostered player that player_info.csv doesn't know, instead of a bare
+// "cannot read properties of undefined" on the first one. rosterFiles = [{name, rows}] with rows having an ID column.
+export function assertPlayersKnown(playerIndex, rosterFiles, where = "player_info.csv") {
+  const missing = new Map(); // id -> first file it was seen in
+  for (const { name, rows } of rosterFiles)
+    for (const { ID } of rows) if (!playerIndex.has(ID) && !missing.has(ID)) missing.set(ID, name);
+  if (missing.size === 0) return;
+  const list = [...missing].map(([id, name]) => `${id} (in ${name})`).join(", ");
+  throw new Error(`${missing.size} rostered player(s) are missing from ${where}: ${list}`);
+}
+
+// A row that must exist (an owner, a team's cash...): fail with a message naming what is missing and where.
+export function requireRow(index, key, what, where) {
+  const row = index.get(key);
+  if (!row) throw new Error(`${what} "${key}" is missing from ${where}`);
+  return row;
+}
+
+// ---- Season loading ----
+
+// Files named <prefix>_pNN.csv in a directory, as [{period, file}] sorted by period number (p1, p01 and p001 all mean 1).
+function listPeriodFiles(dir, prefix) {
+  if (!existsSync(dir)) return [];
+  const pattern = new RegExp(`^${prefix}_p(\\d+)\\.csv$`);
+  return readdirSync(dir)
+    .map(name => pattern.exec(name))
+    .filter(Boolean)
+    .map(m => ({ period: Number(m[1]), file: `${dir}/${m[0]}` }))
+    .sort((x, y) => x.period - y.period);
+}
+
+// Blank lines in a roster file parse as rows with no ID; they are not players, so drop them.
+const readRosterFile = (file) => csvParse(stripBom(readFileSync(file, "utf-8"))).filter(row => row.ID);
+
+// Periods are meant to be numbered 1..N without gaps; say so (once, on stderr) when they are not.
+function warnIfGaps(season, kind, periods) {
+  if (periods.some((p, i) => p !== i + 1))
+    console.warn(`[${season}] ${kind} files are not numbered 1..${periods.length} consecutively: ${periods.join(", ")}`);
+}
+
+const seasonCache = new Map();
+
+// Load all data files for a given season directory. Cached per season, so loaders that visit the same season more than
+// once (or import the current-season exports below) read and parse the files only once.
+//
+// Periods are discovered from the files themselves, keyed by period NUMBER:
+//   statsData / rosterData       {period: rows}
+//   statsPeriods / rosterPeriods [{period, data}] in period order. rosterPeriods can run one ahead of statsPeriods
+//                                (next period's roster is created before its stats exist).
+//   availablePeriods             the periods that have stats, as strings ("1", "2", ...)
+//   latestPeriod                 the highest period with stats (0 if none): the period in progress
+//   lastPeriodNum                latestPeriod - 1, the number of completed periods
+//   latestStatsFile/latestRosterFile (+ ...Index Maps) are the stats and roster for latestPeriod
+export function loadSeasonData(season) {
+  if (!seasonCache.has(season)) seasonCache.set(season, loadSeason(season));
+  return seasonCache.get(season);
+}
+
+async function loadSeason(season) {
   const basePath = `src/data/static/${season}`;
 
-  // Load period-specific stats files
-  const statsPeriods = [];
-  const statsData = {};
-  for (let i = 1; i <= 25; i++) {
-    const paddedNum = i.toString().padStart(2, '0');
-    try {
-      const data = readStatsFile(`${basePath}/stats/stats_p${paddedNum}.csv`);
-      statsPeriods.push({ period: i, data });
-      statsData[i] = data;
-    } catch (error) {
-      // File doesn't exist yet, skip
-    }
-  }
+  const statsPeriods = listPeriodFiles(`${basePath}/stats`, "stats").map(({ period, file }) => ({ period, data: readStatsFile(file) }));
+  const rosterPeriods = listPeriodFiles(`${basePath}/rosters`, "rosters").map(({ period, file }) => ({ period, data: readRosterFile(file) }));
+  const statsData = Object.fromEntries(statsPeriods.map(p => [p.period, p.data]));
+  const rosterData = Object.fromEntries(rosterPeriods.map(p => [p.period, p.data]));
+  warnIfGaps(season, "stats", statsPeriods.map(p => p.period));
+  warnIfGaps(season, "roster", rosterPeriods.map(p => p.period));
 
-  // Load period-specific roster files
-  const rosterPeriods = [];
-  const rosterData = {};
-  for (let i = 1; i <= 25; i++) {
-    const paddedNum = i.toString().padStart(2, '0');
-    try {
-      const data = csvParse(stripBom(readFileSync(`${basePath}/rosters/rosters_p${paddedNum}.csv`, "utf-8")));
-      rosterPeriods.push({ period: i, data });
-      rosterData[i] = data;
-    } catch (error) {
-      // File doesn't exist yet, skip
-    }
-  }
+  const availablePeriods = statsPeriods.map(p => String(p.period));
+  const latestPeriod = statsPeriods.length ? statsPeriods[statsPeriods.length - 1].period : 0;
+  const lastPeriodNum = latestPeriod - 1;
+  const latestStatsFile = statsData[latestPeriod] ?? [];
+  const latestRosterFile = rosterData[latestPeriod] ?? [];
+  if (latestPeriod > 0 && !rosterData[latestPeriod])
+    console.warn(`[${season}] stats exist for period ${latestPeriod} but there is no rosters_p${String(latestPeriod).padStart(2, "0")}.csv`);
 
-  const availablePeriods = [...Object.keys(statsData)];
-  const lastPeriodNum = availablePeriods.length - 1;
-  const latestStatsFile = statsPeriods.length > 0 ? statsPeriods[lastPeriodNum].data : [];
-  const latestRosterFile = rosterPeriods.length > 0 ? rosterPeriods[lastPeriodNum].data : [];
-
-  // Load playoff round configuration
-  let playoffRoundsConfig = [];
-  try {
-    playoffRoundsConfig = await readCsvFile(`${basePath}/playoff_rounds.csv`);
-  } catch (e) {
-    // No playoff config for this season yet
-  }
-
-  const playoffRounds = playoffRoundsConfig.map(config => ({
-    round: parseInt(config.round),
-    name: config.name,
-    statsFile: null,
-    rosterFile: null,
-    available: false
-  }));
-
-  for (let i = 0; i < playoffRounds.length; i++) {
-    const roundNum = playoffRounds[i].round;
-    const paddedNum = roundNum.toString().padStart(2, '0');
-    try {
-      playoffRounds[i].statsFile = readStatsFile(`${basePath}/stats/stats_playoff_r${paddedNum}.csv`);
-      playoffRounds[i].rosterFile = csvParse(stripBom(readFileSync(`${basePath}/rosters/rosters_playoff_r${paddedNum}.csv`, "utf-8")));
-      playoffRounds[i].available = true;
-    } catch (error) {
-      // Files don't exist yet, keep as unavailable
-    }
-  }
-
+  // Playoff round configuration (a season without playoffs yet simply has none)
+  const playoffRoundsFile = `${basePath}/playoff_rounds.csv`;
+  const playoffRoundsConfig = existsSync(playoffRoundsFile) ? await readCsvFile(playoffRoundsFile) : [];
+  const playoffRounds = playoffRoundsConfig.map(config => {
+    const round = parseInt(config.round);
+    const padded = round.toString().padStart(2, '0');
+    const statsFile = `${basePath}/stats/stats_playoff_r${padded}.csv`;
+    const rosterFile = `${basePath}/rosters/rosters_playoff_r${padded}.csv`;
+    const available = existsSync(statsFile) && existsSync(rosterFile);
+    return {
+      round,
+      name: config.name,
+      statsFile: available ? readStatsFile(statsFile) : null,
+      rosterFile: available ? readRosterFile(rosterFile) : null,
+      available,
+    };
+  });
   const availablePlayoffRounds = playoffRounds.filter(round => round.available);
 
   // Build distributions and season-scoped getOverallStats
@@ -220,8 +286,10 @@ export async function loadSeasonData(season) {
     basePath,
     statsPeriods, statsData, rosterPeriods, rosterData,
     playoffRounds, availablePlayoffRounds,
-    availablePeriods, lastPeriodNum,
+    availablePeriods, latestPeriod, lastPeriodNum,
     latestStatsFile, latestRosterFile,
+    latestStatsIndex: indexBy(latestStatsFile, "hockeyRef"),
+    latestRosterIndex: indexBy(latestRosterFile, "ID"),
     distributions, getOverallStats,
   };
 }
@@ -244,6 +312,8 @@ export const availablePeriods = _currentSeasonData.availablePeriods;
 export const lastPeriodNum = _currentSeasonData.lastPeriodNum;
 export const latestStatsFile = _currentSeasonData.latestStatsFile;
 export const latestRosterFile = _currentSeasonData.latestRosterFile;
+export const latestStatsIndex = _currentSeasonData.latestStatsIndex;
+export const latestRosterIndex = _currentSeasonData.latestRosterIndex;
 
 // Function to map positions to G, D, or F
 export function mapPosition(pos) {
@@ -334,10 +404,26 @@ export const getOverallStats = _currentSeasonData.getOverallStats;
 // contracts.csv may hold several rows per player; the optional Period column is the first
 // period a row applies to (blank = 1). Returns the row in effect for the given period
 // (default: the latest), or undefined if the player has no contract.
+const contractIndexes = new WeakMap();
+
+// Contract rows grouped by player ID (row order kept), built once per contracts array. The array must not be changed
+// after its first lookup.
+function contractsById(contracts) {
+  let index = contractIndexes.get(contracts);
+  if (!index) {
+    index = new Map();
+    for (const c of contracts) {
+      if (!index.has(c.ID)) index.set(c.ID, []);
+      index.get(c.ID).push(c);
+    }
+    contractIndexes.set(contracts, index);
+  }
+  return index;
+}
+
 export function getContract(contracts, id, period = Infinity) {
   let best, earliest;
-  for (const c of contracts) {
-    if (c.ID !== id) continue;
+  for (const c of contractsById(contracts).get(id) ?? []) {
     const from = c.Period > 1 ? c.Period : 1;
     if (!earliest || from < (earliest.Period > 1 ? earliest.Period : 1)) earliest = c;
     if (from <= period && (!best || from >= (best.Period > 1 ? best.Period : 1))) best = c;
@@ -347,12 +433,7 @@ export function getContract(contracts, id, period = Infinity) {
 
 // One contract per player: the one in effect for the latest period
 export function latestContracts(contracts) {
-  return [...new Set(contracts.map(c => c.ID))].map(id => getContract(contracts, id));
-}
-
-// Cash charged to a team for one period: salary/25, with a minimum of 13
-export function periodCost(totalSalary) {
-  return totalSalary < 325 ? 13 : totalSalary / 25;
+  return [...contractsById(contracts).keys()].map(id => getContract(contracts, id));
 }
 
 // A team's cash going into the latest period: its starting cash less the cost of every

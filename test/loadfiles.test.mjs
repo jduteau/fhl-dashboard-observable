@@ -6,7 +6,9 @@ import assert from "node:assert/strict";
 import {
   calcToughness, calcDStat, calcGStat, statInputs, mapPosition, calculateAge, getAgeCutoff, getStatsForPeriod,
   getContract, latestContracts, periodCost, computeTeamCash, loadSeasonData, readStatsFile,
+  indexBy, periodLookup, assertPlayersKnown, requireRow,
 } from "../src/components/loadfiles.js";
+import { PERIODS_PER_SEASON } from "../src/components/leagueRules.js";
 
 const near = (actual, expected, eps = 1e-9) => assert.ok(Math.abs(actual - expected) < eps, `${actual} !== ${expected}`);
 
@@ -154,6 +156,7 @@ test("a period costs salary/25, with a minimum of 13", () => {
   assert.equal(periodCost(324.99), 13);
   assert.equal(periodCost(325), 13); // 325/25 = 13: the boundary is seamless
   assert.equal(periodCost(500), 20);
+  assert.equal(periodCost(500), 500 / PERIODS_PER_SEASON); // the divisor is the league's season length
   near(periodCost(412), 16.48);
 });
 
@@ -244,4 +247,86 @@ test("a player missing from the stats file rates against the league as all zeros
   assert.equal(s.games_played, 0);
   assert.equal(s.goals, 0);
   near(s.rating, (12.5 + 25 + 12.5 + 12.5) / 4 * 1); // same as a real all-zero skater (s1)
+});
+
+// ---- Period discovery, lookups and validation ----------------------------------------------
+
+test("loadSeasonData also reports the period in progress and the completed count", () => {
+  assert.equal(sf.latestPeriod, 2);
+  assert.equal(sf.lastPeriodNum, 1);
+  assert.equal(sf.latestStatsIndex.get("s4")["stats/goals"], 3);
+  assert.equal(sf.latestRosterIndex.get("g2").ABBR, "ANA");
+});
+
+test("loadSeasonData is cached per season", async () => {
+  assert.equal(await loadSeasonData("../../../test/fixtures/league"), await loadSeasonData("../../../test/fixtures/league"));
+});
+
+test("periods are keyed by number: a gap in the files is reported and nothing is guessed", async () => {
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (...a) => warnings.push(a.join(" "));
+  let sparse;
+  try { sparse = await loadSeasonData("../../../test/fixtures/sparse"); } finally { console.warn = realWarn; }
+  assert.deepEqual(sparse.availablePeriods, ["1", "3"]);
+  assert.equal(sparse.latestPeriod, 3); // the highest period number, not the count of files
+  assert.equal(sparse.lastPeriodNum, 2);
+  assert.equal(sparse.latestStatsFile, sparse.statsData[3]);
+  assert.equal(sparse.latestRosterFile, sparse.rosterData[3]);
+  assert.ok(warnings.some((w) => /stats files are not numbered 1\.\.2 consecutively: 1, 3/.test(w)), warnings.join("|"));
+  assert.ok(warnings.some((w) => /roster files are not numbered/.test(w)));
+});
+
+test("a blank line in a roster file is not a player", async () => {
+  const sparse = await loadSeasonData("../../../test/fixtures/sparse");
+  assert.deepEqual(sparse.rosterData[1].map((r) => r.ID), ["s1", "s2"]);
+});
+
+test("indexBy: the first row wins on duplicates, like Array.find", () => {
+  const rows = [{ id: "a", v: 1 }, { id: "b", v: 2 }, { id: "a", v: 3 }];
+  const idx = indexBy(rows, "id");
+  assert.equal(idx.size, 2);
+  assert.equal(idx.get("a").v, 1);
+  assert.equal(idx.get("zzz"), undefined);
+});
+
+test("periodLookup: a period's stats are measured against the nearest EARLIER period that has a file", async () => {
+  const sparse = await loadSeasonData("../../../test/fixtures/sparse");
+  const lookup = periodLookup(sparse.statsData);
+  assert.equal(lookup.stats(3).get("s1")["stats/goals"], 5);
+  assert.equal(lookup.stats(2).size, 0); // no file for period 2
+  assert.equal(lookup.previous(1).size, 0); // nothing before the first period
+  assert.equal(lookup.previous(3).get("s1")["stats/goals"], 1); // period 1, skipping the missing period 2
+  assert.equal(lookup.previous("3").get("s1")["stats/goals"], 1); // period keys may be strings
+  const delta = getStatsForPeriod("F", lookup.stats(3).get("s1"), lookup.previous(3).get("s1"));
+  assert.equal(delta.goals, 4);
+  assert.equal(delta.games_played, 6);
+  assert.equal(periodLookup(sparse.statsData), lookup); // cached
+});
+
+test("assertPlayersKnown names every missing player at once, and the file each was first seen in", () => {
+  const known = indexBy([{ ID: "a" }, { ID: "b" }], "ID");
+  assertPlayersKnown(known, [{ name: "r1", rows: [{ ID: "a" }, { ID: "b" }] }]); // fine: no throw
+  assert.throws(
+    () => assertPlayersKnown(known, [{ name: "rosters_p01.csv", rows: [{ ID: "a" }, { ID: "x" }] }, { name: "rosters_p02.csv", rows: [{ ID: "x" }, { ID: "y" }] }]),
+    (e) => /2 rostered player\(s\) are missing from player_info\.csv: x \(in rosters_p01\.csv\), y \(in rosters_p02\.csv\)/.test(e.message)
+  );
+});
+
+test("requireRow returns the row or names what is missing and where", () => {
+  const idx = indexBy([{ ABBR: "ANA", CASH: 5 }], "ABBR");
+  assert.equal(requireRow(idx, "ANA", "Team", "team_cash.csv").CASH, 5);
+  assert.throws(() => requireRow(idx, "ZZZ", "Team", "2026-27 team_cash.csv"), /Team "ZZZ" is missing from 2026-27 team_cash\.csv/);
+});
+
+test("contracts are looked up by player ID without changing which row is chosen", () => {
+  const rows = [
+    { ID: "a", Salary: 1, Period: 0 }, { ID: "b", Salary: 9, Period: 0 },
+    { ID: "a", Salary: 2, Period: 3 }, { ID: "a", Salary: 3, Period: 3 }, // a tie: the later row wins, as before
+  ];
+  assert.equal(getContract(rows, "a", 2).Salary, 1);
+  assert.equal(getContract(rows, "a", 3).Salary, 3);
+  assert.equal(getContract(rows, "a").Salary, 3);
+  assert.equal(getContract(rows, "b").Salary, 9);
+  assert.deepEqual(latestContracts(rows).map((c) => c.ID), ["a", "b"]); // in order of first appearance
 });

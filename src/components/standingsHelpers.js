@@ -1,4 +1,4 @@
-import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, getStatsForPeriod } from "./loadfiles.js";
+import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, getStatsForPeriod, indexBy, periodLookup, assertPlayersKnown } from "./loadfiles.js";
 
 // Function to calculate rankings for a specific stat across all teams
 function calculateRankings(teams, period, statKey) {
@@ -463,17 +463,22 @@ function createTeamRankings(teams, availablePeriods) {
 
 export function buildSeasonStandings(sf, teamInfo, playerInfo) {
   const { statsData, rosterPeriods, availablePeriods } = sf;
+  const playerIndex = indexBy(playerInfo, "ID");
+  assertPlayersKnown(playerIndex, rosterPeriods.map(p => ({ name: `${sf.season ?? ""} rosters_p${String(p.period).padStart(2, "0")}.csv`.trim(), rows: p.data })));
+  const stats = periodLookup(statsData);
+  // A roster file with no stats yet (the upcoming period) has nothing to rank, so it is skipped
+  const scoredRosterPeriods = rosterPeriods.filter(p => statsData[p.period]);
 
   const teamData = teamInfo.map(team => {
-    rosterPeriods.forEach(periodInfo => {
+    scoredRosterPeriods.forEach(periodInfo => {
       team[periodInfo.period] = {};
       const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
-      const currentStats = statsData[periodInfo.period];
-      const previousStats = (periodInfo.period > 1) ?  statsData[periodInfo.period - 1] : [];
+      const currentStats = stats.stats(periodInfo.period);
+      const previousStats = stats.previous(periodInfo.period);
       team[periodInfo.period]['ROSTER'] = roster.map(player => {
-        const info = playerInfo.find(p => p.ID === player.ID);
+        const info = playerIndex.get(player.ID);
         const position = mapPosition(info.Pos);
-        const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {});
+        const playerStats = getStatsForPeriod(position, currentStats.get(player.ID) || {}, previousStats.get(player.ID) || {});
         return {
           PLAYER_ID: player.ID,
           Name: info.Name,

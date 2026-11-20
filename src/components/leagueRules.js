@@ -1,0 +1,60 @@
+// League rules, in one place: season length, the money rules, roster limits and the stat weights. Plain constants and
+// pure functions, so the data loaders (Node), the pages (browser), the Worker and the GitHub scripts can all import
+// them. Change a rule here and it changes everywhere.
+
+// ---- Season and money ----
+
+// A season has 25 periods. A team's salary is spread over them (salary / 25 is charged each period), and the number of
+// periods left in the season is this minus the periods already completed.
+export const PERIODS_PER_SEASON = 25;
+
+// A team is charged at least this much cash per period, however small its payroll
+export const MIN_PERIOD_COST = 13;
+
+// Cash charged to a team for one period: salary / PERIODS_PER_SEASON, with a minimum of MIN_PERIOD_COST
+// (so payrolls under MIN_PERIOD_COST * PERIODS_PER_SEASON = 325 all pay the minimum).
+export function periodCost(totalSalary) {
+  const perPeriod = totalSalary / PERIODS_PER_SEASON;
+  return perPeriod < MIN_PERIOD_COST ? MIN_PERIOD_COST : perPeriod;
+}
+
+// Cash left at the end of the season if a team keeps `latestSalary` as its payroll from now on: its cash less the cost of
+// every period that is still to be charged (the period in progress included). periodsCompleted = the latest period - 1.
+export function projectedBudget(cash, latestSalary, periodsCompleted) {
+  return cash - periodCost(latestSalary) * (PERIODS_PER_SEASON - periodsCompleted);
+}
+
+// ---- Rosters ----
+
+// Everyone a team owns, active and reserve: a trade must leave both teams within these limits
+export const MIN_ROSTER = 20;
+export const MAX_ROSTER = 36;
+
+// The active lineup a GM submits for a period
+export const ACTIVE_LINEUP = { players: 20, minDefensemen: 6, maxDefensemen: 7, goalies: 2 };
+
+// What is wrong with an active lineup, as [{code, message}] (empty = legal). counts = {total, defensemen, goalies} of the
+// ACTIVE players. A regular-season lineup must be exactly 20 players with 6-7 defensemen and 2 goalies; a playoff lineup
+// only has the maximums (20 players, 7 defensemen, 2 goalies), since teams can run short once players are eliminated.
+export function lineupProblems({ total, defensemen, goalies }, { playoff = false } = {}) {
+  const L = ACTIVE_LINEUP;
+  const problems = [];
+  const add = (code, message) => problems.push({ code, message });
+  if (total > L.players) add("TOO_MANY_PLAYERS", `Too many active players (${total}, max ${L.players})`);
+  if (defensemen > L.maxDefensemen) add("TOO_MANY_DEFENSEMEN", `Too many defensemen (${defensemen}, max ${L.maxDefensemen})`);
+  if (goalies > L.goalies) add("TOO_MANY_GOALIES", `Too many goalies (${goalies}, max ${L.goalies})`);
+  if (!playoff) {
+    if (total < L.players) add("TOO_FEW_PLAYERS", `Too few active players (${total}, need ${L.players})`);
+    if (defensemen < L.minDefensemen) add("TOO_FEW_DEFENSEMEN", `Too few defensemen (${defensemen}, min ${L.minDefensemen})`);
+    if (goalies < L.goalies) add("TOO_FEW_GOALIES", `Too few goalies (${goalies}, need ${L.goalies})`);
+  }
+  return problems;
+}
+
+// ---- Stat formulas (used by calcDStat / calcGStat in loadfiles.js) ----
+
+// DStat counts time on ice in units of this many minutes: 20 for a defenseman, 30 for everyone else
+export const DSTAT_TOI_DIVISOR = { D: 20, other: 30 };
+
+// GStat = wins * 2 + ties * 1 + shutouts * 2 + shots against * 0.15 - goals against
+export const GSTAT_WEIGHTS = { win: 2, tie: 1, shutout: 2, shotAgainst: 0.15 };

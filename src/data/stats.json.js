@@ -1,13 +1,14 @@
-import { readCsvFile, latestContracts, seasons, currentSeason, loadSeasonData, mapPosition } from "../components/loadfiles.js";
+import { readCsvFile, latestContracts, seasons, currentSeason, loadSeasonData, mapPosition, indexBy } from "../components/loadfiles.js";
 
 function buildSeasonStats(sf, teamInfo, players, contracts) {
-  const { latestStatsFile, latestRosterFile, getOverallStats, distributions } = sf;
+  const { latestStatsIndex, latestRosterIndex, getOverallStats, distributions } = sf;
+  const playerIndex = indexBy(players, "ID");
 
   const contractRanking = latestContracts(contracts).map(info => {
-    const player = players.find(p => p.ID === info.ID);
+    const player = playerIndex.get(info.ID);
     if (!player) return null;
-    const stats = latestStatsFile.find(s => s.hockeyRef === info.ID) || {};
-    const roster = latestRosterFile.find(r => r.ID === info.ID) || {};
+    const stats = latestStatsIndex.get(info.ID) || {};
+    const roster = latestRosterIndex.get(info.ID) || {};
     const position = mapPosition(player.Pos);
     const playerStats = getOverallStats(position, stats);
     return {

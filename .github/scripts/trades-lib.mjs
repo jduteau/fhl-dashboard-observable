@@ -5,8 +5,8 @@
 //     appliedAt?  (set by materialize when the trade was applied to the new roster),
 //     skipped?    (set by materialize, with the reason, when the trade could no longer be applied) }
 // `give` is what team `from` sends to `to`; `get` is what `from` receives.
-export const MIN_ROSTER = 20;
-export const MAX_ROSTER = 36;
+import { MIN_ROSTER, MAX_ROSTER } from "../../src/components/leagueRules.js";
+export { MIN_ROSTER, MAX_ROSTER };
 
 const TEAM = /^[A-Z]{2,4}$/;
 const PLAYER = /^[\w.'-]{1,20}$/;

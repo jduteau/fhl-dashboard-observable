@@ -1,18 +1,24 @@
-import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
+import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod, indexBy, periodLookup, assertPlayersKnown } from "../components/loadfiles.js";
 
 function buildSeasonRosters(sf, teamInfo, playerInfo, contracts) {
-  const { season, statsData, rosterPeriods, latestStatsFile, latestRosterFile, availablePeriods, lastPeriodNum, getOverallStats } = sf;
+  const { season, statsData, rosterPeriods, latestStatsIndex, latestRosterFile, availablePeriods, getOverallStats } = sf;
   const teams = teamInfo.map(team => team.ABBR).sort();
-  const latestPeriod = rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].period : 0;
+  // The newest roster file, which may be one period ahead of the stats (next period's lineup)
+  const latestRosterPeriod = rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].period : 0;
+  const playerIndex = indexBy(playerInfo, "ID");
+  assertPlayersKnown(playerIndex, rosterPeriods.map(p => ({ name: `${season} rosters_p${String(p.period).padStart(2, "0")}.csv`, rows: p.data })));
+  const stats = periodLookup(statsData);
+  // Only periods that have stats are reported; a roster file with no stats yet (the upcoming period) is skipped
+  const scoredRosterPeriods = rosterPeriods.filter(p => statsData[p.period]);
 
   const teamData = teamInfo.map(team => {
     team["OVERALL"] = {};
-    const overallRoster = (rosterPeriods[lastPeriodNum]?.data || []).filter(player => player.ABBR === team.ABBR);
+    const overallRoster = latestRosterFile.filter(player => player.ABBR === team.ABBR);
     team["OVERALL"]['ROSTER'] = overallRoster.map(player => {
-      const info = playerInfo.find(p => p.ID === player.ID);
-      const contract = getContract(contracts, player.ID, latestPeriod);
+      const info = playerIndex.get(player.ID);
+      const contract = getContract(contracts, player.ID, latestRosterPeriod);
       const position = mapPosition(info.Pos);
-      const playerStats = getOverallStats(position, latestStatsFile.find(s => s.hockeyRef === player.ID) || {});
+      const playerStats = getOverallStats(position, latestStatsIndex.get(player.ID) || {});
       return {
         PLAYER_ID: player.ID,
         Name: info.Name,
@@ -62,18 +68,18 @@ function buildSeasonRosters(sf, teamInfo, playerInfo, contracts) {
 
     team["OVERALL"]['RESERVE_TOTALS'] = { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 };
 
-    rosterPeriods.forEach(periodInfo => {
+    const overallRatings = indexBy(team["OVERALL"]['ROSTER'], "PLAYER_ID");
+    scoredRosterPeriods.forEach(periodInfo => {
       team[periodInfo.period] = {};
       const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
-      const currentStats = statsData[periodInfo.period];
-      const previousStats = (periodInfo.period > 1) ? statsData[periodInfo.period - 1] : [];
-      const overallTeamStats = team["OVERALL"]['ROSTER'];
+      const currentStats = stats.stats(periodInfo.period);
+      const previousStats = stats.previous(periodInfo.period);
       team[periodInfo.period]['ROSTER'] = roster.map(player => {
-        const info = playerInfo.find(p => p.ID === player.ID);
+        const info = playerIndex.get(player.ID);
         const contract = getContract(contracts, player.ID, periodInfo.period);
         const position = mapPosition(info.Pos);
-        const playerStats = getStatsForPeriod(position, currentStats.find(s => s.hockeyRef === player.ID) || {}, previousStats.find(s => s.hockeyRef === player.ID) || {});
-        const rating = overallTeamStats.find(p => p.PLAYER_ID === player.ID)?.Rating || 0;
+        const playerStats = getStatsForPeriod(position, currentStats.get(player.ID) || {}, previousStats.get(player.ID) || {});
+        const rating = overallRatings.get(player.ID)?.Rating || 0;
         return {
           PLAYER_ID: player.ID,
           Name: info.Name,

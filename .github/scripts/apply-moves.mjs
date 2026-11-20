@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from "fs";
 import { csvParse } from "d3-dsv";
 import { applyTrades, updatePicksText, reconcileMoves } from "./trades-lib.mjs";
+import { lineupProblems } from "../../src/components/leagueRules.js";
 
 const root = "src/data/static";
 const read = (p) => csvParse(readFileSync(p, "utf-8").replace(/^﻿/, ""));
@@ -45,12 +46,8 @@ function applyToTeam(base, team, promote, demote, playerInfo) {
   }
   const active = [...byId.values()].filter((r) => r.RESERVE !== "R" && r.RESERVE !== "N/A");
   const count = (p) => active.filter((r) => pos(playerInfo.find((i) => i.ID === r.ID)?.Pos) === p).length;
-  const [d, g] = [count("D"), count("G")];
-  const problems = [];
-  if (active.length !== 20) problems.push(`${active.length} active players (need exactly 20)`);
-  if (d < 6 || d > 7) problems.push(`${d} defensemen (need 6-7)`);
-  if (g !== 2) problems.push(`${g} goalies (need exactly 2)`);
-  if (problems.length) throw new Error(`Illegal roster for ${team}: ${problems.join("; ")}`);
+  const problems = lineupProblems({ total: active.length, defensemen: count("D"), goalies: count("G") });
+  if (problems.length) throw new Error(`Illegal roster for ${team}: ${problems.map((p) => p.message).join("; ")}`);
   return [...byId.values()];
 }
 

@@ -1,9 +1,11 @@
 // Shared by the Compare Teams (propose), Trades (inbox) and My Account pages.
 
+import {MIN_ROSTER, MAX_ROSTER, projectedBudget} from "./leagueRules.js";
+
+export {MIN_ROSTER, MAX_ROSTER};
+
 // Deployed Cloudflare Worker (see worker/README.md)
 export const WORKER_URL = "https://fhl-roster-moves.fhldashboard.workers.dev";
-export const MIN_ROSTER = 20;
-export const MAX_ROSTER = 36;
 
 // POST to a Worker endpoint such as "trades/list". Resolves to {ok, error, data}; never throws.
 export async function callWorker(path, body) {
@@ -32,10 +34,7 @@ export const pickLabel = (p) => `${p.PICK ?? p.pick} (${p.DraftSeason ?? p.seaso
 // warnings = budget goes negative (allowed); blockers = roster size outside 20-36 (the Worker refuses these).
 export function evaluateTrade({tisd, team1, team2, roster1, roster2, out1, out2}) {
   const sum = (players) => players.reduce((total, p) => total + (p?.Salary || 0), 0);
-  const budget = (team, salaryOut, salaryIn) => {
-    const perPeriod = (team.LatestSalary - salaryOut + salaryIn) / 25;
-    return team.CASH - (perPeriod < 13 ? 13 : perPeriod) * (25 - tisd.lastPeriodNum);
-  };
+  const budget = (team, salaryOut, salaryIn) => projectedBudget(team.CASH, team.LatestSalary - salaryOut + salaryIn, tisd.lastPeriodNum);
   const budget1 = budget(team1, sum(out1), sum(out2));
   const budget2 = budget(team2, sum(out2), sum(out1));
   const size1 = roster1.length - out1.length + out2.length;

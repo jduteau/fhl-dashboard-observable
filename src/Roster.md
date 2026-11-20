@@ -8,6 +8,7 @@ toc: false
 ```js
 import {playerLinksFormat} from "./components/playerLink.js";
 import {pickLabel, agreedTrades, applyAgreedTrades} from "./components/trades.js";
+import {lineupProblems} from "./components/leagueRules.js";
 
 // Deployed Cloudflare Worker (see worker/README.md)
 const WORKER_URL = "https://fhl-roster-moves.fhldashboard.workers.dev";
@@ -125,11 +126,7 @@ const numForwards = active.filter((p) => p.Position === "F").length;
 const numDefence = active.filter((p) => p.Position === "D").length;
 const numGoalies = active.filter((p) => p.Position === "G").length;
 const total = active.length;
-const errors = [
-  total > 20 ? "TOO MANY PLAYERS" : "", total < 20 ? "NOT ENOUGH PLAYERS" : "",
-  numDefence < 6 ? "NOT ENOUGH DEFENCEMEN" : "", numDefence > 7 ? "TOO MANY DEFENCEMEN" : "",
-  numGoalies !== 2 ? "NEED EXACTLY 2 GOALIES" : ""
-].filter(Boolean);
+const errors = lineupProblems({total, defensemen: numDefence, goalies: numGoalies}).map((p) => p.message.toUpperCase());
 ```
 
 ```js

@@ -1,7 +1,7 @@
 // Run with: node --test test/trades-component.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyAgreedTrades, agreedTrades, nextPeriodOf } from "../src/components/trades.js";
+import { applyAgreedTrades, agreedTrades, nextPeriodOf, evaluateTrade } from "../src/components/trades.js";
 const row = (id, Position = "F", Reserve = "", Salary = 1) => ({ PLAYER_ID: id, Position, Reserve, Salary });
 const base = { ANA: [row("a1", "D", "", 5), row("a2", "F", "R", 3)], BOS: [row("b1", "G", "", 2)], CAR: [row("c1", "F", "", 4)] };
 const pk = { ANA: [{ PICK: "ANA1", DraftSeason: "2026-27" }], BOS: [], CAR: [] };
@@ -37,4 +37,11 @@ test("sorted D, F, G with reserves last; agreedTrades / nextPeriodOf", () => {
   const td = { data: { s: [{ period: 8 }, { period: 8, skipped: "x" }, { period: 7 }] } };
   assert.equal(agreedTrades(td, "s", 8).length, 1);
   assert.equal(nextPeriodOf({ availablePeriods: ["1", "2", "7", "OVERALL"] }), 8);
+});
+
+test("evaluateTrade: the budget runs over the periods left in the season (25 in all)", () => {
+  const team = (ABBR) => ({ ABBR, CASH: 500, LatestSalary: 500 }); // 500/25 = $20 a period
+  const run = (tisd) => evaluateTrade({ tisd, team1: team("ANA"), team2: team("BOS"), roster1: [{}], roster2: [{}], out1: [], out2: [] });
+  assert.equal(run({ lastPeriodNum: 5 }).budget1, 500 - 20 * (25 - 5)); // 100
+  assert.equal(run({ lastPeriodNum: 24 }).budget1, 500 - 20 * (25 - 24)); // one period left
 });

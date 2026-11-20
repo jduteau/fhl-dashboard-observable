@@ -4,36 +4,14 @@ import {readFileSync} from "fs";
 import stripBom from "strip-bom";
 import {csvParse} from "d3-dsv";
 import path from "path";
+import {lineupProblems} from "./src/components/leagueRules.js";
 
-// Function to validate team roster legality
+// Function to validate team roster legality (the rules live in src/components/leagueRules.js)
 function validateTeamRoster(teamData, totalPlayers, isPlayoffRoster) {
-  const issues = [];
-  
-  // Rules that apply to all rosters (regular season and playoff)
-  if (totalPlayers > 20) {
-    issues.push(`Too many players (${totalPlayers}/20 max)`);
-  }
-  if (teamData.goalies > 2) {
-    issues.push(`Too many goalies (${teamData.goalies}/2 max)`);
-  }
-  if (teamData.defensemen > 7) {
-    issues.push(`Too many defensemen (${teamData.defensemen}/7 max)`);
-  }
-  
-  // Rules that only apply to regular season rosters
-  if (!isPlayoffRoster) {
-    if (totalPlayers < 20) {
-      issues.push(`Too few players (${totalPlayers}/20 required)`);
-    }
-    if (teamData.defensemen < 6) {
-      issues.push(`Too few defensemen (${teamData.defensemen}/6 min)`);
-    }
-    if (teamData.goalies < 2) {
-      issues.push(`Too few goalies (${teamData.goalies}/2 min)`);
-    }
-  }
-  
-  return issues;
+  return lineupProblems(
+    { total: totalPlayers, defensemen: teamData.defensemen, goalies: teamData.goalies },
+    { playoff: isPlayoffRoster }
+  ).map(problem => problem.message);
 }
 
 // Function to map positions to G, D, or F (copied from loadfiles.js)

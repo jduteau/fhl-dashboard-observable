@@ -1,9 +1,12 @@
-import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
+import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod, indexBy, assertPlayersKnown } from "../components/loadfiles.js";
 
 function buildSeasonPlayoffRosters(sf, teamInfo, playerInfo, contracts) {
   const { season, availablePlayoffRounds } = sf;
   const getOverallStats = sf.getOverallStats;
   const teams = teamInfo.map(team => team.ABBR).sort();
+  const playerIndex = indexBy(playerInfo, "ID");
+  assertPlayersKnown(playerIndex, availablePlayoffRounds.map(r => ({ name: `${season} rosters_playoff_r${String(r.round).padStart(2, "0")}.csv`, rows: r.rosterFile })));
+  const statsIndexes = new Map(availablePlayoffRounds.map(r => [r, indexBy(r.statsFile, "hockeyRef")]));
 
   const teamData = teamInfo.map(team => {
 
@@ -11,15 +14,15 @@ function buildSeasonPlayoffRosters(sf, teamInfo, playerInfo, contracts) {
       const roundKey = `R${round.round.toString().padStart(2, '0')}`;
       team[roundKey] = {};
       const roster = round.rosterFile.filter(player => player.ABBR === team.ABBR);
-      const currentStats = round.statsFile;
-      const previousStats = index > 0 ? availablePlayoffRounds[index - 1].statsFile : null;
+      const currentStats = statsIndexes.get(round);
+      const previousStats = index > 0 ? statsIndexes.get(availablePlayoffRounds[index - 1]) : null;
 
       team[roundKey]['ROSTER'] = roster.map(player => {
-        const info = playerInfo.find(p => p.ID === player.ID);
+        const info = playerIndex.get(player.ID);
         const contract = getContract(contracts, player.ID);
         const position = mapPosition(info.Pos);
-        const currentPlayerStats = currentStats.find(s => s.hockeyRef === player.ID) || {};
-        const previousPlayerStats = previousStats ? previousStats.find(s => s.hockeyRef === player.ID) || {} : null;
+        const currentPlayerStats = currentStats.get(player.ID) || {};
+        const previousPlayerStats = previousStats ? previousStats.get(player.ID) || {} : null;
         const playerStats = previousPlayerStats
           ? getStatsForPeriod(position, currentPlayerStats, previousPlayerStats)
           : getOverallStats(position, currentPlayerStats);
@@ -87,10 +90,10 @@ function buildSeasonPlayoffRosters(sf, teamInfo, playerInfo, contracts) {
       const overallRoster = latestRound.rosterFile.filter(player => player.ABBR === team.ABBR);
       team['OVERALL'] = {};
       team['OVERALL']['ROSTER'] = overallRoster.map(player => {
-        const info = playerInfo.find(p => p.ID === player.ID);
+        const info = playerIndex.get(player.ID);
         const contract = getContract(contracts, player.ID);
         const position = mapPosition(info.Pos);
-        const playerStats = getOverallStats(position, latestRound.statsFile.find(s => s.hockeyRef === player.ID) || {});
+        const playerStats = getOverallStats(position, statsIndexes.get(latestRound).get(player.ID) || {});
         return {
           PLAYER_ID: player.ID,
           Name: info.Name,

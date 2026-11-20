@@ -1,14 +1,20 @@
-import { readCsvFile, getContract, computeTeamCash, seasonsConfig, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge } from "../components/loadfiles.js";
+import { readCsvFile, getContract, computeTeamCash, seasonsConfig, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge, indexBy, requireRow, assertPlayersKnown } from "../components/loadfiles.js";
+import { PERIODS_PER_SEASON, projectedBudget } from "../components/leagueRules.js";
 
 function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks, nextSeason) {
-  const { season, rosterPeriods, availablePeriods, lastPeriodNum } = sf;
+  const { season, rosterPeriods, availablePeriods, lastPeriodNum, latestPeriod } = sf;
+  const playerIndex = indexBy(playerInfo, "ID");
+  const cashIndex = indexBy(teamCash, "ABBR");
+  const ownerIndex = indexBy(owners, "ABBR");
+  assertPlayersKnown(playerIndex, rosterPeriods.map(p => ({ name: `${season} rosters_p${String(p.period).padStart(2, "0")}.csv`, rows: p.data })));
+  const latestKey = availablePeriods[availablePeriods.length - 1]; // the period in progress, as a key into team[...]
   // autoCash seasons: team_cash.csv is the starting cash and current cash is derived from the rosters
   const autoCash = seasonsConfig.find(s => s.season === season)?.autoCash === "true";
 
   const teams = teamInfo.map(team => {
-    const cashInfo = teamCash.find(cash => cash.ABBR === team.ABBR);
+    const cashInfo = requireRow(cashIndex, team.ABBR, "Team", `${season} team_cash.csv`);
     team['CASH'] = autoCash ? computeTeamCash(cashInfo.CASH, team.ABBR, rosterPeriods, contracts) : cashInfo.CASH;
-    const ownerInfo = owners.find(owner => owner.ABBR === team.ABBR);
+    const ownerInfo = requireRow(ownerIndex, team.ABBR, "Team", `${season} owners.csv`);
     team['OWNER'] = ownerInfo.OWNER;
     team['LOCATION'] = ownerInfo.LOCATION;
     team['CURRENT_PICKS'] = currentPicks.filter(pick => pick.OWNER === team.ABBR).reduce((acc, pick) => acc + `${pick.PICK} `, "");
@@ -22,7 +28,7 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
       team[periodInfo.period] = {};
       const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
       team[periodInfo.period]['ROSTER'] = roster.map(player => {
-        const info = playerInfo.find(p => p.ID === player.ID);
+        const info = playerIndex.get(player.ID);
         const contract = getContract(contracts, player.ID, periodInfo.period);
         return {
           PLAYER_ID: player.ID,
@@ -58,12 +64,12 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
         }), { F: 0, D: 0, G: 0 });
     });
 
-    team['LatestSalary'] = team[availablePeriods[lastPeriodNum]]['TOTAL_SALARY'];
-    team['SalaryPerPeriod'] = team['LatestSalary'] / 25;
-    team['Budget'] = team.CASH - (team['SalaryPerPeriod'] < 13 ? 13 : team['SalaryPerPeriod']) * (26 - availablePeriods.length);
-    team['AddSalary'] = availablePeriods.length < 22 ? team['Budget'] * 25 / (25 - availablePeriods.length) : '---';
-    team['TotalPlayerCount'] = `(${team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].F}-${team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].D}-${team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].G}) ${team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].F+team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].D+team[availablePeriods[lastPeriodNum]]['TOTAL_COUNTS'].G}`;
-    team['ActivePlayerCount'] = `(${team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].F}-${team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].D}-${team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].G}) ${team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].F+team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].D+team[availablePeriods[lastPeriodNum]]['ACTIVE_COUNTS'].G}`;
+    team['LatestSalary'] = team[latestKey]['TOTAL_SALARY'];
+    team['SalaryPerPeriod'] = team['LatestSalary'] / PERIODS_PER_SEASON;
+    team['Budget'] = projectedBudget(team.CASH, team['LatestSalary'], lastPeriodNum);
+    team['AddSalary'] = latestPeriod < PERIODS_PER_SEASON - 3 ? team['Budget'] * PERIODS_PER_SEASON / (PERIODS_PER_SEASON - latestPeriod) : '---';
+    team['TotalPlayerCount'] = `(${team[latestKey]['TOTAL_COUNTS'].F}-${team[latestKey]['TOTAL_COUNTS'].D}-${team[latestKey]['TOTAL_COUNTS'].G}) ${team[latestKey]['TOTAL_COUNTS'].F+team[latestKey]['TOTAL_COUNTS'].D+team[latestKey]['TOTAL_COUNTS'].G}`;
+    team['ActivePlayerCount'] = `(${team[latestKey]['ACTIVE_COUNTS'].F}-${team[latestKey]['ACTIVE_COUNTS'].D}-${team[latestKey]['ACTIVE_COUNTS'].G}) ${team[latestKey]['ACTIVE_COUNTS'].F+team[latestKey]['ACTIVE_COUNTS'].D+team[latestKey]['ACTIVE_COUNTS'].G}`;
 
     return team;
   });

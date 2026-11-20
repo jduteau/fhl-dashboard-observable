@@ -7,14 +7,13 @@
 import { csvParse, ghFile, gh, HttpError } from "./lib.js";
 import { authenticate, assertAdmin } from "./accounts.js";
 import { makeMailer } from "./email.js";
+import { MIN_ROSTER, MAX_ROSTER } from "../src/components/leagueRules.js";
 
 const SEASON = /^\d{4}-\d{2}$/;
 const TEAM = /^[A-Z]{2,4}$/;
 const PLAYER = /^[\w.'-]{1,20}$/;
 const PICK = /^[A-Z]{2,4}\d{1,2}$/;
 const TRADE_ID = /^[0-9a-f-]{36}$/;
-const MIN_ROSTER = 20;
-const MAX_ROSTER = 36;
 const MAX_ITEMS = 15; // per side
 const MAX_OPEN = 20; // open outgoing proposals per team
 const MAX_NOTE = 500;
