@@ -301,28 +301,27 @@ test("emails: nothing is sent (and nothing breaks) until EmailJS is configured",
   assert.equal(emails.length, 0);
 });
 
-test("emails: a proposal goes only to the other GM, with names, note and link, and no secrets", async () => {
+test("emails: a proposal goes to both GMs in one email, with names, note and link, and no secrets", async () => {
   enableEmail();
   ok(await propose(A, { to: "BOS", give: { players: ["ana01"], picks: [{ pick: "WPG2", season: "2026-27" }] }, get: { players: ["bos01"] }, note: "fair deal?" }));
-  assert.equal(emails.length, 1);
+  assert.deepEqual(sentTo(), ["a@x.com,b@x.com"]);
   const e = emails[0];
   assert.deepEqual([e.service_id, e.template_id, e.user_id, e.accessToken], ["service_x", "template_x", "pub_x", "priv_x"]);
   assert.deepEqual(Object.keys(e.template_params).sort(), ["message", "subject", "to_email", "to_name"]);
-  assert.equal(e.template_params.to_email, "b@x.com");
-  assert.equal(e.template_params.to_name, "B");
-  assert.equal(e.template_params.subject, "FHL trade proposal from ANA");
+  assert.equal(e.template_params.to_name, "A and B");
+  assert.equal(e.template_params.subject, "FHL trade proposal: ANA to BOS");
   const m = e.template_params.message;
   for (const text of ["Anna One", "WPG2 (2026-27)", "Bo Sone", 'Note from ANA: "fair deal?"', "https://site.example/dash/Trades", "period 8"]) assert.ok(m.includes(text), text);
   assert.ok(!m.includes("ana01") && !m.includes("pwA") && !m.includes("pwB") && !m.includes("a@x.com") && !m.includes("priv_x"));
 });
 
-test("emails: accept notifies both GMs (no private note); decline goes to the proposer; withdraw to the recipient", async () => {
+test("emails: accept notifies both GMs (no private note); decline and withdraw also go to both", async () => {
   enableEmail();
   const t1 = ok(await propose(A, { ...oneForOne, note: "secret note" })).id;
   emails.length = 0;
   ok(await respond(B, t1, "accept"));
-  assert.deepEqual(sentTo(), ["a@x.com", "b@x.com"]);
-  assert.ok(emails.every((e) => e.template_params.subject.startsWith("FHL trade agreed with")));
+  assert.deepEqual(sentTo(), ["a@x.com,b@x.com"]);
+  assert.ok(emails.every((e) => e.template_params.subject.startsWith("FHL trade agreed:")));
   assert.ok(emails.every((e) => /period 8/.test(e.template_params.message) && /lineup/.test(e.template_params.message) && /Roster/.test(e.template_params.message)));
   assert.ok(emails.every((e) => !e.template_params.message.includes("secret note")));
 
@@ -330,24 +329,24 @@ test("emails: accept notifies both GMs (no private note); decline goes to the pr
   const t2 = ok(await propose(A, { to: "CAR", give: { players: ["ana05"] }, get: { players: ["car05"] } })).id;
   emails.length = 0;
   ok(await respond(C, t2, "decline"));
-  assert.deepEqual(sentTo(), ["a@x.com"]);
+  assert.deepEqual(sentTo(), ["a@x.com,c@x.com"]);
   assert.match(emails[0].template_params.subject, /declined by CAR/);
 
   const t3 = ok(await propose(A, { to: "CAR", give: { players: ["ana06"] }, get: { players: ["car06"] } })).id;
   emails.length = 0;
   ok(await respond(A, t3, "withdraw"));
-  assert.deepEqual(sentTo(), ["c@x.com"]);
+  assert.deepEqual(sentTo(), ["a@x.com,c@x.com"]);
   assert.match(emails[0].template_params.subject, /withdrawn by ANA/);
 });
 
-test("emails: a counter-offer goes to the original proposer and says it replaces their proposal", async () => {
+test("emails: a counter-offer goes to both GMs and says it replaces the earlier proposal", async () => {
   enableEmail();
   const t1 = ok(await propose(A, oneForOne)).id;
   emails.length = 0;
   ok(await propose(B, { to: "ANA", give: { players: ["bos01"] }, get: { players: ["ana01", "ana02"] }, counters: t1 }));
-  assert.deepEqual(sentTo(), ["a@x.com"]);
-  assert.match(emails[0].template_params.subject, /counter-offer from BOS/);
-  assert.match(emails[0].template_params.message, /replaces your earlier proposal/);
+  assert.deepEqual(sentTo(), ["b@x.com,a@x.com"]);
+  assert.match(emails[0].template_params.subject, /counter-offer: BOS to ANA/);
+  assert.match(emails[0].template_params.message, /replaces the earlier proposal/);
 });
 
 test("emails: a failing EmailJS never fails or blocks the trade action", async () => {
@@ -371,17 +370,17 @@ test("emails: sent after the response when the platform provides waitUntil; a GM
   files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,,pwB\nCAR,C,c@x.com,pwC\n";
   emails.length = 0;
   ok(await propose(A, { to: "BOS", give: { players: ["ana02"] }, get: { players: ["bos02"] } }));
-  assert.equal(emails.length, 0); // BOS has no email on file
+  assert.deepEqual(sentTo(), ["a@x.com"]); // BOS has no email on file, ANA still gets hers
 });
 
 test("emails: an accepted trade is also announced to the league address, and only an accepted trade", async () => {
   enableEmail();
   env.LEAGUE_EMAIL = "league@x.com";
   const t1 = ok(await propose(A, { ...oneForOne, note: "secret note" })).id;
-  assert.deepEqual(sentTo(), ["b@x.com"]); // proposing does not go to the league
+  assert.deepEqual(sentTo(), ["a@x.com,b@x.com"]); // proposing does not go to the league
   emails.length = 0;
   ok(await respond(B, t1, "accept"));
-  assert.deepEqual(sentTo(), ["a@x.com", "b@x.com", "league@x.com"]);
+  assert.deepEqual(sentTo(), ["a@x.com,b@x.com", "league@x.com"]);
   const league = emails.find((e) => e.template_params.to_email === "league@x.com").template_params;
   assert.equal(league.to_name, "FHL League");
   assert.equal(league.subject, "FHL trade: ANA and BOS");
@@ -406,28 +405,36 @@ test("emails: a failing league email does not affect the trade or the GM emails"
   };
   emails.length = 0; // forget the proposal email; the wrapper above rejects the league email before it is recorded
   assert.equal(ok(await respond(B, t1, "accept")).status, "ACCEPTED");
-  assert.deepEqual(sentTo(), ["a@x.com", "b@x.com"]); // both GMs were still told
+  assert.deepEqual(sentTo(), ["a@x.com,b@x.com"]); // both GMs were still told
   assert.equal(ok(await list(A)).trades[0].status, "ACCEPTED");
 });
 
-test("emails: a malformed address is skipped (and named by team, never by address) without affecting the others", async () => {
+test("emails: a malformed address is dropped (and the team named, never the address) without affecting the others", async () => {
   enableEmail();
   env.LEAGUE_EMAIL = "league@x.com";
-  files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,\"b@x.com; other@x.com\",pwB\nCAR,C,c@x.com,pwC\n";
+  files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,not-an-address,pwB\nCAR,C,c@x.com,pwC\n";
   const logged = [];
   const realError = console.error;
   console.error = (...a) => logged.push(a.join(" "));
   try {
-    const { id } = ok(await propose(A, oneForOne)); // goes to BOS, whose address is two addresses in one field
-    assert.equal(emails.length, 0);
-    assert.ok(logged.some((l) => /Not emailing BOS/.test(l)));
+    const { id } = ok(await propose(A, oneForOne)); // goes to BOS, whose address is malformed
+    assert.deepEqual(sentTo(), ["a@x.com"]); // ANA is still told
+    assert.ok(logged.some((l) => /invalid email address\(es\) for ANA\/BOS/.test(l)));
     // an accept then still reaches ANA and the league
+    emails.length = 0;
     ok(await respond(B, id, "accept"));
     assert.deepEqual(sentTo(), ["a@x.com", "league@x.com"]);
   } finally {
     console.error = realError;
   }
   assert.ok(logged.every((l) => !/@/.test(l))); // addresses never appear in the logs
+});
+
+test("emails: several addresses in one field go out as one comma-separated email", async () => {
+  enableEmail();
+  files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,\"b@x.com; other@x.com\",pwB\nCAR,C,c@x.com,pwC\n";
+  ok(await propose(A, oneForOne));
+  assert.deepEqual(sentTo(), ["a@x.com,b@x.com,other@x.com"]);
 });
 
 test("emails: an EmailJS rejection is logged with the recipient's team", async () => {
@@ -437,6 +444,6 @@ test("emails: an EmailJS rejection is logged with the recipient's team", async (
   const realError = console.error;
   console.error = (...a) => logged.push(a.join(" "));
   try { ok(await propose(A, oneForOne)); } finally { console.error = realError; }
-  assert.ok(logged.some((l) => /rejected an email to BOS \(HTTP 422\)/.test(l)));
+  assert.ok(logged.some((l) => /rejected an email to ANA\/BOS \(HTTP 422\)/.test(l)));
   assert.ok(logged.every((l) => !/@/.test(l)));
 });

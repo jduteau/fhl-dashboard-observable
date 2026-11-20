@@ -33,9 +33,10 @@ When a trade is accepted, other open proposals in which the same team gives any 
 The dashboard (Compare Teams, Trades, Roster) shows the same post-trade state from the trade log.
 
 ### Trade emails (EmailJS)
-The Worker emails the GMs involved (addresses from `owners.csv`): a proposal or counter-offer goes to the other GM, an
-accepted trade goes to both (with a reminder to check their lineup), a decline goes to the proposer and a withdrawal to
-the recipient. If `LEAGUE_EMAIL` (in `wrangler.toml`) is set to a league-wide address, an accepted trade is also announced
+The Worker sends one email addressed to both GMs involved (addresses from `owners.csv`, which may hold several
+comma-separated addresses) for every event: proposal, counter-offer, acceptance (with a reminder to check their lineup),
+decline and withdrawal. A GM with no valid address is left off; the other still gets the email.
+If `LEAGUE_EMAIL` (in `wrangler.toml`) is set to a league-wide address, an accepted trade is also announced
 there (one email per trade; it has no lineup advice and never includes the private note). Emails are sent after the response, and a failure is logged but never affects the trade. Nothing is sent
 until EmailJS is set up:
 1. In EmailJS, **Account > Security**: allow API calls from non-browser applications (the Worker is not a browser).

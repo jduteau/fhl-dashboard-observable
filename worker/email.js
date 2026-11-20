@@ -7,16 +7,26 @@ const EMAILJS_URL = "https://api.emailjs.com/api/v1.0/email/send";
 export const emailConfigured = (env) =>
   Boolean(env.EMAILJS_SERVICE_ID && env.EMAILJS_TEMPLATE_ID && env.EMAILJS_PUBLIC_KEY && env.EMAILJS_PRIVATE_KEY);
 
-// A single plain address (no names, lists or whitespace). EmailJS answers "recipients address is corrupted" otherwise.
+// A plain address (no display names or whitespace). EmailJS answers "recipients address is corrupted" otherwise.
 const VALID_ADDRESS = /^[^\s@,;<>()"]+@[^\s@,;<>()"]+\.[^\s@,;<>()"]+$/;
+
+// Several recipients may share one cell (owners.csv EMAIL, LEAGUE_EMAIL), separated by commas or semicolons.
+// Returns {good, bad}: the valid addresses joined with commas (what EmailJS expects, or "" if none) and how many were invalid.
+export function normalizeRecipients(to) {
+  const list = String(to ?? "").split(/[,;]/).map((a) => a.trim()).filter(Boolean);
+  const good = list.filter((a) => VALID_ADDRESS.test(a));
+  return { good: good.join(","), bad: list.length - good.length };
+}
 
 // Sends one email through the shared EmailJS template, which has the variables
 // {{to_email}} {{to_name}} {{subject}} {{message}}. Resolves to true if EmailJS accepted it.
 // `label` names the recipient in the logs (a team abbreviation or "league"); addresses are never logged.
 export async function sendEmail(env, { to, toName, subject, message, label = "recipient" }) {
   if (!emailConfigured(env) || !to) return false;
-  if (!VALID_ADDRESS.test(to)) {
-    console.error(`Not emailing ${label}: the address on file is not a single valid email address`);
+  const { good: recipients, bad } = normalizeRecipients(to);
+  if (bad) console.error(`Skipping ${bad} invalid email address(es) for ${label}`);
+  if (!recipients) {
+    console.error(`Not emailing ${label}: no valid email address on file`);
     return false;
   }
   try {
@@ -28,7 +38,7 @@ export async function sendEmail(env, { to, toName, subject, message, label = "re
         template_id: env.EMAILJS_TEMPLATE_ID,
         user_id: env.EMAILJS_PUBLIC_KEY,
         accessToken: env.EMAILJS_PRIVATE_KEY, // required for server-side calls
-        template_params: { to_email: to, to_name: toName, subject, message },
+        template_params: { to_email: recipients, to_name: toName, subject, message },
       }),
     });
     if (!res.ok) {
@@ -67,21 +77,24 @@ export function buildEmails(event, trade, owners, names, siteUrl = "", leagueEma
   const block = tradeBlock(trade, names);
   const note = trade.note ? `\nNote from ${trade.from}: "${trade.note}"\n` : "";
 
-  const mail = (toAbbr, subject, body) => {
-    const o = owner(toAbbr);
-    return o?.EMAIL ? [{ to: o.EMAIL.trim(), toName: o.OWNER, label: toAbbr, subject, message: `Hello ${o.OWNER},\n\n${body}\n\n- FHL Dashboard` }] : [];
+  // One email addressed to both GMs of the trade (those with an address on file).
+  const mail = (subject, body) => {
+    const gms = [trade.from, trade.to].map(owner).filter((o) => o?.EMAIL?.trim());
+    if (!gms.length) return [];
+    const names = gms.map((o) => o.OWNER).join(" and ");
+    return [{ to: gms.map((o) => o.EMAIL.trim()).join(","), toName: names, label: `${trade.from}/${trade.to}`, subject, message: `Hello ${names},\n\n${body}\n\n- FHL Dashboard` }];
   };
 
   switch (event) {
     case "proposed":
-      return mail(trade.to, `FHL trade proposal from ${trade.from}`,
+      return mail(`FHL trade proposal: ${trade.from} to ${trade.to}`,
         `${trade.from} has proposed a trade to ${trade.to}, taking effect in period ${trade.period}:\n\n${block}\n${note}\n` +
-        `The trade only happens if you accept. You can accept, decline or counter it on the Trades page:${link("Trades")}\n` +
+        `The trade only happens if ${trade.to} accepts. ${trade.to} can accept, decline or counter it on the Trades page:${link("Trades")}\n` +
         `An unanswered proposal expires when period ${trade.period} starts.`);
     case "countered":
-      return mail(trade.to, `FHL counter-offer from ${trade.from}`,
-        `${trade.from} has answered your proposal with a counter-offer, taking effect in period ${trade.period}. It replaces your earlier proposal:\n\n${block}\n${note}\n` +
-        `You can accept, decline or counter it on the Trades page:${link("Trades")}`);
+      return mail(`FHL counter-offer: ${trade.from} to ${trade.to}`,
+        `${trade.from} has answered a proposal with a counter-offer to ${trade.to}, taking effect in period ${trade.period}. It replaces the earlier proposal:\n\n${block}\n${note}\n` +
+        `${trade.to} can accept, decline or counter it on the Trades page:${link("Trades")}`);
     case "accepted": {
       const body =
         `The trade between ${trade.from} and ${trade.to} has been agreed by both GMs:\n\n${block}\n\n` +
@@ -94,14 +107,14 @@ export function buildEmails(event, trade, owners, names, siteUrl = "", leagueEma
         message: `Trade agreed between ${who(trade.from)} and ${who(trade.to)}, taking effect in period ${trade.period}:\n\n${block}\n\n` +
           `All agreed trades are listed on the Trades page:${link("Trades")}\n- FHL Dashboard`,
       }] : [];
-      return [...mail(trade.from, `FHL trade agreed with ${trade.to}`, body), ...mail(trade.to, `FHL trade agreed with ${trade.from}`, body), ...league];
+      return [...mail(`FHL trade agreed: ${trade.from} and ${trade.to}`, body), ...league];
     }
     case "declined":
-      return mail(trade.from, `FHL trade declined by ${trade.to}`,
-        `${trade.to} has declined your trade proposal:\n\n${block}\n\nYou can see your trades on the Trades page:${link("Trades")}`);
+      return mail(`FHL trade declined by ${trade.to}`,
+        `${trade.to} has declined the trade proposal from ${trade.from}:\n\n${block}\n\nYou can see your trades on the Trades page:${link("Trades")}`);
     case "withdrawn":
-      return mail(trade.to, `FHL trade withdrawn by ${trade.from}`,
-        `${trade.from} has withdrawn their trade proposal to you:\n\n${block}\n\nNothing further is needed.`);
+      return mail(`FHL trade withdrawn by ${trade.from}`,
+        `${trade.from} has withdrawn their trade proposal to ${trade.to}:\n\n${block}\n\nNothing further is needed.`);
     default:
       return [];
   }
