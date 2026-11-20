@@ -32,5 +32,24 @@
       "hildede01"
     ],
     "submittedAt": "2026-11-19T16:16:36.833Z"
+  },
+  "WPG": {
+    "promote": [
+      "faulkju01",
+      "desimni01",
+      "zibanmi01",
+      "meyerbe01",
+      "dellaty01",
+      "pickaca01"
+    ],
+    "demote": [
+      "crevilo01",
+      "lizotbl01",
+      "kozakty01",
+      "brazeju01",
+      "mcgroru01",
+      "silovar01"
+    ],
+    "submittedAt": "2026-11-20T10:14:01.057Z"
   }
 }
