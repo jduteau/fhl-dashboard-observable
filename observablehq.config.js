@@ -42,6 +42,7 @@ export default {
     {name: "Stats Visualizations", path: "/StatViz"},
     {name: "Playoffs", path: "/Playoffs"},
     {name: "Playoff Statistics", path: "/PlayoffStats"},
+    {name: "My Account", path: "/Account"},
   ],
 
   // Content to add to the head of the page, e.g. for a favicon:

@@ -1,13 +1,11 @@
 import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod } from "../components/loadfiles.js";
 
-function buildSeasonRosters(sf, teamInfo, owners, playerInfo, contracts) {
+function buildSeasonRosters(sf, teamInfo, playerInfo, contracts) {
   const { season, statsData, rosterPeriods, latestStatsFile, latestRosterFile, availablePeriods, lastPeriodNum, getOverallStats } = sf;
   const teams = teamInfo.map(team => team.ABBR).sort();
   const latestPeriod = rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].period : 0;
 
   const teamData = teamInfo.map(team => {
-    const ownerInfo = owners.find(owner => owner.ABBR === team.ABBR);
-    team['EMAIL'] = ownerInfo.EMAIL;
     team["OVERALL"] = {};
     const overallRoster = (rosterPeriods[lastPeriodNum]?.data || []).filter(player => player.ABBR === team.ABBR);
     team["OVERALL"]['ROSTER'] = overallRoster.map(player => {
@@ -142,10 +140,9 @@ const allData = {};
 for (const season of seasons) {
   const sf = await loadSeasonData(season);
   const teamInfo = await readCsvFile(`${sf.basePath}/team_info.csv`);
-  const owners = await readCsvFile(`${sf.basePath}/owners.csv`);
   const playerInfo = await readCsvFile(`${sf.basePath}/player_info.csv`);
   const contracts = await readCsvFile(`${sf.basePath}/contracts.csv`);
-  allData[season] = buildSeasonRosters(sf, teamInfo, owners, playerInfo, contracts);
+  allData[season] = buildSeasonRosters(sf, teamInfo, playerInfo, contracts);
 }
 
 process.stdout.write(JSON.stringify({ seasons, currentSeason, data: allData }));

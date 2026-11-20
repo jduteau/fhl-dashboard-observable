@@ -15,3 +15,4 @@ fhlgetplayerinfo.sh
 .claude/
 
 fhl_trader.txt
+worker/seed-accounts.sql

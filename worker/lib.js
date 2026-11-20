@@ -1,4 +1,4 @@
-// Shared helpers for the Worker: CSV parsing, JSON responses, GitHub access, GM authentication.
+// Shared helpers for the Worker: CSV parsing, JSON responses, GitHub access. (GM authentication is in accounts.js.)
 
 // Minimal CSV parser (handles quoted fields). d3-dsv can't be used: it relies on
 // `new Function`, which Cloudflare Workers disallow.
@@ -59,13 +59,10 @@ export async function ghFile(env, path) {
   return (await res.text()).replace(/^﻿/, "");
 }
 
-// Verify the GM's password against the current owners.csv (never exposed to the browser).
-// Returns the owners rows (so callers can validate other teams / look up emails).
-export async function authenticate(env, season, team, password) {
-  const text = await ghFile(env, `src/data/static/${season}/owners.csv`);
-  if (text === null) throw new HttpError(502, "Could not verify password");
-  const owners = csvParse(text);
-  const owner = owners.find((o) => o.ABBR === team);
-  if (!owner || !owner.PW || owner.PW !== password) throw new HttpError(401, "Wrong password");
-  return owners;
+// Constant-time string comparison, so secrets can't be guessed from response timing.
+export function sameSecret(a, b) {
+  const x = new TextEncoder().encode(String(a)), y = new TextEncoder().encode(String(b));
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
 }

@@ -1,14 +1,14 @@
-// Shared by the Compare Teams (propose) and Trades (inbox) pages.
+// Shared by the Compare Teams (propose), Trades (inbox) and My Account pages.
 
 // Deployed Cloudflare Worker (see worker/README.md)
 export const WORKER_URL = "https://fhl-roster-moves.fhldashboard.workers.dev";
 export const MIN_ROSTER = 20;
 export const MAX_ROSTER = 36;
 
-// POST to a /trades/* endpoint. Resolves to {ok, error, data}; never throws.
-export async function callTrades(endpoint, body) {
+// POST to a Worker endpoint such as "trades/list". Resolves to {ok, error, data}; never throws.
+export async function callWorker(path, body) {
   try {
-    const res = await fetch(`${WORKER_URL}/trades/${endpoint}`, {
+    const res = await fetch(`${WORKER_URL}/${path}`, {
       method: "POST",
       headers: {"content-type": "application/json"},
       body: JSON.stringify(body)
@@ -19,6 +19,9 @@ export async function callTrades(endpoint, body) {
     return {ok: false, error: String(e)};
   }
 }
+
+export const callTrades = (endpoint, body) => callWorker(`trades/${endpoint}`, body);
+export const callAccount = (endpoint, body) => callWorker(`account/${endpoint}`, body);
 
 // Accepts a team-info pick {PICK, DraftSeason} or a Worker pick {pick, season}: "ANA1 (2026-27)"
 export const pickLabel = (p) => `${p.PICK ?? p.pick} (${p.DraftSeason ?? p.season})`;

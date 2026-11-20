@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import worker from "../index.js";
+import { hashPassword } from "../accounts.js";
 
 const ORIGIN = "https://pages.example";
 const schema = readFileSync(new URL("../schema.sql", import.meta.url), "utf-8");
@@ -33,13 +34,19 @@ const rosterCsv = (teams) => "ID,ABBR,RESERVE\n" + Object.entries(teams).flatMap
 let files, dispatches, env, emails, emailStatus;
 const baseFiles = () => ({
   "src/data/static/seasons.csv": "season,label,current\n2026-27,2026-27,true\n2027-28,2027-28,false\n",
-  "src/data/static/2026-27/owners.csv": "﻿ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,b@x.com,pwB\nCAR,C,c@x.com,pwC\n",
+  "src/data/static/2026-27/owners.csv": "﻿ABBR,OWNER\nANA,A\nBOS,B\nCAR,C\n",
   "src/data/static/2026-27/rosters/rosters_p07.csv": rosterCsv({ ANA: 21, BOS: 20, CAR: 20 }),
   "src/data/static/2026-27/draft_picks.csv": "PICK,OWNER\nANA1,ANA\nBOS1,BOS\nCAR1,CAR\nWPG2,ANA\n",
   "src/data/static/2027-28/draft_picks.csv": "PICK,OWNER\nANA1,ANA\nBOS1,BOS\n",
   "src/data/static/2026-27/player_info.csv": "ID,Name,Pos\nana01,Anna One,F\nana02,Anna Two,D\nbos01,Bo Sone,F\ncar01,Cara One,G\n",
 });
 
+// GM accounts live in D1; hash once (PBKDF2 is deliberately slow) and seed every test's database with them.
+const accounts = [["ANA", "a@x.com", "pwA"], ["BOS", "b@x.com", "pwB"], ["CAR", "c@x.com", "pwC"]];
+const hashes = new Map(await Promise.all(accounts.map(async ([team, , pw]) => [team, await hashPassword(pw)])));
+const setEmail = (team, email) => rawDb.prepare("UPDATE gm_accounts SET email = ? WHERE team = ?").run(email, team);
+
+let rawDb;
 beforeEach(() => {
   files = baseFiles();
   dispatches = [];
@@ -47,6 +54,8 @@ beforeEach(() => {
   emailStatus = 200;
   const db = new DatabaseSync(":memory:");
   db.exec(schema);
+  for (const [team, email] of accounts) db.prepare("INSERT INTO gm_accounts (team, email, pw, updated_at) VALUES (?, ?, ?, ?)").run(team, email, hashes.get(team), "2026-01-01T00:00:00.000Z");
+  rawDb = db;
   env = { DB: d1(db), GITHUB_REPO: "test/repo", GITHUB_TOKEN: "t", ALLOWED_ORIGIN: ORIGIN };
   globalThis.fetch = async (url, init = {}) => {
     const path = new URL(url).pathname.replace("/repos/test/repo/", "");
@@ -367,7 +376,7 @@ test("emails: sent after the response when the platform provides waitUntil; a GM
   await Promise.all(pending);
   assert.equal(emails.length, 1);
 
-  files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,,pwB\nCAR,C,c@x.com,pwC\n";
+  setEmail("BOS", "");
   emails.length = 0;
   ok(await propose(A, { to: "BOS", give: { players: ["ana02"] }, get: { players: ["bos02"] } }));
   assert.deepEqual(sentTo(), ["a@x.com"]); // BOS has no email on file, ANA still gets hers
@@ -412,7 +421,7 @@ test("emails: a failing league email does not affect the trade or the GM emails"
 test("emails: a malformed address is dropped (and the team named, never the address) without affecting the others", async () => {
   enableEmail();
   env.LEAGUE_EMAIL = "league@x.com";
-  files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,not-an-address,pwB\nCAR,C,c@x.com,pwC\n";
+  setEmail("BOS", "not-an-address");
   const logged = [];
   const realError = console.error;
   console.error = (...a) => logged.push(a.join(" "));
@@ -432,7 +441,7 @@ test("emails: a malformed address is dropped (and the team named, never the addr
 
 test("emails: several addresses in one field go out as one comma-separated email", async () => {
   enableEmail();
-  files["src/data/static/2026-27/owners.csv"] = "ABBR,OWNER,EMAIL,PW\nANA,A,a@x.com,pwA\nBOS,B,\"b@x.com; other@x.com\",pwB\nCAR,C,c@x.com,pwC\n";
+  setEmail("BOS", "b@x.com; other@x.com");
   ok(await propose(A, oneForOne));
   assert.deepEqual(sentTo(), ["a@x.com,b@x.com,other@x.com"]);
 });

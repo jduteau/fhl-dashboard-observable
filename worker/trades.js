@@ -4,7 +4,8 @@
 // A trade takes effect in the NEXT period's roster (latest rosters_pNN.csv + 1). A proposal that is still
 // PROPOSED when that period's roster file appears is expired. Accepting requires only the *other* GM:
 // proposing counts as the proposer's approval.
-import { csvParse, ghFile, gh, authenticate, HttpError } from "./lib.js";
+import { csvParse, ghFile, gh, HttpError } from "./lib.js";
+import { authenticate, assertAdmin } from "./accounts.js";
 import { makeMailer } from "./email.js";
 
 const SEASON = /^\d{4}-\d{2}$/;
@@ -171,21 +172,11 @@ function present(t, items, ctx) {
 
 // ---- Endpoints ---------------------------------------------------------------------------
 
-// Constant-time string comparison, so the commissioner password can't be guessed from response timing.
-function sameSecret(a, b) {
-  const x = new TextEncoder().encode(String(a)), y = new TextEncoder().encode(String(b));
-  let diff = x.length ^ y.length;
-  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
-  return diff === 0;
-}
-
 // Commissioner view: every proposal of the season, whoever it involves, with private notes. Read-only.
-// Protected by the ADMIN_PASSWORD secret (not an owners.csv password); unset means the endpoint is off.
+// Protected by the ADMIN_PASSWORD secret (not a GM password); unset means the endpoint is off.
 async function adminList(body, env) {
   if (!SEASON.test(body.season ?? "") || typeof body.password !== "string") throw bad("Invalid request");
-  if (!env.DB) throw new HttpError(500, "Trade database is not configured");
-  if (!env.ADMIN_PASSWORD) throw new HttpError(403, "Commissioner access is not set up");
-  if (!sameSecret(body.password, env.ADMIN_PASSWORD)) throw new HttpError(401, "Wrong password");
+  await assertAdmin(env, body.password);
   const ctx = await loadContext(env, body.season);
   const { results: trades } = await env.DB.prepare(`SELECT * FROM trades WHERE season = ? ORDER BY created_at DESC LIMIT 500`).bind(body.season).all();
   const { results: items } = await env.DB.prepare(

@@ -37,3 +37,20 @@ CREATE TABLE IF NOT EXISTS trade_items (
   PRIMARY KEY (trade_id, kind, ref, pick_season)
 );
 CREATE INDEX IF NOT EXISTS trade_items_asset ON trade_items (kind, ref, pick_season);
+
+-- GM accounts: salted PBKDF2 password hash and the address(es) trade emails go to (several may be separated by commas).
+-- Never published. Seed from owners.csv with seed-accounts.mjs; GMs change their own details on the My Account page and
+-- the commissioner resets forgotten passwords there too.
+CREATE TABLE IF NOT EXISTS gm_accounts (
+  team       TEXT PRIMARY KEY,
+  email      TEXT NOT NULL DEFAULT '',
+  pw         TEXT NOT NULL,               -- pbkdf2$<iterations>$<salt>$<hash>
+  updated_at TEXT NOT NULL
+);
+
+-- Failed logins (a team abbreviation, or '*admin*'), used to lock a team out for a while after too many wrong passwords.
+CREATE TABLE IF NOT EXISTS auth_failures (
+  team TEXT NOT NULL,
+  at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS auth_failures_team ON auth_failures (team, at);

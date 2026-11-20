@@ -127,14 +127,12 @@ const _nextDraftYear = _currentDraftYear + 1;
         "ABBR",
         "NAME",
         "OWNER",
-        "EMAIL",
         "LOCATION"
       ],
       header: {
         ABBR: "Team",
         NAME: "Team Name",
         OWNER: "Owner",
-        EMAIL: "Email",
         LOCATION: "Location"
       },
       sort: "ABBR",

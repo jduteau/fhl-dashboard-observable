@@ -10,7 +10,6 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
     team['CASH'] = autoCash ? computeTeamCash(cashInfo.CASH, team.ABBR, rosterPeriods, contracts) : cashInfo.CASH;
     const ownerInfo = owners.find(owner => owner.ABBR === team.ABBR);
     team['OWNER'] = ownerInfo.OWNER;
-    team['EMAIL'] = ownerInfo.EMAIL;
     team['LOCATION'] = ownerInfo.LOCATION;
     team['CURRENT_PICKS'] = currentPicks.filter(pick => pick.OWNER === team.ABBR).reduce((acc, pick) => acc + `${pick.PICK} `, "");
     team['NEXT_PICKS'] = nextPicks.filter(pick => pick.OWNER === team.ABBR).reduce((acc, pick) => acc + `${pick.PICK} `, "");

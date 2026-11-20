@@ -28,6 +28,7 @@ Local preview reads the data files in the repo; submitting moves or trades from 
 | Team Roster | Rosters by period; **Next Period** tab lets a GM submit lineup moves (password required) |
 | Overall Stats | Cumulative stats across periods |
 | Compare Teams | Compare two teams and **propose or counter a trade** (password required) |
+| My Account | A GM changes their own password and notification email; the commissioner resets forgotten passwords |
 | Trades | A GM's inbox (accept / decline / counter / withdraw), the public trade log, and a commissioner view of all proposals |
 | Stats Visualizations | Charts |
 | Playoffs / Playoff Statistics | Bracket and team-vs-team playoff stats |
@@ -93,16 +94,17 @@ The full story, with diagrams and a table of secrets, is in [docs/ARCHITECTURE.m
 | Preview locally | `npm run dev` |
 | Build the site | `npm run build` (output in `dist/`) |
 | Clear the data-loader cache | `npm run clean` |
-| Run all tests | `node --test worker/test/trades.test.mjs .github/scripts/test/trades-lib.test.mjs test/trades-component.test.mjs` |
+| Run all tests | `node --test worker/test/*.mjs .github/scripts/test/trades-lib.test.mjs test/trades-component.test.mjs` |
 | Start a new period | Actions -> **Apply Roster Moves** -> Run workflow |
 | Re-fetch stats | Actions -> **Read Stats** -> Run workflow (optional season/period) |
 | Redeploy the site | Actions -> **Deploy** -> Run workflow |
 | Deploy Worker changes | `cd worker && npx wrangler deploy` (not automatic) |
-| Change a GM's password/email | Edit `src/data/static/<season>/owners.csv` and commit |
+| Change a GM's password/email | The GM does it on **My Account**; for a forgotten password the commissioner uses the Commissioner section of that page (no repo edit) |
 
 ## Technical stack
 
 Observable Framework, d3-dsv, GitHub Pages, GitHub Actions, Cloudflare Workers + D1, EmailJS, optional Discord webhook.
 
-> **Note:** `owners.csv` contains GM passwords and emails and is committed to the repository. See the security notes in
+> **Note:** GM passwords (hashed) and emails live in the Worker's D1 database, not in the repository or on the site;
+> `owners.csv` holds only public owner names and locations. See the security notes in
 > [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#security-notes-and-known-limitations).

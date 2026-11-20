@@ -6,26 +6,31 @@ fits with GitHub Actions, D1, EmailJS and the site. It is deployed by hand (`npx
 Secrets (`npx wrangler secret put NAME`): `GITHUB_TOKEN`, `EMAILJS_PRIVATE_KEY`, `ADMIN_PASSWORD` (commissioner view),
 `DISCORD_WEBHOOK_URL` (optional). Everything else is in `wrangler.toml`.
 
-Roster-moves flow: Roster page -> this Worker (checks password vs `owners.csv`) -> `repository_dispatch` ->
+Roster-moves flow: Roster page -> this Worker (checks the password against the hashed accounts in D1) -> `repository_dispatch` ->
 `Apply Roster Moves` workflow (validates, writes `src/data/static/<season>/moves/moves_pNN.json`) -> Deploy.
 
 ## Setup (once)
 1. Create a fine-grained GitHub token for this repo only, with **Contents: Read and write**
-   (needed for `repository_dispatch` and reading `owners.csv`).
+   (needed for `repository_dispatch` and reading rosters and `owners.csv`).
 2. `cd worker && npx wrangler secret put GITHUB_TOKEN` (paste the token)
 3. Confirm `ALLOWED_ORIGIN` in `wrangler.toml` matches the Pages origin, then `npx wrangler deploy`.
 4. Put the Worker URL in `src/Roster.md` (`WORKER_URL`).
 
 ## Trades (D1)
-Endpoints (all `POST`, JSON, password checked against `owners.csv` like roster moves):
+Endpoints (all `POST`, JSON, password checked against the hashed D1 accounts like roster moves):
 `/trades/propose`, `/trades/list`, `/trades/respond`, `/trades/republish` (plus `/trades/admin-list` for the commissioner,
 below). Pending proposals live in a D1 database and are only
 returned to the two GMs involved; accepted trades are sent to GitHub as a `trade-approved` dispatch.
 
 Setup (once):
 1. `cd worker && npx wrangler d1 create fhl-trades` and paste the printed `database_id` into `wrangler.toml`.
-2. `npx wrangler d1 execute fhl-trades --remote --file=schema.sql`
-3. `npx wrangler deploy`
+2. `npx wrangler d1 execute fhl-trades --remote --file=schema.sql` (safe to re-run: it only creates missing tables, so run it again to add `gm_accounts` and `auth_failures`)
+3. Seed the GM accounts once, from an `owners.csv` that still has the `PW` and `EMAIL` columns (take an older copy from git history, e.g. `git show <old-commit>:src/data/static/2026-27/owners.csv > owners-old.csv`):
+   `node worker/seed-accounts.mjs owners-old.csv > worker/seed-accounts.sql`, then
+   `npx wrangler d1 execute fhl-trades --remote --file=seed-accounts.sql`, then delete `seed-accounts.sql` and `owners-old.csv` (both hold credentials).
+   Existing rows are never overwritten. After that GMs manage their own details on the My Account page, and the commissioner
+   (`ADMIN_PASSWORD`) can set a team's password or email there.
+4. `npx wrangler deploy`
 
 Request shapes (`season` must be the current season; `give` = what the proposer sends, `get` = what they receive):
 - propose: `{season, team, password, to, give:{players:[id], picks:[{pick,season}]}, get:{...}, note?, counters?: tradeId}`
@@ -50,7 +55,7 @@ lineup advice, no private note, and mentions are disabled). In Discord: channel 
 New Webhook > Copy Webhook URL, then `cd worker && npx wrangler secret put DISCORD_WEBHOOK_URL` and paste it. Unset, nothing is posted.
 
 ### Trade emails (EmailJS)
-The Worker sends one email addressed to both GMs involved (addresses from `owners.csv`, which may hold several
+The Worker sends one email addressed to both GMs involved (addresses from the D1 `gm_accounts` table, which may hold several
 comma-separated addresses) for every event: proposal, counter-offer, acceptance (with a reminder to check their lineup),
 decline and withdrawal. A GM with no valid address is left off; the other still gets the email.
 If `LEAGUE_EMAIL` (in `wrangler.toml`) is set to a league-wide address, an accepted trade is also announced
@@ -68,7 +73,7 @@ Troubleshooting (`npx wrangler tail` shows the Worker logs; they name the recipi
 - **"recipients address is corrupted" (HTTP 422)** for every email: the template's *To Email* field isn't `{{to_email}}`.
   Don't point `EMAILJS_TEMPLATE_ID` at the old roster-form template, whose fields are different; create the trade
   template described above (To Email `{{to_email}}`, Subject `{{subject}}`, content `{{message}}`).
-- **"Skipping N invalid email address(es) for ANA/BOS"**: one address in that team's `EMAIL` cell (in `owners.csv`) is
+- **"Skipping N invalid email address(es) for ANA/BOS"**: one address in that team's email on My Account (or set by the commissioner) is
   malformed (a `Name <addr>` form, a typo). The valid ones still get the email. Separate several addresses with commas or
   semicolons. **"Not emailing ...: no valid email address on file"** means none of them were usable.
 

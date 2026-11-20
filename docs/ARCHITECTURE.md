@@ -74,7 +74,7 @@ flowchart LR
 - **Why it exists:** the static site cannot hold secrets or verify a GM. The Worker checks the GM's password, enforces
   the trade rules, and is the only thing holding the GitHub token.
 - **Files:** `index.js` (routing, CORS, roster moves), `trades.js` (trade endpoints), `email.js` (EmailJS and Discord),
-  `lib.js` (GitHub access, password check), `schema.sql` (D1 tables), `wrangler.toml` (config), `test/`.
+  `accounts.js` (GM accounts, password hashing, lockout, `/account/*`), `lib.js` (GitHub access, CSV parsing), `schema.sql` (D1 tables), `wrangler.toml` (config), `test/`.
 - **Endpoints** (all `POST`, JSON; requests from origins other than the allowed list are refused):
 
   | Endpoint | Who | What |
@@ -85,10 +85,14 @@ flowchart LR
   | `/trades/respond` | GM | Accept / decline / withdraw; accept triggers the `trade-approved` dispatch |
   | `/trades/republish` | GM | Re-send accepted trades to GitHub if the trade log is missing one |
   | `/trades/admin-list` | Commissioner | Every proposal of the season, read-only |
+  | `/account/get`, `/account/update` | GM | Read or change their own notification email and password |
+  | `/account/admin-list`, `/account/admin-set` | Commissioner | List accounts; set any team's password or email (the only way to recover a forgotten password) |
 
-- **Authentication:** every GM request carries the team abbreviation and password. The Worker reads
-  `src/data/static/<season>/owners.csv` from GitHub (never sent to the browser) and compares. The commissioner view
-  uses a separate `ADMIN_PASSWORD` secret, compared in constant time.
+- **Authentication:** every GM request carries the team abbreviation and password. The Worker checks it against a
+  salted PBKDF2 hash in the D1 table `gm_accounts` (never sent to the browser). After 10 wrong passwords for a team in
+  15 minutes that team is locked out for the rest of the window (`auth_failures` table). The commissioner endpoints use a
+  separate `ADMIN_PASSWORD` secret, compared in constant time and throttled the same way. `owners.csv` only supplies
+  public owner names and locations.
 - **Trade rules enforced here:** each side must own what it gives (latest roster + draft picks, with already-agreed
   trades applied in order), both rosters must end with 20-36 players, and open proposals using an asset that has just
   been traded become `VOID`. A proposal expires when the next period's roster file appears.
@@ -126,7 +130,7 @@ Worker dispatches are serialized by separate concurrency groups so a trade can n
   template (`EMAILJS_TEMPLATE_ID`) with the variables `to_email`, `to_name`, `subject`, `message`.
 - **When:** every trade event (proposal, counter, accept, decline, withdraw) sends **one email addressed to both GMs**.
   Accepted trades also go to the league list (`LEAGUE_EMAIL`, a Google Group) with no lineup advice and no private note.
-- **Addresses:** from the `EMAIL` column of `owners.csv`; a cell may hold several comma- or semicolon-separated
+- **Addresses:** from the `email` column of the D1 `gm_accounts` table (set by the GM on My Account); it may hold several comma- or semicolon-separated
   addresses. Invalid addresses are dropped individually and logged by team, never by address.
 - **Account setting required:** *Account > Security > allow API calls from non-browser applications*, because the
   Worker is not a browser.
@@ -180,26 +184,26 @@ rows) -> Deploy rebuilds. No human involvement.
 
 | Item | Where | Notes |
 | --- | --- | --- |
-| `GITHUB_TOKEN` (fine-grained PAT, Contents read/write on this repo) | Worker secret | Used to read `owners.csv`/rosters and send dispatches |
+| `GITHUB_TOKEN` (fine-grained PAT, Contents read/write on this repo) | Worker secret | Used to read rosters, `owners.csv` (public names) and send dispatches |
 | `EMAILJS_PRIVATE_KEY` | Worker secret | Required for server-side sends |
-| `ADMIN_PASSWORD` | Worker secret | Commissioner view; unset = endpoint refuses everyone |
+| `ADMIN_PASSWORD` | Worker secret | Commissioner endpoints (trade view, account resets); unset = they refuse everyone |
 | `DISCORD_WEBHOOK_URL` | Worker secret | Treat as a credential; unset = no Discord posts |
 | `EMAILJS_SERVICE_ID`, `EMAILJS_PUBLIC_KEY`, `EMAILJS_TEMPLATE_ID`, `LEAGUE_EMAIL`, `SITE_URL`, `ALLOWED_ORIGIN`, `GITHUB_REPO` | `worker/wrangler.toml` | Non-secret config, committed |
 | D1 binding `DB` (`database_id`) | `worker/wrangler.toml` | Created once with `wrangler d1 create` |
-| GM passwords and emails | `src/data/static/<season>/owners.csv` | In the repo; see security notes |
+| GM password hashes and emails | D1 table `gm_accounts` | Not in the repo or on the site; seeded once by `worker/seed-accounts.mjs` |
 | Worker URL (`WORKER_URL`) | `src/Roster.md`, `src/components/trades.js` | Hard-coded in the pages |
 
 Set Worker secrets with `cd worker && npx wrangler secret put NAME`. List them with `npx wrangler secret list`.
 
 ## Security notes and known limitations
 
-- **`owners.csv` holds every GM's password in plain text and is committed to the repository.** Anyone who can read the
-  repo can read every password and email address. If the repository is public (it must be, for GitHub Pages on a free
-  plan), this is effectively public. Passwords here protect against casual mischief, not a determined person. Options
-  if that matters: make the repo private (requires a paid Pages plan), or move credentials out of the repo (for
-  example, hashed passwords in D1 or a Worker secret) and have the Worker read them from there.
-- A password is sent with every request and compared in the Worker; there is no session, lockout or rate limiting.
-  Cloudflare's rate-limiting rules can be added in front of the Worker if abuse becomes a concern.
+- GM passwords are stored only as salted PBKDF2 hashes in D1 and emails only in D1, so neither is in the public
+  repository or the built site. Older commits of `owners.csv` still contain the original plain-text passwords and
+  emails (history was not rewritten), so those passwords should be changed (My Account or the commissioner reset).
+  Passwords are a light barrier, not strong security: they are sent with each request (no session), and the lockout is
+  per team, so someone could deliberately lock a GM out for 15 minutes. Cloudflare rate-limiting rules can be added in
+  front of the Worker if abuse becomes a concern.
+- A forgotten password is reset by the commissioner only (there is no emailed reset link).
 - The commissioner password is separate and stored only as a Worker secret.
 - The Worker only accepts browser requests from the origins in `ALLOWED_ORIGIN`. This stops other websites from using a
   visitor's browser, but it is not authentication; the password is.

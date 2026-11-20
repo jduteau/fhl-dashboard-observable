@@ -1,13 +1,15 @@
 // Cloudflare Worker: receives roster moves and trade proposals from the dashboard, checks the GM's password
-// against owners.csv in the repo, and triggers GitHub workflows / stores trades in D1.
+// against the hashed accounts in D1, and triggers GitHub workflows / stores trades in D1.
 //
 //   POST /                  roster moves  -> "Apply Roster Moves" workflow (repository_dispatch)
 //   POST /trades/propose    propose (or counter) a trade            -> D1
 //   POST /trades/list       this GM's proposals                     -> D1
 //   POST /trades/respond    accept / decline / withdraw             -> D1 (+ repository_dispatch on accept)
+//   POST /account/*         a GM changes their password/email; the commissioner resets them (see accounts.js)
 //
 // Secrets/vars (see worker/README.md):  GITHUB_TOKEN (secret), GITHUB_REPO, ALLOWED_ORIGIN, DB (D1 binding)
-import { json, gh, authenticate, HttpError } from "./lib.js";
+import { json, gh, HttpError } from "./lib.js";
+import { authenticate, handleAccount } from "./accounts.js";
 import { handleTrades } from "./trades.js";
 
 // ALLOWED_ORIGIN is a comma-separated list (the Pages site, plus local preview origins for development).
@@ -52,6 +54,10 @@ async function handle(request, env, origin, execCtx) {
   const path = new URL(request.url).pathname.replace(/\/+$/, "");
   if (path.startsWith("/trades/")) {
     const result = await handleTrades(path.slice("/trades/".length), m, env, execCtx);
+    return json(result, 200, origin);
+  }
+  if (path.startsWith("/account/")) {
+    const result = await handleAccount(path.slice("/account/".length), m, env);
     return json(result, 200, origin);
   }
   return handleMoves(m, env, origin);
