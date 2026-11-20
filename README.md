@@ -94,7 +94,7 @@ The full story, with diagrams and a table of secrets, is in [docs/ARCHITECTURE.m
 | Preview locally | `npm run dev` |
 | Build the site | `npm run build` (output in `dist/`) |
 | Clear the data-loader cache | `npm run clean` |
-| Run all tests | `node --test worker/test/*.mjs .github/scripts/test/trades-lib.test.mjs test/trades-component.test.mjs` |
+| Run all tests | `npm test` |
 | Start a new period | Actions -> **Apply Roster Moves** -> Run workflow |
 | Re-fetch stats | Actions -> **Read Stats** -> Run workflow (optional season/period) |
 | Redeploy the site | Actions -> **Deploy** -> Run workflow |
