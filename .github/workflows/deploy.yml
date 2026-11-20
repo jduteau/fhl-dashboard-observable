@@ -13,6 +13,12 @@ on:
   # Run this workflow when triggered manually in GitHub’s UI.
   workflow_dispatch: {}
 
+# One deploy at a time; a run that starts while another is deploying waits its turn (the last one queued wins), so an
+# older build can never overwrite a newer one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   deploy:
     # For workflow_run, only deploy if the triggering workflow succeeded.

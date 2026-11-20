@@ -26,7 +26,11 @@ jobs:
           node-version: 24
       - name: Resolve season and period
         id: resolve
-        run: node .github/scripts/resolve-period.mjs "${{ inputs.season }}" "${{ inputs.period }}"
+        # Inputs go through env, never straight into the script text (shell injection).
+        env:
+          SEASON_INPUT: ${{ inputs.season }}
+          PERIOD_INPUT: ${{ inputs.period }}
+        run: node .github/scripts/resolve-period.mjs "$SEASON_INPUT" "$PERIOD_INPUT"
       - uses: pnpm/action-setup@v4
         if: steps.resolve.outputs.period != ''
         with:
@@ -40,20 +44,35 @@ jobs:
           pnpm exec projen compile
       - name: Read stats
         if: steps.resolve.outputs.period != ''
+        env:
+          SEASON: ${{ steps.resolve.outputs.season }}
+          YEAR: ${{ steps.resolve.outputs.year }}
+          PERIOD: ${{ steps.resolve.outputs.period }}
         run: |
-          SEASON=${{ steps.resolve.outputs.season }}
-          node ./FHLScripts/lib/readStatsIndex.js ${{ steps.resolve.outputs.year }} fhl_stats_overall
-          mkdir -p src/data/static/${SEASON}/stats
-          cp fhl_stats_overall.csv src/data/static/${SEASON}/stats/stats_p${{ steps.resolve.outputs.period }}.csv
+          node ./FHLScripts/lib/readStatsIndex.js "$YEAR" fhl_stats_overall
+          mkdir -p "src/data/static/${SEASON}/stats"
+          cp fhl_stats_overall.csv "src/data/static/${SEASON}/stats/stats_p${PERIOD}.csv"
       - name: Add new players to player_info.csv
         if: steps.resolve.outputs.period != ''
         continue-on-error: true
-        run: node .github/scripts/update-player-info.mjs "${{ steps.resolve.outputs.season }}" "${{ steps.resolve.outputs.period }}"
+        env:
+          SEASON: ${{ steps.resolve.outputs.season }}
+          PERIOD: ${{ steps.resolve.outputs.period }}
+        run: node .github/scripts/update-player-info.mjs "$SEASON" "$PERIOD"
       - name: Commit updated stats
         if: steps.resolve.outputs.period != ''
+        env:
+          SEASON: ${{ steps.resolve.outputs.season }}
+          PERIOD: ${{ steps.resolve.outputs.period }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/data/static
-          git diff --cached --quiet || git commit -m "Update stats for ${{ steps.resolve.outputs.season }} period ${{ steps.resolve.outputs.period }}"
-          git push
+          git diff --cached --quiet && exit 0
+          git commit -m "Update stats for $SEASON period $PERIOD"
+          # Another workflow may have pushed meanwhile; retry the rebase+push a few times.
+          for i in 1 2 3 4 5; do
+            git pull --rebase && git push && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
