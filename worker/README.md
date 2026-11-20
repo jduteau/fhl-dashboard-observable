@@ -1,6 +1,12 @@
-# Roster-moves Worker
+# Roster-moves and trades Worker
 
-Flow: Roster page -> this Worker (checks password vs `owners.csv`) -> `repository_dispatch` ->
+The Worker is the dashboard's only server-side code. See [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) for how it
+fits with GitHub Actions, D1, EmailJS and the site. It is deployed by hand (`npx wrangler deploy`), not by a workflow.
+
+Secrets (`npx wrangler secret put NAME`): `GITHUB_TOKEN`, `EMAILJS_PRIVATE_KEY`, `ADMIN_PASSWORD` (commissioner view),
+`DISCORD_WEBHOOK_URL` (optional). Everything else is in `wrangler.toml`.
+
+Roster-moves flow: Roster page -> this Worker (checks password vs `owners.csv`) -> `repository_dispatch` ->
 `Apply Roster Moves` workflow (validates, writes `src/data/static/<season>/moves/moves_pNN.json`) -> Deploy.
 
 ## Setup (once)
@@ -12,7 +18,8 @@ Flow: Roster page -> this Worker (checks password vs `owners.csv`) -> `repositor
 
 ## Trades (D1)
 Endpoints (all `POST`, JSON, password checked against `owners.csv` like roster moves):
-`/trades/propose`, `/trades/list`, `/trades/respond`. Pending proposals live in a D1 database and are only
+`/trades/propose`, `/trades/list`, `/trades/respond`, `/trades/republish` (plus `/trades/admin-list` for the commissioner,
+below). Pending proposals live in a D1 database and are only
 returned to the two GMs involved; accepted trades are sent to GitHub as a `trade-approved` dispatch.
 
 Setup (once):
@@ -61,8 +68,9 @@ Troubleshooting (`npx wrangler tail` shows the Worker logs; they name the recipi
 - **"recipients address is corrupted" (HTTP 422)** for every email: the template's *To Email* field isn't `{{to_email}}`.
   Don't point `EMAILJS_TEMPLATE_ID` at the old roster-form template, whose fields are different; create the trade
   template described above (To Email `{{to_email}}`, Subject `{{subject}}`, content `{{message}}`).
-- **"Not emailing XYZ: the address on file is not a single valid email address"**: that team's `EMAIL` in `owners.csv`
-  (or `LEAGUE_EMAIL`) is empty-looking, has several addresses, or a `Name <addr>` form. Use exactly one plain address.
+- **"Skipping N invalid email address(es) for ANA/BOS"**: one address in that team's `EMAIL` cell (in `owners.csv`) is
+  malformed (a `Name <addr>` form, a typo). The valid ones still get the email. Separate several addresses with commas or
+  semicolons. **"Not emailing ...: no valid email address on file"** means none of them were usable.
 
 ### From accepted trade to new roster
 1. When the second GM accepts, the Worker sends a `trade-approved` dispatch. It always carries **all** accepted trades for
