@@ -32,6 +32,11 @@ team is about to receive can be traded onward in a later trade, while one it alr
 When a trade is accepted, other open proposals in which the same team gives any of the same assets become VOID.
 The dashboard (Compare Teams, Trades, Roster) shows the same post-trade state from the trade log.
 
+### Accepted trades on Discord
+Set the `DISCORD_WEBHOOK_URL` secret to post every accepted trade to a Discord channel (same text as the league email: no
+lineup advice, no private note, and mentions are disabled). In Discord: channel > Edit Channel > Integrations > Webhooks >
+New Webhook > Copy Webhook URL, then `cd worker && npx wrangler secret put DISCORD_WEBHOOK_URL` and paste it. Unset, nothing is posted.
+
 ### Trade emails (EmailJS)
 The Worker sends one email addressed to both GMs involved (addresses from `owners.csv`, which may hold several
 comma-separated addresses) for every event: proposal, counter-offer, acceptance (with a reminder to check their lineup),

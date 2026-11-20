@@ -447,3 +447,27 @@ test("emails: an EmailJS rejection is logged with the recipient's team", async (
   assert.ok(logged.some((l) => /rejected an email to ANA\/BOS \(HTTP 422\)/.test(l)));
   assert.ok(logged.every((l) => !/@/.test(l)));
 });
+
+test("discord: an accepted trade is posted to the webhook (no note, no mentions), other events are not", async () => {
+  enableEmail();
+  env.DISCORD_WEBHOOK_URL = "https://discord.example/api/webhooks/1/abc";
+  const posts = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).startsWith("https://discord.example/")) { posts.push(JSON.parse(init.body)); return new Response(null, { status: 204 }); }
+    return realFetch(url, init);
+  };
+  try {
+    const t1 = ok(await propose(A, { ...oneForOne, note: "secret note" })).id;
+    assert.equal(posts.length, 0);
+    ok(await respond(B, t1, "accept"));
+    assert.equal(posts.length, 1);
+    assert.match(posts[0].content, /^\*\*FHL trade: ANA and BOS\*\*/);
+    assert.ok(/Anna One/.test(posts[0].content) && /Bo Sone/.test(posts[0].content));
+    assert.ok(!/secret note|lineup|FHL Dashboard$/.test(posts[0].content));
+    assert.deepEqual(posts[0].allowed_mentions, { parse: [] });
+  } finally {
+    globalThis.fetch = realFetch;
+    delete env.DISCORD_WEBHOOK_URL;
+  }
+});

@@ -52,6 +52,27 @@ export async function sendEmail(env, { to, toName, subject, message, label = "re
   }
 }
 
+// Posts a message to a Discord channel through its webhook (DISCORD_WEBHOOK_URL secret). Best-effort like email.
+export async function sendDiscord(env, content) {
+  if (!env.DISCORD_WEBHOOK_URL) return false;
+  try {
+    // allowed_mentions: none, so a note or name can never ping @everyone
+    const res = await fetch(env.DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content: content.slice(0, 2000), allowed_mentions: { parse: [] } }),
+    });
+    if (!res.ok) {
+      console.error(`Discord rejected the trade post (HTTP ${res.status}): ${(await res.text()).slice(0, 200)}`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error(`Discord request failed: ${e.message}`);
+    return false;
+  }
+}
+
 // ---- Message content (pure; see worker/test) ----------------------------------------------
 
 const bullets = (lines) => (lines.length ? lines.map((l) => `  - ${l}`).join("\n") : "  (nothing)");
@@ -102,11 +123,11 @@ export function buildEmails(event, trade, owners, names, siteUrl = "", leagueEma
         `so please check your lineup for period ${trade.period} on the Roster page (Next Period tab), which already includes this trade:${link("Roster")}`;
       // The whole league is told too (one email to the league address). It carries no lineup advice and no private note.
       const who = (abbr) => `${abbr}${owner(abbr)?.OWNER ? ` (${owner(abbr).OWNER})` : ""}`;
-      const league = leagueEmail ? [{
+      const league = [{
         to: leagueEmail.trim(), toName: "FHL League", label: "league", subject: `FHL trade: ${trade.from} and ${trade.to}`,
         message: `Trade agreed between ${who(trade.from)} and ${who(trade.to)}, taking effect in period ${trade.period}:\n\n${block}\n\n` +
           `All agreed trades are listed on the Trades page:${link("Trades")}\n- FHL Dashboard`,
-      }] : [];
+      }]; // no `to` when LEAGUE_EMAIL is unset: sendEmail skips it, but the Discord post still uses its text
       return [...mail(`FHL trade agreed: ${trade.from} and ${trade.to}`, body), ...league];
     }
     case "declined":
@@ -135,11 +156,15 @@ async function playerNames(env, season) {
 // the platform provides it, so it never slows down or breaks the trade action.
 export function makeMailer(env, owners, execCtx) {
   return async function mail(event, trade) {
-    if (!emailConfigured(env)) return;
+    if (!emailConfigured(env) && !env.DISCORD_WEBHOOK_URL) return;
     const job = (async () => {
       try {
         const emails = buildEmails(event, trade, owners, await playerNames(env, trade.season), env.SITE_URL ?? "", env.LEAGUE_EMAIL ?? "");
-        await Promise.all(emails.map((e) => sendEmail(env, e)));
+        const jobs = emails.map((e) => sendEmail(env, e));
+        // Accepted trades are also posted to Discord, using the same text as the league email (no lineup advice, no note).
+        const league = emails.find((e) => e.label === "league");
+        if (league) jobs.push(sendDiscord(env, `**${league.subject}**\n${league.message.replace(/\n- FHL Dashboard$/, "")}`));
+        await Promise.all(jobs);
       } catch (e) {
         console.error(`Could not send ${event} emails: ${e.message}`);
       }
