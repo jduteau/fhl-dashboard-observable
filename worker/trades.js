@@ -24,6 +24,7 @@ const keyOf = (i) => `${i.kind}|${i.ref}|${i.pick_season}`;
 const sqlTrue = "t.status = 'ACCEPTED'";
 
 export async function handleTrades(action, body, env, execCtx) {
+  if (action === "admin-list") return adminList(body, env); // commissioner: no team, own password
   if (!SEASON.test(body.season ?? "") || !TEAM.test(body.team ?? "") || typeof body.password !== "string")
     throw bad("Invalid request");
   if (!env.DB) throw new HttpError(500, "Trade database is not configured");
@@ -169,6 +170,31 @@ function present(t, items, ctx) {
 }
 
 // ---- Endpoints ---------------------------------------------------------------------------
+
+// Constant-time string comparison, so the commissioner password can't be guessed from response timing.
+function sameSecret(a, b) {
+  const x = new TextEncoder().encode(String(a)), y = new TextEncoder().encode(String(b));
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
+
+// Commissioner view: every proposal of the season, whoever it involves, with private notes. Read-only.
+// Protected by the ADMIN_PASSWORD secret (not an owners.csv password); unset means the endpoint is off.
+async function adminList(body, env) {
+  if (!SEASON.test(body.season ?? "") || typeof body.password !== "string") throw bad("Invalid request");
+  if (!env.DB) throw new HttpError(500, "Trade database is not configured");
+  if (!env.ADMIN_PASSWORD) throw new HttpError(403, "Commissioner access is not set up");
+  if (!sameSecret(body.password, env.ADMIN_PASSWORD)) throw new HttpError(401, "Wrong password");
+  const ctx = await loadContext(env, body.season);
+  const { results: trades } = await env.DB.prepare(`SELECT * FROM trades WHERE season = ? ORDER BY created_at DESC LIMIT 500`).bind(body.season).all();
+  const { results: items } = await env.DB.prepare(
+    `SELECT i.* FROM trade_items i JOIN trades t ON t.id = i.trade_id WHERE t.season = ? ORDER BY i.kind DESC, i.pick_season, i.ref`
+  ).bind(body.season).all();
+  const byTrade = new Map();
+  for (const i of items) byTrade.set(i.trade_id, [...(byTrade.get(i.trade_id) ?? []), i]);
+  return { period: ctx.period, trades: trades.map((t) => present(t, byTrade.get(t.id) ?? [], ctx)) };
+}
 
 async function list(body, env, ctx) {
   const { team, season } = body;

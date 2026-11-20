@@ -185,6 +185,33 @@ loadButton.onclick = () => load();
 display(html`<div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end;">${teamSelector} ${passwordInput} ${loadButton}</div>`);
 display(status);
 display(inbox);
+
+// Commissioner: every proposal of the season, read-only, behind its own password (ADMIN_PASSWORD on the Worker).
+const adminPassword = html`<input type="password" placeholder="Commissioner password" autocomplete="off">`;
+const adminButton = html`<button>Show all trades</button>`;
+const adminStatus = html`<div style="margin:0.5rem 0;"></div>`;
+const adminList = html`<div></div>`;
+const statusLabel = {PROPOSED: "Pending", ACCEPTED: "Accepted", APPLIED: "Completed", DECLINED: "Declined", WITHDRAWN: "Withdrawn", COUNTERED: "Countered", VOID: "Void", EXPIRED: "Expired"};
+const adminSide = (side) => [...side.players.map(playerText), ...side.picks.map(pickLabel)].join("; ") || "nothing";
+adminButton.onclick = async () => {
+  adminStatus.textContent = "Loading…";
+  const r = await callTrades("admin-list", {season: _season, password: adminPassword.value});
+  if (!r.ok) { adminStatus.textContent = `FAILED: ${r.error}`; adminList.replaceChildren(); return; }
+  const {trades} = r.data;
+  const counts = Object.entries(Object.groupBy(trades, (t) => t.status)).map(([k, v]) => `${v.length} ${statusLabel[k] ?? k}`).join(" · ");
+  adminStatus.textContent = `${trades.length} proposals${counts ? ` (${counts})` : ""} · updated ${new Date().toLocaleTimeString()}`;
+  adminList.replaceChildren(...trades.map((t) => html`<div class="card" style="max-width:50em;">
+    <div><strong>${t.from} → ${t.to}</strong> · <em>${statusLabel[t.status] ?? t.status}</em> · period ${t.period} · proposed ${new Date(t.createdAt).toLocaleString()}${t.respondedAt ? ` · answered ${new Date(t.respondedAt).toLocaleString()}` : ""}${t.counters ? " · counter-offer" : ""}</div>
+    <div>${t.from} sends: ${adminSide(t.give)}</div>
+    <div>${t.to} sends: ${adminSide(t.get)}</div>
+    ${t.note ? html`<div><em>"${t.note}"</em></div>` : ""}
+  </div>`));
+};
+display(html`<details style="margin-top:1.5rem;"><summary><strong>Commissioner: all trade proposals</strong></summary>
+  <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end; margin-top:0.5rem;">${adminPassword} ${adminButton}</div>
+  ${adminStatus}${adminList}
+</details>`);
+
 display(html`<h2>League trade log</h2>`);
 display(tradeLog);
 if (window._fhlTeam && window._fhlPw) load(); // arriving from Compare Teams: load straight away

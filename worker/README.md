@@ -32,6 +32,11 @@ team is about to receive can be traded onward in a later trade, while one it alr
 When a trade is accepted, other open proposals in which the same team gives any of the same assets become VOID.
 The dashboard (Compare Teams, Trades, Roster) shows the same post-trade state from the trade log.
 
+### Commissioner view
+The **Commissioner** section at the bottom of the Trades page lists every proposal of the season, whoever it involves,
+with its status and private note (read-only). It is protected by its own password, not a team's: set it with
+`cd worker && npx wrangler secret put ADMIN_PASSWORD`. Until it is set the endpoint (`POST /trades/admin-list`) refuses everyone.
+
 ### Accepted trades on Discord
 Set the `DISCORD_WEBHOOK_URL` secret to post every accepted trade to a Discord channel (same text as the league email: no
 lineup advice, no private note, and mentions are disabled). In Discord: channel > Edit Channel > Integrations > Webhooks >

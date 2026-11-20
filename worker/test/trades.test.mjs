@@ -471,3 +471,25 @@ test("discord: an accepted trade is posted to the webhook (no note, no mentions)
     delete env.DISCORD_WEBHOOK_URL;
   }
 });
+
+test("admin: the commissioner sees every proposal (with notes and status) using ADMIN_PASSWORD only", async () => {
+  env.ADMIN_PASSWORD = "boss";
+  const t1 = ok(await propose(A, { ...oneForOne, note: "fair deal?" })).id;
+  ok(await propose(C, { to: "BOS", give: { players: ["car01"] }, get: { players: ["bos02"] } }));
+  ok(await respond(B, t1, "decline"));
+  const r = ok(await post("/trades/admin-list", { season: "2026-27", password: "boss" }));
+  assert.equal(r.trades.length, 2);
+  assert.deepEqual(r.trades.map((t) => `${t.from}>${t.to}:${t.status}`).sort(), ["ANA>BOS:DECLINED", "CAR>BOS:PROPOSED"]);
+  assert.equal(r.trades.find((t) => t.from === "ANA").note, "fair deal?");
+  assert.deepEqual(r.trades.find((t) => t.from === "ANA").give.players, ["ana01"]);
+});
+
+test("admin: wrong password, a GM's team password, and an unset ADMIN_PASSWORD are all refused", async () => {
+  assert.equal((await post("/trades/admin-list", { season: "2026-27", password: "boss" })).status, 403); // not set up
+  assert.equal((await post("/trades/admin-list", { season: "2026-27", password: "" })).status, 403);
+  env.ADMIN_PASSWORD = "boss";
+  assert.equal((await post("/trades/admin-list", { season: "2026-27", password: "nope" })).status, 401);
+  assert.equal((await post("/trades/admin-list", { season: "2026-27", password: "pwA" })).status, 401);
+  assert.equal((await post("/trades/admin-list", { season: "2026-27", password: "boss" }, "https://evil.example")).status, 403);
+  assert.equal((await post("/trades/admin-list", { season: "bad", password: "boss" })).status, 400);
+});
