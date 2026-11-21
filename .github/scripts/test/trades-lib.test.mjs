@@ -1,7 +1,7 @@
 // Run with: node --test .github/scripts/test/trades-lib.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanTrade, mergeTrades, applyTrades, updatePicksText, reconcileMoves } from "../trades-lib.mjs";
+import { cleanTrade, mergeTrades, applyTrades, updatePicksText, reconcileMoves, materializeTarget, revertAppliedPicks } from "../trades-lib.mjs";
 
 const uuid = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
 const players = (team, n) => Array.from({ length: n }, (_, i) => `${team.toLowerCase()}${String(i + 1).padStart(2, "0")}`);
@@ -127,4 +127,77 @@ test("applyTrades replays a chain in order: an asset acquired in one trade can b
   // if the first trade were missing, the onward trade can't happen
   const lone = applyTrades(league({ ANA: 21, BOS: 20, CAR: 20 }), [trade(2, { from: "BOS", to: "CAR", give: { players: ["ana01"] } })], picks());
   assert.equal(lone.skipped.length, 1);
+});
+
+// ---- Running `materialize` again ----------------------------------------------------------------
+
+test("materializeTarget: the period after the latest roster, unless that roster is for a period that has not started", () => {
+  // rosters 1-7 and stats 1-7: period 7 is in progress, so the next roster to write is 8, from 7
+  assert.deepEqual(materializeTarget([1, 2, 3, 4, 5, 6, 7], [1, 2, 3, 4, 5, 6, 7]), { period: 8, base: 7, regenerate: false });
+  // rosters 1-8 but no stats for 8 yet: 8 is a previous run's output, so run again rebuilds it from 7
+  assert.deepEqual(materializeTarget([1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 3, 4, 5, 6, 7]), { period: 8, base: 7, regenerate: true });
+  // period 8 has started (it has stats): the next one to write is 9
+  assert.deepEqual(materializeTarget([1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 3, 4, 5, 6, 7, 8]), { period: 9, base: 8, regenerate: false });
+  // the very start of a season: roster 1 exists with no stats yet and nothing before it to rebuild from, so write 2
+  assert.deepEqual(materializeTarget([1], []), { period: 2, base: 1, regenerate: false });
+  assert.deepEqual(materializeTarget([1, 2], [1]), { period: 2, base: 1, regenerate: true });
+});
+
+const pickOwners = () => new Map([["2026-27", new Map([["ANA1", "ANA"], ["BOS1", "BOS"], ["CAR1", "CAR"]])]]);
+const pickTrade = (id, at, from, to, give, get, appliedAt) => ({ id, from, to, acceptedAt: at, give: { players: [], picks: give }, get: { players: [], picks: get }, ...(appliedAt ? { appliedAt } : {}) });
+const P = (pick) => ({ pick, season: "2026-27" });
+
+test("revertAppliedPicks: hands back the picks that applied trades moved, and only those", () => {
+  const owners = pickOwners();
+  owners.get("2026-27").set("ANA1", "BOS"); // moved by an earlier run
+  owners.get("2026-27").set("BOS1", "ANA");
+  const trades = [
+    pickTrade("t1", "2026-11-01T00:00:00Z", "ANA", "BOS", [P("ANA1")], [P("BOS1")], "2026-11-02T00:00:00Z"),
+    pickTrade("t2", "2026-11-03T00:00:00Z", "CAR", "ANA", [P("CAR1")], [], undefined), // never applied: left alone
+  ];
+  assert.equal(revertAppliedPicks(trades, owners), 2);
+  assert.equal(owners.get("2026-27").get("ANA1"), "ANA");
+  assert.equal(owners.get("2026-27").get("BOS1"), "BOS");
+  assert.equal(owners.get("2026-27").get("CAR1"), "CAR");
+});
+
+test("revertAppliedPicks: a pick traded onward is handed back newest trade first", () => {
+  const owners = pickOwners();
+  owners.get("2026-27").set("ANA1", "CAR"); // ANA -> BOS, then BOS -> CAR
+  const trades = [
+    pickTrade("t1", "2026-11-01T00:00:00Z", "ANA", "BOS", [P("ANA1")], [], "2026-11-02T00:00:00Z"),
+    pickTrade("t2", "2026-11-03T00:00:00Z", "BOS", "CAR", [P("ANA1")], [], "2026-11-04T00:00:00Z"),
+  ];
+  assert.equal(revertAppliedPicks(trades, owners), 2);
+  assert.equal(owners.get("2026-27").get("ANA1"), "ANA");
+});
+
+test("revertAppliedPicks: a pick that someone else now owns, or a season with no pick file, is left alone", () => {
+  const owners = pickOwners();
+  owners.get("2026-27").set("ANA1", "CAR"); // not where the trade left it
+  const trades = [
+    pickTrade("t1", "2026-11-01T00:00:00Z", "ANA", "BOS", [P("ANA1")], [], "2026-11-02T00:00:00Z"),
+    pickTrade("t2", "2026-11-03T00:00:00Z", "ANA", "BOS", [{ pick: "ANA1", season: "2099-00" }], [], "2026-11-04T00:00:00Z"),
+  ];
+  assert.equal(revertAppliedPicks(trades, owners), 0);
+  assert.equal(owners.get("2026-27").get("ANA1"), "CAR");
+});
+
+test("applyTrades keeps the original appliedAt of a trade that applies again, so a rerun changes nothing", () => {
+  const t = (id, extra) => ({ id, from: "ANA", to: "BOS", acceptedAt: "2026-11-01T00:00:00Z", give: { players: ["ana01"], picks: [] }, get: { players: ["bos01"], picks: [] }, ...extra });
+  const again = t("t1", { appliedAt: "2026-11-02T00:00:00.000Z" }); // applied by an earlier run
+  const { applied } = applyTrades(league({ ANA: 20, BOS: 20 }), [again], new Map(), "2027-01-01T00:00:00.000Z");
+  assert.deepEqual(applied, ["t1"]);
+  assert.equal(again.appliedAt, "2026-11-02T00:00:00.000Z"); // not the new time
+  const first = t("t2");
+  applyTrades(league({ ANA: 20, BOS: 20 }), [first], new Map(), "2027-01-01T00:00:00.000Z");
+  assert.equal(first.appliedAt, "2027-01-01T00:00:00.000Z"); // a trade applied for the first time gets the time
+});
+
+test("revertAppliedPicks ignores a trade flagged skipped: it moved nothing", () => {
+  const owners = pickOwners();
+  owners.get("2026-27").set("ANA1", "BOS");
+  const stale = { ...pickTrade("t1", "2026-11-01T00:00:00Z", "ANA", "BOS", [P("ANA1")], [], "2026-11-02T00:00:00Z"), skipped: "old reason" };
+  assert.equal(revertAppliedPicks([stale], owners), 0);
+  assert.equal(owners.get("2026-27").get("ANA1"), "BOS");
 });

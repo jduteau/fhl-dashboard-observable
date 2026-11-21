@@ -1,30 +1,8 @@
 // Shared helpers for the Worker: CSV parsing, JSON responses, GitHub access. (GM authentication is in accounts.js.)
 
-// Minimal CSV parser (handles quoted fields). d3-dsv can't be used: it relies on
-// `new Function`, which Cloudflare Workers disallow.
-export function csvParse(text) {
-  const rows = [];
-  let row = [], field = "", q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) {
-      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
-      else if (c === '"') q = false;
-      else field += c;
-    } else if (c === '"') q = true;
-    else if (c === ",") { row.push(field); field = ""; }
-    else if (c === "\n" || c === "\r") {
-      if (c === "\r" && text[i + 1] === "\n") i++;
-      row.push(field); field = "";
-      if (row.some((v) => v !== "")) rows.push(row);
-      row = [];
-    } else field += c;
-  }
-  if (field !== "" || row.length) { row.push(field); rows.push(row); }
-  const [head, ...body] = rows;
-  const cols = head.map((h) => h.trim());
-  return body.map((r) => Object.fromEntries(cols.map((h, i) => [h, (r[i] ?? "").trim()])));
-}
+// CSV parsing is shared with the GitHub scripts: src/components/csv.js (d3-dsv can't be used here: it relies on
+// `new Function`, which Cloudflare Workers disallow).
+export { csvParse } from "../src/components/csv.js";
 
 // An error that should be reported to the caller with this HTTP status.
 export class HttpError extends Error {

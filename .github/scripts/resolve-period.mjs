@@ -3,12 +3,9 @@
 // Period: first period in src/data/static/<season>/periods.csv whose end date is today or later
 // Usage: node resolve-period.mjs [season] [period]   (args override the lookup)
 import { readFileSync, appendFileSync } from "fs";
+import { csvParse } from "../../src/components/csv.js";
 
-const parseCsv = (path) => {
-  const [header, ...rows] = readFileSync(path, "utf-8").replace(/^﻿/, "").trim().split(/\r?\n/);
-  const cols = header.split(",").map((c) => c.trim());
-  return rows.filter(Boolean).map((r) => Object.fromEntries(r.split(",").map((v, i) => [cols[i], v.trim()])));
-};
+const parseCsv = (path) => csvParse(readFileSync(path, "utf-8"));
 
 const [seasonArg, periodArg] = process.argv.slice(2);
 const season = seasonArg || parseCsv("src/data/static/seasons.csv").find((s) => s.current === "true")?.season;

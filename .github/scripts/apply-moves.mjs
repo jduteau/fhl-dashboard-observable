@@ -3,6 +3,7 @@
 //   node apply-moves.mjs                       validate $MOVES (JSON) and store it in
 //                                              src/data/static/<season>/moves/moves_pNN.json
 //   node apply-moves.mjs materialize [season] [period]
+//                                              (safe to run again: see below)
 //                                              write rosters_pNN.csv = previous roster + the agreed trades in
 //                                              src/data/static/<season>/trades/trades_pNN.json (see record-trades.mjs; traded picks
 //                                              are rewritten in the draft_picks.csv files) + the stored moves
@@ -12,7 +13,7 @@
 //   trades for the next period have been applied (traded players keep their status until their new GM changes it)
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from "fs";
 import { csvParse } from "d3-dsv";
-import { applyTrades, updatePicksText, reconcileMoves } from "./trades-lib.mjs";
+import { applyTrades, updatePicksText, reconcileMoves, materializeTarget, revertAppliedPicks } from "./trades-lib.mjs";
 import { lineupProblems, mapPosition } from "../../src/components/leagueRules.js";
 
 const root = "src/data/static";
@@ -21,8 +22,11 @@ const pad = (n) => String(n).padStart(2, "0");
 const fail = (msg) => { console.error(`::error::${msg}`); process.exit(1); };
 
 const currentSeason = () => read(`${root}/seasons.csv`).find((s) => s.current === "true")?.season;
-const latestRosterPeriod = (season) =>
-  Math.max(...readdirSync(`${root}/${season}/rosters`).map((f) => /^rosters_p(\d+)\.csv$/.exec(f)?.[1]).filter(Boolean).map(Number));
+const periodsIn = (dir, prefix) =>
+  existsSync(dir) ? readdirSync(dir).map((f) => new RegExp(`^${prefix}_p(\\d+)\\.csv$`).exec(f)?.[1]).filter(Boolean).map(Number) : [];
+const rosterPeriods = (season) => periodsIn(`${root}/${season}/rosters`, "rosters");
+const statsPeriods = (season) => periodsIn(`${root}/${season}/stats`, "stats");
+const latestRosterPeriod = (season) => Math.max(...rosterPeriods(season));
 const movesPath = (season, period) => `${root}/${season}/moves/moves_p${pad(period)}.json`;
 const tradesPath = (season, period) => `${root}/${season}/trades/trades_p${pad(period)}.json`;
 const loadMoves = (season, period) => (existsSync(movesPath(season, period)) ? JSON.parse(readFileSync(movesPath(season, period), "utf-8")) : {});
@@ -74,9 +78,13 @@ const [mode, a1, a2] = process.argv.slice(2);
 
 if (mode === "materialize") {
   const season = a1 || currentSeason();
-  const base = latestRosterPeriod(season);
-  const period = a2 ? Number(a2) : base + 1;
-  if (period !== base + 1) fail(`Can only materialize period ${base + 1}`);
+  // The period to write: normally the one after the latest roster; if that latest roster is for a period that has not
+  // started yet (an earlier run's output), it is rebuilt from the roster before it, so running again is safe and picks
+  // up trades agreed and moves submitted since.
+  const { period: target, base, regenerate } = materializeTarget(rosterPeriods(season), statsPeriods(season));
+  const period = a2 ? Number(a2) : target;
+  if (period !== target) fail(`Can only materialize period ${target}`);
+  if (regenerate) console.log(`rosters_p${pad(period)}.csv already exists and period ${period} has not started: regenerating it from rosters_p${pad(base)}.csv`);
   const baseRows = read(`${root}/${season}/rosters/rosters_p${pad(base)}.csv`);
   const playerInfo = read(`${root}/${season}/player_info.csv`);
   const rows = baseRows.map((r) => ({ ID: r.ID, ABBR: r.ABBR, RESERVE: r.RESERVE }));
@@ -87,6 +95,9 @@ if (mode === "materialize") {
   const t = loadTrades(season, period);
   if (t) {
     const before = new Map([...t.picksBySeason].map(([s, m]) => [s, new Map(m)]));
+    // Picks moved by an earlier run are already in draft_picks.csv: hand them back first so the trades apply from the
+    // same starting point every time (the roster itself is rebuilt from the previous period's file)
+    revertAppliedPicks(t.trades, t.picksBySeason);
     const { applied, skipped } = applyTrades(rows, t.trades, t.picksBySeason);
     for (const { id, reason } of skipped) console.warn(`::warning::Trade ${id} NOT applied: ${reason}`);
     for (const [s, owners] of t.picksBySeason) {

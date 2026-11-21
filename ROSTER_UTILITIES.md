@@ -5,41 +5,24 @@ This directory contains utilities for analyzing FHL roster files to count active
 ## Files
 
 - **`countActiveRoster.js`** - Node.js utility for analyzing roster files
-- **`count_roster.sh`** - Shell script wrapper for easy usage  
 
 ## Usage
 
-### Option 1: Use the shell script wrapper (recommended)
+Give it a roster file. The season (and so the `player_info.csv` used to look up positions) is taken from the file's
+path, `src/data/static/<season>/rosters/...`.
 
 ```bash
-# Count active players in period 25
-./count_roster.sh 25
+# A regular season period
+node countActiveRoster.js src/data/static/2026-27/rosters/rosters_p07.csv
 
-# Count active players in period 1  
-./count_roster.sh 1
-
-# Count playoff round 1 (multiple formats supported)
-./count_roster.sh r1
-./count_roster.sh playoff1
-
-# Count from a specific file
-./count_roster.sh src/data/static/rosters/rosters_p25.csv
-./count_roster.sh src/data/static/rosters/rosters_playoff_r01.csv
-
-# Show help and available periods/playoff rounds
-./count_roster.sh
-```
-
-### Option 2: Use the Node.js script directly
-
-```bash
-# Direct usage with specific file
-node countActiveRoster.js src/data/static/rosters/rosters_p25.csv
-node countActiveRoster.js src/data/static/rosters/rosters_playoff_r01.csv
+# A playoff round
+node countActiveRoster.js src/data/static/2026-27/rosters/rosters_playoff_r01.csv
 
 # Show usage help
 node countActiveRoster.js
 ```
+
+The roster limits it checks are defined once, in `src/components/leagueRules.js`.
 
 ## Output
 
@@ -67,7 +50,7 @@ The utilities automatically detect roster type and provide:
 
 #### Regular Season Roster (All Legal)
 ```
-=== REGULAR SEASON ROSTER ANALYSIS: src/data/static/rosters/rosters_p25.csv ===
+=== REGULAR SEASON ROSTER ANALYSIS: src/data/static/2026-27/rosters/rosters_p25.csv ===
 Total Players: 1062
 Active Players: 640
 Reserve Players: 422
@@ -87,7 +70,7 @@ BY TEAM:
 
 #### Playoff Roster (With Violations)
 ```
-=== PLAYOFF ROSTER ANALYSIS: src/data/static/rosters/rosters_playoff_r01.csv ===
+=== PLAYOFF ROSTER ANALYSIS: src/data/static/2026-27/rosters/rosters_playoff_r01.csv ===
 Total Players: 1062
 Active Players: 545
 Reserve Players: 517
@@ -122,7 +105,7 @@ BY TEAM:
 - **Period numbers**: `1`, `25`, `01`, `05` → `rosters_p01.csv`, `rosters_p25.csv`
 - **Playoff rounds**: `r1`, `r2`, `r01` → `rosters_playoff_r01.csv`, `rosters_playoff_r02.csv`  
 - **Alternative playoff**: `playoff1`, `playoff2` → `rosters_playoff_r01.csv`, `rosters_playoff_r02.csv`
-- **Direct file paths**: `src/data/static/rosters/rosters_p25.csv`
+- **Direct file paths**: `src/data/static/2026-27/rosters/rosters_p25.csv`
 
 ### Available Files
 - **Regular season periods**: P01-P25 (`rosters_p01.csv` through `rosters_p25.csv`)
@@ -137,6 +120,6 @@ BY TEAM:
 
 ## Data Sources
 
-- **Regular season roster files**: `src/data/static/rosters/rosters_pXX.csv`
-- **Playoff roster files**: `src/data/static/rosters/rosters_playoff_rXX.csv`
+- **Regular season roster files**: `src/data/static/<season>/rosters/rosters_pXX.csv`
+- **Playoff roster files**: `src/data/static/<season>/rosters/rosters_playoff_rXX.csv`
 - **Player info**: `src/data/static/player_info.csv` (for position lookups)

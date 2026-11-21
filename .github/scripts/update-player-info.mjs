@@ -23,6 +23,8 @@
 // PuckPedia blocks scripted access outright, so its slug is derived from the
 // name (correct for ~99% of existing rows) and never fetched.
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "fs";
+import { csvParse } from "../../src/components/csv.js";
+import { appendPlayers, setHockeyDbId } from "./player-info-lib.mjs";
 
 const MAX_SITE_REQUESTS = Number(process.env.MAX_SITE_REQUESTS ?? 40);
 const MIN_DELAY_MS = Number(process.env.MIN_DELAY_MS ?? 6000);
@@ -39,12 +41,8 @@ const NHL_TEAMS = [
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.log("[player-info]", ...a);
 
-// ---------- CSV helpers (player_info.csv has no quoted fields beyond simple names) ----------
-function parseCsv(path) {
-  const [header, ...rows] = readFileSync(path, "utf-8").replace(/^﻿/, "").trim().split(/\r?\n/);
-  const cols = header.split(",").map((c) => c.trim());
-  return rows.filter(Boolean).map((r) => Object.fromEntries(r.split(",").map((v, i) => [cols[i], v.trim()])));
-}
+// ---------- CSV helper (quoted fields such as "Smith, Jr." are handled by the shared parser) ----------
+const parseCsv = (path) => csvParse(readFileSync(path, "utf-8"));
 
 // ---------- Polite, serial, budgeted fetching for the protected sites ----------
 const sites = {}; // host -> {blocked, lastRequest}
@@ -212,12 +210,8 @@ for (const p of [...added, ...needsDb]) {
 // Append new rows / patch back-filled ids, preserving the file's existing layout
 // (header, LF line endings, no trailing newline).
 let text = readFileSync(infoPath, "utf-8");
-for (const p of needsDb.filter((p) => p.HockeyDB)) {
-  text = text.replace(new RegExp(`^(${p.ID},[^\\r\\n]*?),,`, "m"), `$1,${p.HockeyDB},`);
-}
-const eol = text.includes("\r\n") ? "\r\n" : "\n";
-for (const p of added)
-  text += `${eol}${[p.ID, p.Name, p.BirthDate, p.Pos, p.NHL, p.HockeyDB, p.PuckPedia].join(",")}`;
+for (const p of needsDb.filter((p) => p.HockeyDB)) text = setHockeyDbId(text, p.ID, p.HockeyDB);
+text = appendPlayers(text, added);
 
 if (DRY_RUN) {
   log("DRY_RUN: would append:\n" + added.map((p) => Object.values(p).join(",")).join("\n"));

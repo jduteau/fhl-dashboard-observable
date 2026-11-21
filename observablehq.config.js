@@ -48,69 +48,8 @@ export default {
   // Content to add to the head of the page, e.g. for a favicon:
   head: `<link rel="icon" href="observable.png" type="image/png" sizes="32x32">
 <link rel="stylesheet" href="/styles/responsive.css">
-<script>
-  (function() {
-    var seasons = ${JSON.stringify(_seasons)};
-    var currentSeason = ${JSON.stringify(_currentSeason)};
-    var STORAGE_KEY = 'fhl-season';
-
-    // Resolve active season: URL param → sessionStorage → default
-    var _p = new URLSearchParams(window.location.search);
-    var activeSeason = _p.get('season');
-    if (!activeSeason || seasons.indexOf(activeSeason) === -1) {
-      activeSeason = sessionStorage.getItem(STORAGE_KEY) || currentSeason;
-      if (seasons.indexOf(activeSeason) === -1) activeSeason = currentSeason;
-    }
-    sessionStorage.setItem(STORAGE_KEY, activeSeason);
-    // If season wasn't in the URL, add it silently so Observable page cells
-    // see the correct ?season= when they evaluate
-    if (!_p.get('season')) {
-      _p.set('season', activeSeason);
-      window.history.replaceState(null, '', window.location.pathname + '?' + _p.toString());
-    }
-
-    function init() {
-      var select = document.getElementById('fhl-season-select');
-      if (!select) { setTimeout(init, 50); return; }
-      seasons.forEach(function(s) {
-        var opt = document.createElement('option');
-        opt.value = s; opt.textContent = s;
-        if (s === activeSeason) opt.selected = true;
-        select.appendChild(opt);
-      });
-      select.addEventListener('change', function() {
-        activeSeason = select.value;
-        sessionStorage.setItem(STORAGE_KEY, activeSeason);
-        var p = new URLSearchParams(window.location.search);
-        p.set('season', activeSeason);
-        window.location.search = p.toString();
-      });
-      // Intercept internal nav links to keep ?season= param across pages
-      document.addEventListener('click', function(e) {
-        var link = e.target.closest('a[href]');
-        if (!link) return;
-        var href = link.getAttribute('href');
-        if (!href || href.startsWith('http') || href.startsWith('//') ||
-            href.startsWith('#') || href.startsWith('mailto:')) return;
-        try {
-          var url = new URL(href, window.location.href);
-          if (url.origin !== window.location.origin) return;
-          if (!url.searchParams.get('season')) {
-            e.preventDefault();
-            url.searchParams.set('season', activeSeason);
-            window.location.href = url.toString();
-          }
-        } catch (_e) {}
-      });
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
-  })();
-</script>`,
+<script>window.FHL_SEASONS = ${JSON.stringify({seasons: _seasons, currentSeason: _currentSeason})};</script>
+<script src="/js/season-selector.js"></script>`,
 
   // Season selector HTML rendered in every page header
   header: `<div id="fhl-season-bar" style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 1rem;font-size:0.875rem;border-bottom:1px solid var(--theme-border,#e0e0e0)">

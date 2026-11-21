@@ -1,23 +1,33 @@
 #!/usr/bin/env node
 // Builds the next period's roster file from an FHL Trader transaction report.
 //
-// Usage: node updateRoster.js [fhl_trader.txt] [--dry-run]
+// Usage: node updateRoster.js [fhl_trader.txt] [--season 2026-27] [--dry-run]
 //
-// Reads the latest rosters_pNN.csv in ./current/rosters and writes rosters_p(NN+1).csv.
+// Works on the season marked current in src/data/static/seasons.csv (or the one given with --season): reads its latest
+// rosters_pNN.csv and writes rosters_p(NN+1).csv.
 // Transactions are applied in this order: waived players, FA signings, trades, roster moves.
 // Traded draft picks are updated in place in the current and next season's draft_picks.csv.
 // FA signings also get a row in contracts.csv, effective from the new period.
-import { readFileSync, writeFileSync, readdirSync, existsSync, realpathSync } from "fs";
+import { readFileSync, writeFileSync, readdirSync, existsSync } from "fs";
 import { dirname, join, basename } from "path";
 import { fileURLToPath } from "url";
 import { csvParse } from "d3-dsv";
+import { csvLine } from "./src/components/csv.js";
 
 const root = dirname(fileURLToPath(import.meta.url));
-const args = process.argv.slice(2);
-const dryRun = args.includes("--dry-run");
+const rawArgs = process.argv.slice(2);
+const dryRun = rawArgs.includes("--dry-run");
+const seasonFlag = rawArgs.indexOf("--season");
+const seasonArg = seasonFlag >= 0 ? rawArgs[seasonFlag + 1] : undefined;
+if (seasonFlag >= 0 && (!seasonArg || seasonArg.startsWith("--"))) throw new Error("--season needs a season, e.g. --season 2026-27");
+const args = rawArgs.filter((a, i) => i !== seasonFlag && i !== seasonFlag + 1 || seasonFlag < 0); // without --season and its value
 const traderFile = args.find(a => !a.startsWith("--")) || join(root, "fhl_trader.txt");
 
-const seasonDir = realpathSync(join(root, "current"));
+const staticDir = join(root, "src/data/static");
+const season = seasonArg ?? csvParse(readFileSync(join(staticDir, "seasons.csv"), "utf-8").replace(/^\uFEFF/, "")).find(s => s.current === "true")?.season;
+if (!season) throw new Error("No current season in seasons.csv: say which with --season");
+const seasonDir = join(staticDir, season);
+if (!existsSync(seasonDir)) throw new Error(`No data folder for season ${season}: ${seasonDir}`);
 const nextSeasonDir = (() => {
   const m = basename(seasonDir).match(/^(\d{4})-(\d{2})$/);
   if (!m) return null;
@@ -32,7 +42,7 @@ const stripBom = s => s.replace(/^﻿/, "");
 const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
 const readCsv = file => csvParse(stripBom(readFileSync(file, "utf-8")));
 const writeCsv = (file, header, rows) =>
-  writeFileSync(file, [header.join(","), ...rows.map(r => header.map(h => r[h] ?? "").join(","))].join("\r\n") + "\r\n");
+  writeFileSync(file, [csvLine(header), ...rows.map(r => csvLine(header.map(h => r[h] ?? "")))].join("\r\n") + "\r\n");
 
 // ---- load current roster ----
 const rosterDir = join(seasonDir, "rosters");

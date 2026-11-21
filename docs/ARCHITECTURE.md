@@ -155,7 +155,8 @@ the league email, with mentions disabled. Unset means off.
   (they are gitignored; Read Stats supersedes them for the regular season).
 - `updateRoster.js`: builds the next roster from an *FHL Trader* transaction report (`fhl_trader.txt`), for
   transactions made outside the dashboard (waivers, free-agent signings). `countActiveRoster.js`: counts active players
-  by position. The `current` symlink points at the current season folder for these scripts.
+  by position. Both work on the season marked `current` in `seasons.csv` (`updateRoster.js` also takes `--season`;
+  `countActiveRoster.js` reads the season from the roster file's path).
 - Playoff data is maintained by hand: `playoff_bracket.csv`, `playoff_rounds.csv` and `stats_playoff_rNN.csv`.
 
 ## Walkthroughs
@@ -179,6 +180,9 @@ the league email, with mentions disabled. Unset means off.
 6. **New period** (commissioner runs *Apply Roster Moves* with "materialize"): trades are re-validated and applied
    to `rosters_pNN.csv` and `draft_picks.csv`; unapplicable ones are skipped with a warning in the run log; then the
    stored lineup moves are applied. Proposals still `PROPOSED` now read as `EXPIRED`.
+   Running it again is safe: while the new period has not started (no `stats_pNN.csv` for it yet) it rebuilds the same
+   `rosters_pNN.csv` from the period before, picking up trades agreed and moves submitted since (picks it already moved
+   are handed back first, so nothing is applied twice). Once the period has stats, the next run creates the following one.
 
 ### Stats arrive
 Daily cron -> Read Stats scrapes the current period's stats, commits `stats_pNN.csv` (and any new `player_info.csv`

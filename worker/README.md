@@ -100,4 +100,5 @@ Tests (no Cloudflare account needed):
 
 ## Commissioner: start a new period
 Run the **Apply Roster Moves** workflow manually (Actions tab). It writes `rosters_pNN.csv`
-for the next period from the stored moves; teams with no moves carry over unchanged.
+for the next period from the stored moves; teams with no moves carry over unchanged. It is safe to run again before
+that period starts: it rebuilds the same roster, including trades agreed and moves submitted since.

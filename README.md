@@ -41,7 +41,8 @@ A season selector applies to every page; seasons are defined in `src/data/static
 .
 ├─ src/
 │  ├─ *.md                     # dashboard pages
-│  ├─ components/              # shared JS: loadfiles.js (stats, seasons), trades.js (trade checks), ...
+│  ├─ components/              # shared JS: loadfiles.js (stats, seasons), leagueRules.js (league rules), trades.js, ...
+│  ├─ js/season-selector.js    # the season selector in every page header
 │  └─ data/
 │     ├─ *.json.js, *.csv.js   # build-time data loaders (CSV -> JSON for the pages)
 │     └─ static/
@@ -60,8 +61,7 @@ A season selector applies to every page; seasons are defined in `src/data/static
 ├─ FHLScripts/                 # TypeScript stats scraper used by the Read Stats workflow
 ├─ docs/ARCHITECTURE.md        # the system overview
 ├─ observablehq.config.js      # navigation and app config
-├─ updateRoster.js, countActiveRoster.js   # local roster utilities (see ROSTER_UTILITIES.md)
-└─ current -> src/data/static/<current season>   # symlink used by the local utilities
+└─ updateRoster.js, countActiveRoster.js   # local roster utilities (see ROSTER_UTILITIES.md)
 ```
 
 ## How data gets in (summary)

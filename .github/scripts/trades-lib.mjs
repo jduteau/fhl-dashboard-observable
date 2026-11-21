@@ -52,11 +52,44 @@ export function mergeTrades(existing, incoming) {
   return { trades: merged.sort(byAcceptedAt), added };
 }
 
+// Which period `materialize` writes the roster for, and which roster it starts from.
+//   rosterPeriods / statsPeriods: the period numbers that have a roster file / a stats file
+// Normally that is the period after the latest roster. But a latest roster for a period with no stats yet (it has not
+// started) is the output of an earlier run, so running again REGENERATES it from the roster before it, picking up trades
+// agreed and moves submitted since, instead of creating yet another period.
+export function materializeTarget(rosterPeriods, statsPeriods) {
+  const latestRoster = Math.max(...rosterPeriods);
+  const latestStats = statsPeriods.length ? Math.max(...statsPeriods) : 0;
+  const regenerate = latestRoster > latestStats && rosterPeriods.includes(latestRoster - 1);
+  return regenerate
+    ? { period: latestRoster, base: latestRoster - 1, regenerate }
+    : { period: latestRoster + 1, base: latestRoster, regenerate };
+}
+
+// Undoes the draft-pick moves of trades an earlier run already applied (those carrying appliedAt), newest first, so the
+// trades can be applied again from the same starting point. Players need no undoing, because the roster is rebuilt from
+// the previous period's file. A pick is only handed back if its current owner is the team the trade gave it to.
+// (A trade flagged skipped moved nothing, so it is left alone.)
+//   picksBySeason: Map(draftSeason -> Map(pickId -> ownerAbbr)) - mutated. Returns how many picks were handed back.
+export function revertAppliedPicks(trades, picksBySeason) {
+  let reverted = 0;
+  for (const t of [...trades].filter((x) => x.appliedAt && !x.skipped).sort(byAcceptedAt).reverse()) {
+    for (const [giver, receiver, side] of [[t.from, t.to, t.give], [t.to, t.from, t.get]]) {
+      for (const p of side?.picks ?? []) {
+        const owners = picksBySeason.get(p.season);
+        if (owners?.get(p.pick) === receiver) { owners.set(p.pick, giver); reverted++; }
+      }
+    }
+  }
+  return reverted;
+}
+
 // Applies trades (oldest first) to the new period's roster rows and to draft-pick ownership.
 //   rows:          [{ID, ABBR, RESERVE}] - mutated: traded players change ABBR and keep their RESERVE designation
 //   picksBySeason: Map(draftSeason -> Map(pickId -> ownerAbbr)) - mutated
 // A trade is applied all-or-nothing and re-checked against current ownership and roster sizes; one that can no
-// longer happen is skipped with a reason. Mutates each trade, setting appliedAt or skipped.
+// longer happen is skipped with a reason. Mutates each trade, setting appliedAt or skipped; a trade that was applied
+// before and applies again keeps its original appliedAt, so running this again changes nothing.
 export function applyTrades(rows, trades, picksBySeason, now = new Date().toISOString()) {
   const rowById = new Map(rows.map((r) => [r.ID, r]));
   const sizes = new Map();
@@ -65,6 +98,7 @@ export function applyTrades(rows, trades, picksBySeason, now = new Date().toISOS
   const skipped = [];
 
   for (const t of [...trades].sort(byAcceptedAt)) {
+    const previouslyAppliedAt = t.skipped ? undefined : t.appliedAt; // a flag left beside `skipped` is stale
     delete t.appliedAt;
     delete t.skipped;
     // Tolerate hand-edited files with a missing players/picks list.
@@ -107,7 +141,7 @@ export function applyTrades(rows, trades, picksBySeason, now = new Date().toISOS
       }
       for (const p of items.picks) picksBySeason.get(p.season).set(p.pick, receiver);
     }
-    t.appliedAt = now;
+    t.appliedAt = previouslyAppliedAt ?? now;
     applied.push(t.id);
   }
   return { applied, skipped };
