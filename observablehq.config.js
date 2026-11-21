@@ -49,7 +49,8 @@ export default {
   head: `<link rel="icon" href="observable.png" type="image/png" sizes="32x32">
 <link rel="stylesheet" href="/styles/responsive.css">
 <script>window.FHL_SEASONS = ${JSON.stringify({seasons: _seasons, currentSeason: _currentSeason})};</script>
-<script src="/js/season-selector.js"></script>`,
+<script src="/js/season-selector.js"></script>
+<script src="/js/tabs.js"></script>`,
 
   // Season selector HTML rendered in every page header
   header: `<div id="fhl-season-bar" style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 1rem;font-size:0.875rem;border-bottom:1px solid var(--theme-border,#e0e0e0)">
