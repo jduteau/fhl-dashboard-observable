@@ -42,7 +42,7 @@ A season selector applies to every page; seasons are defined in `src/data/static
 ├─ src/
 │  ├─ *.md                     # dashboard pages
 │  ├─ components/              # shared JS: loadfiles.js (stats, seasons), leagueRules.js (league rules), trades.js, ...
-│  ├─ js/season-selector.js    # the season selector in every page header
+│  ├─ js/, styles/             # scripts and styles shared by the pages (season selector, tabs, responsive layout)
 │  └─ data/
 │     ├─ *.json.js, *.csv.js   # build-time data loaders (CSV -> JSON for the pages)
 │     └─ static/
@@ -70,7 +70,7 @@ A season selector applies to every page; seasons are defined in `src/data/static
 - **Lineup moves** and **trades** are submitted from the site to the Worker, which checks the GM's password, enforces
   the rules and triggers GitHub workflows that commit the result. Pending trade proposals live in D1 and are private;
   accepted trades are committed to the repo.
-- **Every commit** redeploys the site through the **Deploy** workflow.
+- **Every commit** redeploys the site through the **Deploy** workflow, which runs the tests first and does not deploy if they fail.
 - **A new period** starts when the commissioner runs **Apply Roster Moves** (materialize) from the Actions tab.
 
 The full story, with diagrams and a table of secrets, is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

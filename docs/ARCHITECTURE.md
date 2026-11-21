@@ -63,7 +63,13 @@ flowchart LR
   `playerRows.js` (the building blocks every loader composes its published player rows from),
   `leagueRules.js` (the league's rules in one place: 25 periods, minimum period cost, roster limits, positions, the
   stat weights and the record-by-rank table; also imported by the Worker and the GitHub scripts),
-  `standingsHelpers.js` (period and season rankings) and `trades.js` (trade validation and "agreed trades" overlays).
+  `ranking.js` (how teams are ranked on the five stats and overall, shared by the standings and the playoffs),
+  `standingsHelpers.js` (period and season rankings), `playoffHelpers.js` (playoff matchups),
+  `tradeRules.js` (the identifier formats and "can this trade happen?" check shared by the Worker and the roster script)
+  and `trades.js` (trade validation and "agreed trades" overlays).
+  A season whose first roster exists before any stats counts as period 1 with nothing played yet, so a brand-new season
+  builds; the loaders publish `latestPeriod` (the period in progress) and the pages use it. Static scripts and styles
+  shared by pages are in `src/js/` (`season-selector.js`, `tabs.js`) and `src/styles/`.
 - **Hosting:** GitHub Pages at `https://jduteau.github.io/fhl-dashboard-observable/`.
 - **Important consequence:** the site has no server. Anything dynamic (submitting a lineup, proposing a trade) is the
   browser calling the Worker directly (below). Anything that must appear on the site is committed to the repo and
@@ -78,7 +84,7 @@ flowchart LR
 - **Why it exists:** the static site cannot hold secrets or verify a GM. The Worker checks the GM's password, enforces
   the trade rules, and is the only thing holding the GitHub token.
 - **Files:** `index.js` (routing, CORS, roster moves), `trades.js` (trade endpoints), `email.js` (EmailJS and Discord),
-  `accounts.js` (GM accounts, password hashing, lockout, `/account/*`), `lib.js` (GitHub access, CSV parsing), `schema.sql` (D1 tables), `wrangler.toml` (config), `test/`.
+  `accounts.js` (GM accounts, password hashing, per-caller lockout, `/account/*`), `lib.js` (GitHub access, CSV parsing), `schema.sql` (D1 tables), `wrangler.toml` (config), `test/`.
 - **Endpoints** (all `POST`, JSON; requests from origins other than the allowed list are refused):
 
   | Endpoint | Who | What |
@@ -93,9 +99,13 @@ flowchart LR
   | `/account/admin-list`, `/account/admin-set` | Commissioner | List accounts; set any team's password or email (the only way to recover a forgotten password) |
 
 - **Authentication:** every GM request carries the team abbreviation and password. The Worker checks it against a
-  salted PBKDF2 hash in the D1 table `gm_accounts` (never sent to the browser). After 10 wrong passwords for a team in
-  15 minutes that team is locked out for the rest of the window (`auth_failures` table). The commissioner endpoints use a
-  separate `ADMIN_PASSWORD` secret, compared in constant time and throttled the same way. `owners.csv` only supplies
+  salted PBKDF2 hash in the D1 table `gm_accounts` (never sent to the browser). Wrong passwords are counted per caller (the
+  IP address Cloudflare reports) in the D1 table `login_failures`: 10 wrong passwords for one account from one caller in
+  15 minutes lock that caller out of that account, and 40 wrong passwords of any kind lock that caller out of everything
+  (which stops one address working through all the teams). Because the count is per caller, a stranger guessing at a team
+  only locks themselves out, never the GM. The commissioner endpoints use a separate `ADMIN_PASSWORD` secret, compared in
+  constant time and throttled the same way. An unexpected failure returns a generic "Server error" to the browser; the
+  detail is in the Worker log. `owners.csv` only supplies
   public owner names and locations.
 - **Trade rules enforced here:** each side must own what it gives (latest roster + draft picks, with already-agreed
   trades applied in order), both rosters must end with 20-36 players, and open proposals using an asset that has just
@@ -124,7 +134,8 @@ All workflows that change data commit to `master` as `github-actions[bot]`, and 
 | **Read Stats** (`read-stats.yml`) | Daily 13:00 UTC cron; manual (optional season/period) | Works out the current season and period (`.github/scripts/resolve-period.mjs`, from `seasons.csv` and `periods.csv`), builds `FHLScripts/`, scrapes hockey-reference.com into `stats_pNN.csv`, then adds any new players to `player_info.csv` (`update-player-info.mjs`, which prefers the NHL API and is rate-limited to be polite to scraped sites). |
 | **Apply Roster Moves** (`apply-moves.yml`) | `roster-moves` dispatch from the Worker; manual "materialize" | On dispatch: validates and stores one team's moves in `moves/moves_pNN.json`. On manual run (the commissioner starting a new period): applies the agreed trades, then every team's stored moves, and writes `rosters_p(NN+1).csv`; traded picks are rewritten in `draft_picks.csv`. |
 | **Record Trades** (`record-trades.yml`) | `trade-approved` dispatch from the Worker | Merges accepted trades into `trades/trades_pNN.json` (the public trade log). The Worker always sends *all* accepted trades for the period, so a dropped queued run cannot lose one. |
-| **Deploy** (`deploy.yml`) | Push to `master`; after the three workflows above succeed; manual | `npm ci && npm run build`, publishes `dist/` to GitHub Pages. (Pushes made with the built-in token do not trigger the `push` trigger, which is why `workflow_run` is needed.) |
+| **Deploy** (`deploy.yml`) | Push to `master`; after the three workflows above succeed; manual | `npm ci && npm test && npm run build`, publishes `dist/` to GitHub Pages. **Nothing is deployed unless the tests pass**, so a bad commit (code or data) leaves the live site as it was. (Pushes made with the built-in token do not trigger the `push` trigger, which is why `workflow_run` is needed.) |
+| **Test** (`test.yml`) | Pull requests; manual | `npm ci && npm test && npm run build`: the same checks Deploy runs, for a change that has not been pushed to `master` yet. |
 
 Workflows use only the built-in `GITHUB_TOKEN`; there are no custom Actions secrets. The two workflows that receive
 Worker dispatches are serialized by separate concurrency groups so a trade can never displace a queued roster move.
@@ -199,7 +210,7 @@ rows) -> Deploy rebuilds. No human involvement.
 | `EMAILJS_SERVICE_ID`, `EMAILJS_PUBLIC_KEY`, `EMAILJS_TEMPLATE_ID`, `LEAGUE_EMAIL`, `SITE_URL`, `ALLOWED_ORIGIN`, `GITHUB_REPO` | `worker/wrangler.toml` | Non-secret config, committed |
 | D1 binding `DB` (`database_id`) | `worker/wrangler.toml` | Created once with `wrangler d1 create` |
 | GM password hashes and emails | D1 table `gm_accounts` | Not in the repo or on the site; seeded once by `worker/seed-accounts.mjs` |
-| Worker URL (`WORKER_URL`) | `src/Roster.md`, `src/components/trades.js` | Hard-coded in the pages |
+| Worker URL (`WORKER_URL`) | `src/components/trades.js` | Defined once; the pages import it |
 
 Set Worker secrets with `cd worker && npx wrangler secret put NAME`. List them with `npx wrangler secret list`.
 
@@ -208,9 +219,9 @@ Set Worker secrets with `cd worker && npx wrangler secret put NAME`. List them w
 - GM passwords are stored only as salted PBKDF2 hashes in D1 and emails only in D1, so neither is in the public
   repository or the built site. Older commits of `owners.csv` still contain the original plain-text passwords and
   emails (history was not rewritten), so those passwords should be changed (My Account or the commissioner reset).
-  Passwords are a light barrier, not strong security: they are sent with each request (no session), and the lockout is
-  per team, so someone could deliberately lock a GM out for 15 minutes. Cloudflare rate-limiting rules can be added in
-  front of the Worker if abuse becomes a concern.
+  Passwords are a light barrier, not strong security: they are sent with each request (no session). The lockout
+  is per caller, so a stranger cannot lock a GM out, but someone using many addresses could still guess slowly; Cloudflare
+  rate-limiting rules can be added in front of the Worker if abuse becomes a concern.
 - A forgotten password is reset by the commissioner only (there is no emailed reset link).
 - The commissioner password is separate and stored only as a Worker secret.
 - The Worker only accepts browser requests from the origins in `ALLOWED_ORIGIN`. This stops other websites from using a

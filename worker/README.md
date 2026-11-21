@@ -14,7 +14,7 @@ Roster-moves flow: Roster page -> this Worker (checks the password against the h
    (needed for `repository_dispatch` and reading rosters and `owners.csv`).
 2. `cd worker && npx wrangler secret put GITHUB_TOKEN` (paste the token)
 3. Confirm `ALLOWED_ORIGIN` in `wrangler.toml` matches the Pages origin, then `npx wrangler deploy`.
-4. Put the Worker URL in `src/Roster.md` (`WORKER_URL`).
+4. Put the Worker URL in `src/components/trades.js` (`WORKER_URL`).
 
 ## Trades (D1)
 Endpoints (all `POST`, JSON, password checked against the hashed D1 accounts like roster moves):
@@ -24,13 +24,17 @@ returned to the two GMs involved; accepted trades are sent to GitHub as a `trade
 
 Setup (once):
 1. `cd worker && npx wrangler d1 create fhl-trades` and paste the printed `database_id` into `wrangler.toml`.
-2. `npx wrangler d1 execute fhl-trades --remote --file=schema.sql` (safe to re-run: it only creates missing tables, so run it again to add `gm_accounts` and `auth_failures`)
+2. `npx wrangler d1 execute fhl-trades --remote --file=schema.sql` (safe to re-run: it only creates missing tables, so run it again to add `gm_accounts` and `login_failures`)
 3. Seed the GM accounts once, from an `owners.csv` that still has the `PW` and `EMAIL` columns (take an older copy from git history, e.g. `git show <old-commit>:src/data/static/2026-27/owners.csv > owners-old.csv`):
    `node worker/seed-accounts.mjs owners-old.csv > worker/seed-accounts.sql`, then
    `npx wrangler d1 execute fhl-trades --remote --file=seed-accounts.sql`, then delete `seed-accounts.sql` and `owners-old.csv` (both hold credentials).
    Existing rows are never overwritten. After that GMs manage their own details on the My Account page, and the commissioner
    (`ADMIN_PASSWORD`) can set a team's password or email there.
 4. `npx wrangler deploy`
+
+Upgrading a Worker that is already live (when `login_failures` is new): run step 2 first, which only adds the table and
+leaves the old Worker working, then deploy the new Worker (step 4). Afterwards the old table can go:
+`npx wrangler d1 execute fhl-trades --remote --command "DROP TABLE IF EXISTS auth_failures"`.
 
 Request shapes (`season` must be the current season; `give` = what the proposer sends, `get` = what they receive):
 - propose: `{season, team, password, to, give:{players:[id], picks:[{pick,season}]}, get:{...}, note?, counters?: tradeId}`
