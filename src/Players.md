@@ -17,7 +17,7 @@ const _sd = teamInfo.data[_season];
 const teamSelector = Inputs.select(_sd.teams, {label: "Select Team:"});
 const selectedTeam = Generators.input(teamSelector);
 
-const periodSelector = Inputs.select(_sd.availablePeriods, {label: "Select Period:", value: _sd.availablePeriods[_sd.availablePeriods.length-2]});
+const periodSelector = Inputs.select(_sd.availablePeriods, {label: "Select Period:", value: String(_sd.latestPeriod)}); // opens on the period in progress
 const selectedPeriod = Generators.input(periodSelector);
 ```
 

@@ -7,11 +7,8 @@ toc: false
 
 ```js
 import {playerLinksFormat} from "./components/playerLink.js";
-import {pickLabel, agreedTrades, applyAgreedTrades} from "./components/trades.js";
+import {pickLabel, agreedTrades, applyAgreedTrades, WORKER_URL} from "./components/trades.js";
 import {lineupProblems} from "./components/leagueRules.js";
-
-// Deployed Cloudflare Worker (see worker/README.md)
-const WORKER_URL = "https://fhl-roster-moves.fhldashboard.workers.dev";
 
 const teamInfo = await FileAttachment("./data/rosters.json").json();
 const movesData = await FileAttachment("./data/moves.json").json();
@@ -20,8 +17,8 @@ const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || teamInfo.currentSeason;
 const _sd = teamInfo.data[_season];
 
-const currentPeriod = _sd.availablePeriods[_sd.availablePeriods.length-2];
-const nextPeriod = Number(currentPeriod) + 1;
+const currentPeriod = _sd.latestPeriod; // the period in progress
+const nextPeriod = currentPeriod + 1;
 const isCurrentSeason = _season === teamInfo.currentSeason;
 
 const teamSelector = Inputs.select(_sd.teams, {label: "Select Team:"});

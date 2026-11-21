@@ -48,10 +48,9 @@ export function evaluateTrade({tisd, team1, team2, roster1, roster2, out1, out2}
   return {budget1, budget2, size1, size2, warnings, blockers};
 }
 
-// The period trades take effect in: one after the latest roster (rosters.json lists the periods, then "OVERALL").
+// The period trades take effect in: the one after the period in progress (rosters.json publishes latestPeriod).
 export function nextPeriodOf(rostersSeasonData) {
-  const periods = rostersSeasonData.availablePeriods;
-  return Number(periods[periods.length - 2]) + 1;
+  return rostersSeasonData.latestPeriod + 1;
 }
 
 // Trades both GMs agreed to that haven't been applied to a roster file yet (from trades.json): this is the state the

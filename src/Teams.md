@@ -15,7 +15,7 @@ const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || teamInfo.currentSeason;
 const _sd = teamInfo.data[_season];
 const _draftSd = draftOrder.data[_season];
-const currentPeriod = _sd.availablePeriods.length;
+const currentPeriod = _sd.latestPeriod;
 const _currentDraftYear = parseInt(_season.split("-")[0]) + 1;
 const _nextDraftYear = _currentDraftYear + 1;
 ```

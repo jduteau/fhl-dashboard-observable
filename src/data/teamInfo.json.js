@@ -64,7 +64,7 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
     return team;
   });
 
-  return { teams, availablePeriods, lastPeriodNum };
+  return { teams, availablePeriods, lastPeriodNum, latestPeriod };
 }
 
 const allData = {};

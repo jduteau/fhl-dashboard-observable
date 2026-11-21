@@ -343,3 +343,21 @@ test("contracts are looked up by player ID without changing which row is chosen"
   assert.equal(getContract(rows, "b").Salary, 9);
   assert.deepEqual(latestContracts(rows).map((c) => c.ID), ["a", "b"]); // in order of first appearance
 });
+
+test("a new season (a first roster, no stats yet) counts as period 1 with empty stats", async () => {
+  const fresh = await loadSeasonData("../../../test/fixtures/newseason");
+  assert.deepEqual(fresh.availablePeriods, ["1"]);
+  assert.equal(fresh.latestPeriod, 1);
+  assert.equal(fresh.lastPeriodNum, 0); // nothing completed yet
+  assert.deepEqual(fresh.statsData[1], []);
+  assert.deepEqual(fresh.latestStatsFile, []);
+  assert.deepEqual(fresh.latestRosterFile.map((r) => r.ID), ["s1", "s2"]);
+  assert.equal(fresh.latestStatsIndex.size, 0);
+  // and a player with no stats rates as a player with nothing, without failing
+  assert.equal(fresh.getOverallStats("F", {}).games_played, 0);
+  assert.equal(fresh.getOverallStats("F", {}).rating, 0);
+});
+
+test("a season with no rosters and no stats is an error that says what to do, not a crash later", async () => {
+  await assert.rejects(() => loadSeasonData("../../../test/fixtures/no-such-season"), /no rosters or stats.*mark it stub in seasons\.csv/);
+});

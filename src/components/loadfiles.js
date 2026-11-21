@@ -210,7 +210,8 @@ const seasonCache = new Map();
 //   statsPeriods / rosterPeriods [{period, data}] in period order. rosterPeriods can run one ahead of statsPeriods
 //                                (next period's roster is created before its stats exist).
 //   availablePeriods             the periods that have stats, as strings ("1", "2", ...)
-//   latestPeriod                 the highest period with stats (0 if none): the period in progress
+//   latestPeriod                 the highest period with stats: the period in progress. A season with rosters but no
+//                                stats yet counts as period 1 with empty stats.
 //   lastPeriodNum                latestPeriod - 1, the number of completed periods
 //   latestStatsFile/latestRosterFile (+ ...Index Maps) are the stats and roster for latestPeriod
 export function loadSeasonData(season) {
@@ -223,6 +224,11 @@ async function loadSeason(season) {
 
   const statsPeriods = listPeriodFiles(`${basePath}/stats`, "stats").map(({ period, file }) => ({ period, data: readStatsFile(file) }));
   const rosterPeriods = listPeriodFiles(`${basePath}/rosters`, "rosters").map(({ period, file }) => ({ period, data: readRosterFile(file) }));
+  if (statsPeriods.length === 0 && rosterPeriods.length === 0)
+    throw new Error(`Season ${season} has no rosters or stats in ${basePath}: if it has not started, mark it stub in seasons.csv`);
+  // A new season has its first roster before it has any stats. Its first period is then in progress with nothing played
+  // yet, so it is treated as period 1 with empty stats, and everything downstream works as it does once stats arrive.
+  if (statsPeriods.length === 0) statsPeriods.push({ period: rosterPeriods[0].period, data: [] });
   const statsData = Object.fromEntries(statsPeriods.map(p => [p.period, p.data]));
   const rosterData = Object.fromEntries(rosterPeriods.map(p => [p.period, p.data]));
   warnIfGaps(season, "stats", statsPeriods.map(p => p.period));

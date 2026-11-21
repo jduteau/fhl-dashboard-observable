@@ -60,7 +60,7 @@ function buildSeasonRosters(sf, teamInfo, playerInfo, contracts) {
     return team;
   });
 
-  return { teamData, teams, availablePeriods: [...availablePeriods, "OVERALL"] };
+  return { teamData, teams, availablePeriods: [...availablePeriods, "OVERALL"], latestPeriod: sf.latestPeriod };
 }
 
 const allData = {};

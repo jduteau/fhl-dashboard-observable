@@ -27,7 +27,6 @@ ${searchInput}
 
 ```js
 const playersToSearch = _sd.playerData.map(p => p[selectedPeriod]).filter((p) => (selectedTeam === "All") || (p.FHL === selectedTeam));
-console.log(playersToSearch);
 const searchInput = Inputs.search(playersToSearch);
 const searchPlayers = Generators.input(searchInput);
 ```
