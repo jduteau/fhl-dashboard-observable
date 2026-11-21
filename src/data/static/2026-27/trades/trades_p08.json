@@ -24,6 +24,24 @@
         "picks": []
       },
       "acceptedAt": "2026-11-19T02:06:44.327Z"
+    },
+    {
+      "id": "6f5cc1ef-c198-4b80-b3ea-8dd2ac1fad0b",
+      "from": "VEG",
+      "to": "CAR",
+      "give": {
+        "players": [
+          "vilarga01"
+        ],
+        "picks": []
+      },
+      "get": {
+        "players": [
+          "kyroujo01"
+        ],
+        "picks": []
+      },
+      "acceptedAt": "2026-11-21T13:31:34.772Z"
     }
   ]
 }
