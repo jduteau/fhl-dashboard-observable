@@ -1,92 +1,23 @@
 import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, calcToughness, calcDStat, calcGStat, statInputs } from "./loadfiles.js";
+import { RANKED_STATS, roundForRanking, rankStat, rankOverall } from "./ranking.js";
 
-// Pure ranking functions used across all seasons
-
+// Ranks one stat across the teams in a round (see ranking.js): {teamAbbr: rank}
 function calculateRankings(teams, statKey) {
-  if (statKey === 'gstat') return calculateGstatRankings(teams);
-  const isFloatStat = statKey === 'dstat';
-  const precision = isFloatStat ? 0.0001 : 0;
-  const multiplier = isFloatStat ? 10000 : 1;
-  const teamStats = teams.map(team => ({
-    team,
-    value: isFloatStat ? Math.round((team[statKey] || 0) * multiplier) / multiplier : (team[statKey] || 0)
+  const entries = teams.map(team => ({
+    key: team.abbr,
+    value: roundForRanking(statKey, team[statKey] || 0),
+    played: statKey !== "gstat" || (team.goalieGp || 0) > 0,
   }));
-  teamStats.sort((a, b) => b.value - a.value);
-  const rankings = {};
-  let currentRank = teams.length;
-  let previousValue = null;
-  teamStats.forEach((teamStat, index) => {
-    const valuesEqual = isFloatStat
-      ? Math.abs(teamStat.value - (previousValue || 0)) < precision
-      : previousValue === teamStat.value;
-    if (previousValue === null || !valuesEqual) currentRank = teams.length - index;
-    rankings[teamStat.team.abbr] = currentRank;
-    previousValue = teamStat.value;
-  });
-  return rankings;
+  return rankStat(entries, statKey, teams.length);
 }
 
-function calculateGstatRankings(teams) {
-  const teamsWithGoalieGames = [], teamsWithoutGoalieGames = [];
-  teams.forEach(team => {
-    const gstatValue = Math.round((team.gstat || 0) * 100) / 100;
-    const teamStat = { team, value: gstatValue };
-    ((team.goalieGp || 0) > 0 ? teamsWithGoalieGames : teamsWithoutGoalieGames).push(teamStat);
-  });
-  teamsWithGoalieGames.sort((a, b) => b.value - a.value);
-  teamsWithoutGoalieGames.sort((a, b) => b.value - a.value);
-  const rankings = {};
-  const gstatPrecision = 0.01;
-  let currentRank = teams.length, previousValue = null;
-  teamsWithGoalieGames.forEach((teamStat, index) => {
-    const valuesEqual = previousValue !== null && Math.abs(teamStat.value - previousValue) < gstatPrecision;
-    if (!valuesEqual) currentRank = teams.length - index;
-    rankings[teamStat.team.abbr] = currentRank;
-    previousValue = teamStat.value;
-  });
-  const lowestRankWithGames = teamsWithGoalieGames.length > 0
-    ? Math.min(...teamsWithGoalieGames.map(t => rankings[t.team.abbr])) : teams.length + 1;
-  let rankForNoGames = lowestRankWithGames - 1;
-  previousValue = null;
-  teamsWithoutGoalieGames.forEach((teamStat, index) => {
-    const valuesEqual = previousValue !== null && Math.abs(teamStat.value - previousValue) < gstatPrecision;
-    if (!valuesEqual) rankForNoGames = lowestRankWithGames - 1 - index;
-    rankings[teamStat.team.abbr] = rankForNoGames;
-    previousValue = teamStat.value;
-  });
-  return rankings;
-}
-
+// Overall rank of each team in a round, from its five stat ranks
 function calculateOverallRankings(teams, individualRankings) {
-  const statKeys = ['goals', 'assists', 'toughness', 'dstat', 'gstat'];
-  const teamTotals = teams.map(team => ({
-    team,
-    totalRank: statKeys.reduce((sum, k) => sum + (individualRankings[k][team.abbr] || 0), 0),
-    goals: team.goals || 0, assists: team.assists || 0, toughness: team.toughness || 0,
-    dstat: team.dstat || 0, gstat: team.gstat || 0
-  }));
-  teamTotals.sort((a, b) => {
-    if (a.totalRank !== b.totalRank) return b.totalRank - a.totalRank;
-    if (a.goals !== b.goals) return b.goals - a.goals;
-    if (a.assists !== b.assists) return b.assists - a.assists;
-    if (a.toughness !== b.toughness) return b.toughness - a.toughness;
-    if (a.dstat !== b.dstat) return b.dstat - a.dstat;
-    return b.gstat - a.gstat;
-  });
-  const overallRankings = {};
-  let currentRank = 1, previousTotalRank = null, previousTiebreakers = null;
-  teamTotals.forEach((teamTotal, index) => {
-    const tb = { goals: teamTotal.goals, assists: teamTotal.assists, toughness: teamTotal.toughness, dstat: teamTotal.dstat, gstat: teamTotal.gstat };
-    const isTie = previousTotalRank === teamTotal.totalRank && previousTiebreakers &&
-      previousTiebreakers.goals === tb.goals && previousTiebreakers.assists === tb.assists &&
-      previousTiebreakers.toughness === tb.toughness && previousTiebreakers.dstat === tb.dstat &&
-      previousTiebreakers.gstat === tb.gstat;
-    if (!isTie && index > 0) currentRank = index + 1;
-    overallRankings[teamTotal.team.abbr] = currentRank;
-    previousTotalRank = teamTotal.totalRank;
-    previousTiebreakers = tb;
-  });
-  return overallRankings;
+  return rankOverall(teams.map(team => ({
+    key: team.abbr,
+    ranks: Object.fromEntries(RANKED_STATS.map(stat => [stat, individualRankings[stat][team.abbr]])),
+    values: team,
+  })));
 }
 
 function calculateTeamStats(round, teamAbbr, prevRound, teamInfo) {
@@ -177,7 +108,7 @@ export function buildSeasonPlayoffs(sf, teamInfo, bracketConfig) {
       .filter(Boolean);
 
     const individualRankings = {};
-    ['goals', 'assists', 'toughness', 'dstat', 'gstat'].forEach(k => {
+    RANKED_STATS.forEach(k => {
       individualRankings[k] = calculateRankings(roundTeamStats, k);
     });
     const overallRankings = calculateOverallRankings(roundTeamStats, individualRankings);
