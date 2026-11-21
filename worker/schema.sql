@@ -48,9 +48,15 @@ CREATE TABLE IF NOT EXISTS gm_accounts (
   updated_at TEXT NOT NULL
 );
 
--- Failed logins (a team abbreviation, or '*admin*'), used to lock a team out for a while after too many wrong passwords.
-CREATE TABLE IF NOT EXISTS auth_failures (
-  team TEXT NOT NULL,
-  at   TEXT NOT NULL
+-- Wrong passwords, kept for a short while to lock a caller out after too many (see accounts.js). `subject` is a team
+-- abbreviation or '*admin*'; `ip` is the caller's address as Cloudflare reports it.
+-- This replaces the older auth_failures table, which counted per team only and so let anyone lock a GM out. Nothing in
+-- this file creates or drops it any more; an existing database can lose it once the new Worker is deployed:
+--   npx wrangler d1 execute fhl-trades --remote --command "DROP TABLE IF EXISTS auth_failures"
+CREATE TABLE IF NOT EXISTS login_failures (
+  subject TEXT NOT NULL,
+  ip      TEXT NOT NULL,
+  at      TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS auth_failures_team ON auth_failures (team, at);
+CREATE INDEX IF NOT EXISTS login_failures_subject ON login_failures (subject, ip, at);
+CREATE INDEX IF NOT EXISTS login_failures_ip ON login_failures (ip, at);

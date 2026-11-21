@@ -9,7 +9,8 @@
 //
 // Secrets/vars (see worker/README.md):  GITHUB_TOKEN (secret), GITHUB_REPO, ALLOWED_ORIGIN, DB (D1 binding)
 import { json, gh, HttpError } from "./lib.js";
-import { authenticate, handleAccount } from "./accounts.js";
+import { authenticate, handleAccount, clientOf } from "./accounts.js";
+import { TEAM, PLAYER, SEASON } from "../src/components/tradeRules.js";
 import { handleTrades } from "./trades.js";
 
 // ALLOWED_ORIGIN is a comma-separated list (the Pages site, plus local preview origins for development).
@@ -29,7 +30,7 @@ export default {
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.message }, e.status, origin);
       console.error(e);
-      return json({ error: `Server error: ${e.message}` }, 500, origin);
+      return json({ error: "Server error" }, 500, origin); // the details are in the log, not for the browser
     }
   },
 };
@@ -52,23 +53,24 @@ async function handle(request, env, origin, execCtx) {
   if (m === null || typeof m !== "object") return json({ error: "Bad JSON" }, 400, origin);
 
   const path = new URL(request.url).pathname.replace(/\/+$/, "");
+  const client = clientOf(request);
   if (path.startsWith("/trades/")) {
-    const result = await handleTrades(path.slice("/trades/".length), m, env, execCtx);
+    const result = await handleTrades(path.slice("/trades/".length), m, env, execCtx, client);
     return json(result, 200, origin);
   }
   if (path.startsWith("/account/")) {
-    const result = await handleAccount(path.slice("/account/".length), m, env);
+    const result = await handleAccount(path.slice("/account/".length), m, env, client);
     return json(result, 200, origin);
   }
-  return handleMoves(m, env, origin);
+  return handleMoves(m, env, origin, client);
 }
 
-async function handleMoves(m, env, origin) {
-  const ids = (x) => Array.isArray(x) && x.length <= 40 && x.every((i) => typeof i === "string" && /^[\w.'-]{1,20}$/.test(i));
-  if (!/^[A-Z]{2,4}$/.test(m.team ?? "") || !/^\d{4}-\d{2}$/.test(m.season ?? "") || !Number.isInteger(m.period) || !ids(m.promote) || !ids(m.demote))
+async function handleMoves(m, env, origin, client) {
+  const ids = (x) => Array.isArray(x) && x.length <= 40 && x.every((i) => typeof i === "string" && PLAYER.test(i));
+  if (!TEAM.test(m.team ?? "") || !SEASON.test(m.season ?? "") || !Number.isInteger(m.period) || !ids(m.promote) || !ids(m.demote))
     return json({ error: "Invalid request" }, 400, origin);
 
-  await authenticate(env, m.season, m.team, m.password);
+  await authenticate(env, m.season, m.team, m.password, client);
 
   const dispatch = await gh(env, "dispatches", {
     method: "POST",

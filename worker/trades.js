@@ -7,13 +7,8 @@
 import { csvParse, ghFile, gh, HttpError } from "./lib.js";
 import { authenticate, assertAdmin } from "./accounts.js";
 import { makeMailer } from "./email.js";
-import { MIN_ROSTER, MAX_ROSTER } from "../src/components/leagueRules.js";
+import { tradeProblem, SEASON, TEAM, PLAYER, PICK, TRADE_ID } from "../src/components/tradeRules.js";
 
-const SEASON = /^\d{4}-\d{2}$/;
-const TEAM = /^[A-Z]{2,4}$/;
-const PLAYER = /^[\w.'-]{1,20}$/;
-const PICK = /^[A-Z]{2,4}\d{1,2}$/;
-const TRADE_ID = /^[0-9a-f-]{36}$/;
 const MAX_ITEMS = 15; // per side
 const MAX_OPEN = 20; // open outgoing proposals per team
 const MAX_NOTE = 500;
@@ -23,13 +18,13 @@ const bad = (message) => new HttpError(400, message);
 const keyOf = (i) => `${i.kind}|${i.ref}|${i.pick_season}`;
 const sqlTrue = "t.status = 'ACCEPTED'";
 
-export async function handleTrades(action, body, env, execCtx) {
-  if (action === "admin-list") return adminList(body, env); // commissioner: no team, own password
+export async function handleTrades(action, body, env, execCtx, client) {
+  if (action === "admin-list") return adminList(body, env, client); // commissioner: no team, own password
   if (!SEASON.test(body.season ?? "") || !TEAM.test(body.team ?? "") || typeof body.password !== "string")
     throw bad("Invalid request");
   if (!env.DB) throw new HttpError(500, "Trade database is not configured");
   const ctx = await loadContext(env, body.season); // also rejects non-current seasons before we look for their owners.csv
-  const owners = await authenticate(env, body.season, body.team, body.password);
+  const owners = await authenticate(env, body.season, body.team, body.password, client);
   const mail = makeMailer(env, owners, execCtx); // trade emails; best-effort and a no-op until EmailJS is configured
   switch (action) {
     case "propose": return propose(body, env, ctx, owners, mail);
@@ -124,25 +119,17 @@ function parseSide(side, label) {
 // Throws unless `from` really owns `give`, `to` really owns `get` (per `own`, the ownership after already-accepted
 // trades), and both rosters stay within MIN_ROSTER..MAX_ROSTER players.
 function validateTrade(own, from, to, give, get) {
-  const delta = new Map();
-  for (const [giver, receiver, items] of [[from, to, give], [to, from, get]]) {
-    for (const it of items) {
-      if (it.kind === "player") {
-        if (own.playerOwner.get(it.ref) !== giver) throw bad(`${it.ref} is not on ${giver}'s roster`);
-        delta.set(giver, (delta.get(giver) ?? 0) - 1);
-        delta.set(receiver, (delta.get(receiver) ?? 0) + 1);
-      } else {
-        const owner = own.pickOwner.get(`${it.pick_season}|${it.ref}`);
-        if (owner === undefined) throw bad(`Pick ${it.ref} (${it.pick_season}) does not exist`);
-        if (owner !== giver) throw bad(`${giver} does not own ${it.ref} (${it.pick_season})`);
-      }
-    }
-  }
-  for (const team of [from, to]) {
-    const size = (own.sizes.get(team) ?? 0) + (delta.get(team) ?? 0);
-    if (size < MIN_ROSTER || size > MAX_ROSTER)
-      throw bad(`${team} would have ${size} players after this trade (must be ${MIN_ROSTER}-${MAX_ROSTER})`);
-  }
+  const leg = (giver, receiver, items) => ({
+    giver, receiver,
+    players: items.filter((it) => it.kind === "player").map((it) => it.ref),
+    picks: items.filter((it) => it.kind === "pick").map((it) => ({ season: it.pick_season, pick: it.ref })),
+  });
+  const problem = tradeProblem([leg(from, to, give), leg(to, from, get)], {
+    playerOwner: (id) => own.playerOwner.get(id),
+    pickOwner: (season, pick) => own.pickOwner.get(`${season}|${pick}`),
+    size: (team) => own.sizes.get(team) ?? 0,
+  });
+  if (problem) throw bad(problem);
 }
 
 // ---- Presentation ------------------------------------------------------------------------
@@ -173,9 +160,9 @@ function present(t, items, ctx) {
 
 // Commissioner view: every proposal of the season, whoever it involves, with private notes. Read-only.
 // Protected by the ADMIN_PASSWORD secret (not a GM password); unset means the endpoint is off.
-async function adminList(body, env) {
+async function adminList(body, env, client) {
   if (!SEASON.test(body.season ?? "") || typeof body.password !== "string") throw bad("Invalid request");
-  await assertAdmin(env, body.password);
+  await assertAdmin(env, body.password, client);
   const ctx = await loadContext(env, body.season);
   const { results: trades } = await env.DB.prepare(`SELECT * FROM trades WHERE season = ? ORDER BY created_at DESC LIMIT 500`).bind(body.season).all();
   const { results: items } = await env.DB.prepare(

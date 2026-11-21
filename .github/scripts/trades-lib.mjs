@@ -5,14 +5,7 @@
 //     appliedAt?  (set by materialize when the trade was applied to the new roster),
 //     skipped?    (set by materialize, with the reason, when the trade could no longer be applied) }
 // `give` is what team `from` sends to `to`; `get` is what `from` receives.
-import { MIN_ROSTER, MAX_ROSTER } from "../../src/components/leagueRules.js";
-export { MIN_ROSTER, MAX_ROSTER };
-
-const TEAM = /^[A-Z]{2,4}$/;
-const PLAYER = /^[\w.'-]{1,20}$/;
-const PICK = /^[A-Z]{2,4}\d{1,2}$/;
-const SEASON = /^\d{4}-\d{2}$/;
-const TRADE_ID = /^[0-9a-f-]{36}$/;
+import { tradeProblem, TEAM, PLAYER, PICK, SEASON, TRADE_ID } from "../../src/components/tradeRules.js";
 
 function cleanSide(side, label) {
   const players = side?.players ?? [];
@@ -107,26 +100,14 @@ export function applyTrades(rows, trades, picksBySeason, now = new Date().toISOS
       { giver: t.from, receiver: t.to, items: items(t.give) },
       { giver: t.to, receiver: t.from, items: items(t.get) },
     ];
-    const problem = (() => {
-      const delta = new Map();
-      for (const { giver, receiver, items } of legs) {
-        for (const id of items.players) {
-          if (rowById.get(id)?.ABBR !== giver) return `${id} is not on ${giver}'s roster`;
-          delta.set(giver, (delta.get(giver) ?? 0) - 1);
-          delta.set(receiver, (delta.get(receiver) ?? 0) + 1);
-        }
-        for (const p of items.picks) {
-          const owner = picksBySeason.get(p.season)?.get(p.pick);
-          if (owner === undefined) return `pick ${p.pick} (${p.season}) does not exist`;
-          if (owner !== giver) return `${giver} does not own ${p.pick} (${p.season})`;
-        }
+    const problem = tradeProblem(
+      legs.map(({ giver, receiver, items }) => ({ giver, receiver, players: items.players, picks: items.picks })),
+      {
+        playerOwner: (id) => rowById.get(id)?.ABBR,
+        pickOwner: (season, pick) => picksBySeason.get(season)?.get(pick),
+        size: (team) => sizes.get(team) ?? 0,
       }
-      for (const team of [t.from, t.to]) {
-        const size = (sizes.get(team) ?? 0) + (delta.get(team) ?? 0);
-        if (size < MIN_ROSTER || size > MAX_ROSTER) return `${team} would have ${size} players (must be ${MIN_ROSTER}-${MAX_ROSTER})`;
-      }
-      return null;
-    })();
+    );
 
     if (problem) {
       t.skipped = problem;

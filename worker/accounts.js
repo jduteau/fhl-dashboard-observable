@@ -7,15 +7,16 @@
 //   POST /account/admin-set    {password: <ADMIN_PASSWORD>, team, newPassword?, email?}  -> {ok}
 //                              (commissioner: the only way to recover a forgotten password)
 //
-// Failed logins are throttled per team (MAX_FAILURES within FAILURE_WINDOW_MS) in the auth_failures table.
+// Wrong passwords are throttled per caller in the login_failures table (see "Throttling" below).
 import { csvParse, ghFile, HttpError, sameSecret } from "./lib.js";
 import { normalizeRecipients } from "./email.js";
+import { TEAM } from "../src/components/tradeRules.js";
 
-const TEAM = /^[A-Z]{2,4}$/;
 const ITERATIONS = 100000; // the most Cloudflare Workers allow for PBKDF2
 const MIN_PASSWORD = 6;
 const MAX_PASSWORD = 100;
 const MAX_FAILURES = 10;
+const MAX_FAILURES_PER_CALLER = 40;
 const FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const ADMIN_KEY = "*admin*";
 
@@ -48,44 +49,60 @@ export async function verifyPassword(password, stored) {
 }
 
 // ---- Throttling -----------------------------------------------------------------------------
+//
+// Wrong passwords are counted per caller (the IP address Cloudflare reports), not just per account, so a stranger who
+// keeps guessing locks only their own address out. That matters because a lockout that depended on the account alone
+// would let anyone lock a GM, or the commissioner, out of their own account with a handful of requests.
+//   * MAX_FAILURES wrong passwords for one account from one caller within the window locks that caller out of that account
+//   * MAX_FAILURES_PER_CALLER wrong passwords of any kind from one caller locks that caller out of everything, which
+//     stops one address from working through all the teams
+// The same rules apply to the commissioner login (the account is then "*admin*").
 
 const windowStart = () => new Date(Date.now() - FAILURE_WINDOW_MS).toISOString();
 
-async function assertNotLockedOut(env, key) {
-  const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM auth_failures WHERE team = ? AND at > ?").bind(key, windowStart()).first();
-  if (row.n >= MAX_FAILURES) throw new HttpError(429, "Too many wrong passwords; try again in 15 minutes");
+async function assertNotLockedOut(env, subject, client) {
+  const since = windowStart();
+  const [forAccount, forCaller] = await Promise.all([
+    env.DB.prepare("SELECT COUNT(*) AS n FROM login_failures WHERE subject = ? AND ip = ? AND at > ?").bind(subject, client, since).first(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM login_failures WHERE ip = ? AND at > ?").bind(client, since).first(),
+  ]);
+  if (forAccount.n >= MAX_FAILURES || forCaller.n >= MAX_FAILURES_PER_CALLER)
+    throw new HttpError(429, "Too many wrong passwords from your address; try again in 15 minutes");
 }
 
-async function recordFailure(env, key) {
+async function recordFailure(env, subject, client) {
   await env.DB.batch([
-    env.DB.prepare("DELETE FROM auth_failures WHERE at <= ?").bind(windowStart()),
-    env.DB.prepare("INSERT INTO auth_failures (team, at) VALUES (?, ?)").bind(key, new Date().toISOString()),
+    env.DB.prepare("DELETE FROM login_failures WHERE at <= ?").bind(windowStart()),
+    env.DB.prepare("INSERT INTO login_failures (subject, ip, at) VALUES (?, ?, ?)").bind(subject, client, new Date().toISOString()),
   ]);
 }
 
-const clearFailures = (env, key) => env.DB.prepare("DELETE FROM auth_failures WHERE team = ?").bind(key).run();
+// A correct password forgives this caller's earlier mistakes on this account (and nobody else's)
+const clearFailures = (env, subject, client) => env.DB.prepare("DELETE FROM login_failures WHERE subject = ? AND ip = ?").bind(subject, client).run();
+
+// The caller's address as a short, safe string; "unknown" when there is none (local development, tests)
+export const clientOf = (request) => (request.headers.get("cf-connecting-ip") ?? "unknown").slice(0, 64);
 
 // ---- Authentication -------------------------------------------------------------------------
 
-// Checks a GM's password; returns their account row {team, email}. Wrong passwords count towards the lockout
-// (only for teams that have an account, so unknown names can't fill the table).
-export async function checkPassword(env, team, password) {
+// Checks a GM's password; returns their account row {team, email}. `client` is the caller's address (see clientOf).
+// Every wrong password counts towards the caller's lockout, including guesses at teams that have no account.
+export async function checkPassword(env, team, password, client) {
   if (!env.DB) throw new HttpError(500, "Account database is not configured");
-  await assertNotLockedOut(env, team);
+  await assertNotLockedOut(env, team, client);
   const account = await env.DB.prepare("SELECT team, email, pw FROM gm_accounts WHERE team = ?").bind(team).first();
-  if (!account) throw new HttpError(401, "Wrong password");
-  if (!(await verifyPassword(password, account.pw))) {
-    await recordFailure(env, team);
+  if (!account || !(await verifyPassword(password, account.pw))) {
+    await recordFailure(env, team, client);
     throw new HttpError(401, "Wrong password");
   }
-  await clearFailures(env, team);
+  await clearFailures(env, team, client);
   return { team: account.team, email: account.email };
 }
 
 // Verifies the GM's password and returns the owners rows ({ABBR, OWNER, EMAIL}) so callers can validate other teams
 // and look up whom to email. Names come from the public owners.csv, emails from D1 (never sent to the browser).
-export async function authenticate(env, season, team, password) {
-  await checkPassword(env, team, password);
+export async function authenticate(env, season, team, password, client) {
+  await checkPassword(env, team, password, client);
   const text = await ghFile(env, `src/data/static/${season}/owners.csv`);
   if (text === null) throw new HttpError(502, "Could not verify password");
   const { results } = await env.DB.prepare("SELECT team, email FROM gm_accounts").all();
@@ -128,41 +145,41 @@ async function save(env, team, { newPassword, email }) {
   await env.DB.prepare(`UPDATE gm_accounts SET ${sets.join(", ")} WHERE team = ?`).bind(...args, team).run();
 }
 
-export async function assertAdmin(env, password) {
+export async function assertAdmin(env, password, client) {
   if (!env.DB) throw new HttpError(500, "Account database is not configured");
   if (!env.ADMIN_PASSWORD) throw new HttpError(403, "Commissioner access is not set up");
-  await assertNotLockedOut(env, ADMIN_KEY);
+  await assertNotLockedOut(env, ADMIN_KEY, client);
   if (typeof password !== "string" || !sameSecret(password, env.ADMIN_PASSWORD)) {
-    await recordFailure(env, ADMIN_KEY);
+    await recordFailure(env, ADMIN_KEY, client);
     throw new HttpError(401, "Wrong password");
   }
-  await clearFailures(env, ADMIN_KEY);
+  await clearFailures(env, ADMIN_KEY, client);
 }
 
-export async function handleAccount(action, body, env) {
+export async function handleAccount(action, body, env, client) {
   if (typeof body.password !== "string") throw bad("Invalid request");
   switch (action) {
     case "get": {
       if (!TEAM.test(body.team ?? "")) throw bad("Invalid request");
-      const account = await checkPassword(env, body.team, body.password);
+      const account = await checkPassword(env, body.team, body.password, client);
       return { team: account.team, email: account.email };
     }
     case "update": {
       if (!TEAM.test(body.team ?? "")) throw bad("Invalid request");
       const changes = parseChanges(body); // validate before touching the throttle or the database
-      await checkPassword(env, body.team, body.password);
+      await checkPassword(env, body.team, body.password, client);
       await save(env, body.team, changes);
       return { ok: true };
     }
     case "admin-list": {
-      await assertAdmin(env, body.password);
+      await assertAdmin(env, body.password, client);
       const { results } = await env.DB.prepare("SELECT team, email, updated_at FROM gm_accounts ORDER BY team").all();
       return { accounts: results.map((a) => ({ team: a.team, email: a.email, updatedAt: a.updated_at })) };
     }
     case "admin-set": {
       if (!TEAM.test(body.team ?? "")) throw bad("Invalid request");
       const changes = parseChanges(body);
-      await assertAdmin(env, body.password);
+      await assertAdmin(env, body.password, client);
       await save(env, body.team, changes);
       return { ok: true };
     }

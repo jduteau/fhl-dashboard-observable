@@ -36,8 +36,10 @@ beforeEach(() => {
   env = { DB: d1(db), ADMIN_PASSWORD: "boss", GITHUB_REPO: "test/repo", GITHUB_TOKEN: "t", ALLOWED_ORIGIN: ORIGIN };
 });
 
-const post = async (path, body) => {
-  const res = await worker.fetch(new Request(`https://worker.example${path}`, { method: "POST", headers: { origin: ORIGIN }, body: JSON.stringify(body) }), env);
+// `ip` is the caller's address as Cloudflare reports it; leave it out for "no address" (local development)
+const post = async (path, body, ip) => {
+  const headers = { origin: ORIGIN, ...(ip ? { "cf-connecting-ip": ip } : {}) };
+  const res = await worker.fetch(new Request(`https://worker.example${path}`, { method: "POST", headers, body: JSON.stringify(body) }), env);
   return { status: res.status, body: await res.json() };
 };
 const row = (team) => db.prepare("SELECT * FROM gm_accounts WHERE team = ?").get(team);
@@ -109,27 +111,70 @@ test("admin: refused when ADMIN_PASSWORD is not set up", async () => {
   assert.equal((await post("/account/admin-list", { password: "" })).status, 403);
 });
 
-test("lockout: too many wrong passwords block the team (even the right one) until the window passes", async () => {
-  for (let i = 0; i < 10; i++) assert.equal((await post("/account/get", { team: "ANA", password: "wrong" })).status, 401);
-  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" })).status, 429);
-  // other teams are unaffected by ANA's lockout
-  db.prepare("INSERT INTO gm_accounts (team, email, pw, updated_at) VALUES ('BOS', '', ?, 'then')").run(await hashPassword("pwB"));
-  assert.equal((await post("/account/get", { team: "BOS", password: "pwB" })).status, 200);
-  // once the failures are older than the window the team can log in again
-  db.prepare("UPDATE auth_failures SET at = ?").run(new Date(Date.now() - 16 * 60 * 1000).toISOString());
-  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" })).status, 200);
+// One at a time: the in-memory database used here cannot interleave transactions the way D1 can
+const failures = async (path, body, n, ip) => { for (let i = 0; i < n; i++) await post(path, body, ip); };
+const countFailures = () => db.prepare("SELECT COUNT(*) AS n FROM login_failures").get().n;
+const addAccount = async (team, pw) => db.prepare("INSERT INTO gm_accounts (team, email, pw, updated_at) VALUES (?, '', ?, 'then')").run(team, await hashPassword(pw));
+
+test("lockout: too many wrong passwords block that caller from that team (even with the right one) until the window passes", async () => {
+  for (let i = 0; i < 10; i++) assert.equal((await post("/account/get", { team: "ANA", password: "wrong" }, "1.1.1.1")).status, 401);
+  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" }, "1.1.1.1")).status, 429);
+  // other teams are unaffected for that caller
+  await addAccount("BOS", "pwB");
+  assert.equal((await post("/account/get", { team: "BOS", password: "pwB" }, "1.1.1.1")).status, 200);
+  // once the failures are older than the window the caller can log in again
+  db.prepare("UPDATE login_failures SET at = ?").run(new Date(Date.now() - 16 * 60 * 1000).toISOString());
+  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" }, "1.1.1.1")).status, 200);
 });
 
-test("lockout: a correct password clears earlier failures; unknown teams are not recorded; admin is throttled too", async () => {
-  for (let i = 0; i < 5; i++) await post("/account/get", { team: "ANA", password: "wrong" });
-  ok(await post("/account/get", { team: "ANA", password: "pwA" }));
-  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_failures").get().n, 0);
+test("lockout: a stranger guessing at a team cannot lock the real GM out (the lockout is per caller)", async () => {
+  await failures("/account/get", { team: "ANA", password: "wrong" }, 10, "6.6.6.6");
+  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" }, "6.6.6.6")).status, 429); // the stranger is locked out...
+  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" }, "2.2.2.2")).status, 200); // ...the GM is not
+  assert.equal((await post("/account/update", { team: "ANA", password: "pwA", email: "still@x.com" }, "2.2.2.2")).status, 200);
+});
 
-  await post("/account/get", { team: "XYZ", password: "wrong" });
-  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_failures").get().n, 0);
+test("lockout: the same goes for the commissioner login", async () => {
+  await failures("/account/admin-list", { password: "wrong" }, 10, "6.6.6.6");
+  assert.equal((await post("/account/admin-list", { password: "boss" }, "6.6.6.6")).status, 429);
+  assert.equal((await post("/account/admin-list", { password: "boss" }, "2.2.2.2")).status, 200); // the commissioner still gets in
+  assert.equal((await post("/account/admin-set", { password: "boss", team: "ANA", newPassword: "reset-pw" }, "2.2.2.2")).status, 200);
+});
 
-  for (let i = 0; i < 10; i++) await post("/account/admin-list", { password: "wrong" });
-  assert.equal((await post("/account/admin-list", { password: "boss" })).status, 429);
+test("lockout: one caller guessing across many teams is stopped, whether or not the teams exist", async () => {
+  const guess = (team) => post("/account/get", { team, password: "wrong" }, "6.6.6.6");
+  const teams = Array.from({ length: 40 }, (_, i) => `T${String.fromCharCode(65 + (i % 26))}${String.fromCharCode(65 + Math.floor(i / 26))}`); // 40 different names, none with an account
+  for (const t of teams) assert.equal((await guess(t)).status, 401);
+  assert.equal(countFailures(), 40); // unknown teams are recorded too
+  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" }, "6.6.6.6")).status, 429); // now locked out of everything, even a real login
+  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" }, "2.2.2.2")).status, 200); // other callers are fine
+});
+
+test("lockout: a correct password forgives this caller's earlier mistakes on that account, and nobody else's", async () => {
+  await failures("/account/get", { team: "ANA", password: "wrong" }, 5, "1.1.1.1");
+  await failures("/account/get", { team: "ANA", password: "wrong" }, 3, "2.2.2.2");
+  assert.equal(countFailures(), 8);
+  ok(await post("/account/get", { team: "ANA", password: "pwA" }, "1.1.1.1"));
+  assert.equal(countFailures(), 3); // only the 3 from 2.2.2.2 remain
+});
+
+test("lockout: callers with no address share one bucket (local development and tests)", async () => {
+  await failures("/account/get", { team: "ANA", password: "wrong" }, 10);
+  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" })).status, 429);
+  assert.equal((await post("/account/get", { team: "ANA", password: "pwA" }, "2.2.2.2")).status, 200);
+});
+
+test("an unexpected failure returns a generic message, never the internal detail", async () => {
+  const logged = [];
+  const realError = console.error;
+  console.error = (...a) => logged.push(a.map(String).join(" "));
+  try {
+    env.DB = { prepare: () => { throw new Error("secret internal detail: table gm_accounts"); } };
+    const r = await post("/account/get", { team: "ANA", password: "pwA" }, "1.1.1.1");
+    assert.equal(r.status, 500);
+    assert.deepEqual(r.body, { error: "Server error" });
+  } finally { console.error = realError; }
+  assert.ok(logged.some((l) => /secret internal detail/.test(l))); // it is in the log for the owner to read
 });
 
 test("the old plaintext flow is gone: a password in owners.csv no longer authenticates", async () => {
