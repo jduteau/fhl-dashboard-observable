@@ -60,5 +60,16 @@
       "bussibr01"
     ],
     "submittedAt": "2026-11-21T13:39:49.031Z"
+  },
+  "MIN": {
+    "promote": [
+      "hanlejo01",
+      "edstrad01"
+    ],
+    "demote": [
+      "schenlu01",
+      "gallabr01"
+    ],
+    "submittedAt": "2026-11-21T20:51:11.386Z"
   }
 }
