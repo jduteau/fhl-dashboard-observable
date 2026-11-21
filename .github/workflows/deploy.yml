@@ -38,6 +38,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Nothing is deployed unless the tests pass: a bad commit (code or data) leaves the live site as it was
+      - run: npm test
       - run: npm run build
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

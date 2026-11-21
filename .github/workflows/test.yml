@@ -1,7 +1,8 @@
 name: Test
 
+# Pushes to master are checked by the Deploy workflow, which runs the same tests (and the build) before it deploys.
+# This one checks pull requests and can be run by hand; it also builds the site, since the data loaders only run then.
 on:
-  push: {branches: [master]}
   pull_request: {}
   workflow_dispatch: {}
 
@@ -19,3 +20,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm run build
