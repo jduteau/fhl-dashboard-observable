@@ -6,7 +6,7 @@
 // proposing counts as the proposer's approval.
 import { csvParse, ghFile, gh, HttpError } from "./lib.js";
 import { authenticate, assertAdmin } from "./accounts.js";
-import { makeMailer } from "./email.js";
+import { makeMailer, sendDiscord } from "./email.js";
 import { tradeProblem, SEASON, TEAM, PLAYER, PICK, TRADE_ID } from "../src/components/tradeRules.js";
 
 const MAX_ITEMS = 15; // per side
@@ -20,6 +20,7 @@ const sqlTrue = "t.status = 'ACCEPTED'";
 
 export async function handleTrades(action, body, env, execCtx, client) {
   if (action === "admin-list") return adminList(body, env, client); // commissioner: no team, own password
+  if (action === "admin-test-discord") return adminTestDiscord(body, env, client);
   if (!SEASON.test(body.season ?? "") || !TEAM.test(body.team ?? "") || typeof body.password !== "string")
     throw bad("Invalid request");
   if (!env.DB) throw new HttpError(500, "Trade database is not configured");
@@ -171,6 +172,22 @@ async function adminList(body, env, client) {
   const byTrade = new Map();
   for (const i of items) byTrade.set(i.trade_id, [...(byTrade.get(i.trade_id) ?? []), i]);
   return { period: ctx.period, trades: trades.map((t) => present(t, byTrade.get(t.id) ?? [], ctx)) };
+}
+
+// Commissioner check of the Discord webhook the Worker actually holds: posts one clearly labelled test message and
+// reports whether Discord accepted it, plus the shape of the secret (never its value).
+async function adminTestDiscord(body, env, client) {
+  if (typeof body.password !== "string") throw bad("Invalid request");
+  await assertAdmin(env, body.password, client);
+  const url = env.DISCORD_WEBHOOK_URL ?? "";
+  const shape = {
+    configured: url !== "",
+    length: url.length,
+    looksLikeWebhook: /^https:\/\/(?:\w+\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+$/.test(url),
+    hasWhitespaceOrQuotes: /[\s"']/.test(url),
+  };
+  const posted = await sendDiscord(env, "Test message from the FHL dashboard Worker (commissioner check). Please ignore.");
+  return { ok: posted, ...shape }; // on failure the HTTP status is in the Worker log (wrangler tail)
 }
 
 async function list(body, env, ctx) {

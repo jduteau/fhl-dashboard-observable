@@ -493,6 +493,21 @@ test("admin: the commissioner sees every proposal (with notes and status) using 
   assert.deepEqual(r.trades.find((t) => t.from === "ANA").give.players, ["ana01"]);
 });
 
+test("admin-test-discord: needs the admin password and reports whether the webhook accepted the post", async () => {
+  env.ADMIN_PASSWORD = "boss";
+  assert.equal((await post("/trades/admin-test-discord", { password: "nope" })).status, 401);
+  const r0 = ok(await post("/trades/admin-test-discord", { password: "boss" }));
+  assert.deepEqual([r0.ok, r0.configured], [false, false]); // no webhook set
+  env.DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/123/abc-DEF_1";
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 204 });
+  try {
+    const r = ok(await post("/trades/admin-test-discord", { password: "boss" }));
+    assert.deepEqual([r.ok, r.configured, r.looksLikeWebhook, r.hasWhitespaceOrQuotes], [true, true, true, false]);
+    assert.equal(JSON.stringify(r).includes("abc-DEF"), false); // the secret is never echoed
+  } finally { globalThis.fetch = realFetch; }
+});
+
 test("admin: wrong password, a GM's team password, and an unset ADMIN_PASSWORD are all refused", async () => {
   assert.equal((await post("/trades/admin-list", { season: "2026-27", password: "boss" })).status, 403); // not set up
   assert.equal((await post("/trades/admin-list", { season: "2026-27", password: "" })).status, 403);
