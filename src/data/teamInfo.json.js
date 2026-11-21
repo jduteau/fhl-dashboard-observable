@@ -1,5 +1,6 @@
 import { readCsvFile, getContract, computeTeamCash, seasonsConfig, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge, indexBy, requireRow, assertPlayersKnown } from "../components/loadfiles.js";
 import { PERIODS_PER_SEASON, projectedBudget } from "../components/leagueRules.js";
+import { identityColumns, sortRoster, isActive } from "../components/playerRows.js";
 
 function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks, nextSeason) {
   const { season, rosterPeriods, availablePeriods, lastPeriodNum, latestPeriod } = sf;
@@ -29,25 +30,14 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
       const roster = periodInfo.data.filter(player => player.ABBR === team.ABBR);
       team[periodInfo.period]['ROSTER'] = roster.map(player => {
         const info = playerIndex.get(player.ID);
-        const contract = getContract(contracts, player.ID, periodInfo.period);
+        const position = mapPosition(info.Pos);
         return {
           PLAYER_ID: player.ID,
-          Name: info.Name,
-          BirthDate: info.BirthDate,
-          Age: calculateAge(info.BirthDate, season),
-          Position: mapPosition(info.Pos),
-          NHLTeam: info.NHL,
-          Salary: contract?.Salary || 0,
-          Contract: contract?.Contract || '---',
+          ...identityColumns(info, position, season, getContract(contracts, player.ID, periodInfo.period), { links: false }),
           Reserve: player.RESERVE,
         };
       });
-      team[periodInfo.period]['ROSTER'].sort((a, b) => {
-        const posOrder = { 'G': 3, 'D': 1, 'F': 2 };
-        if (posOrder[a.Position] !== posOrder[b.Position]) return posOrder[a.Position] - posOrder[b.Position];
-        if (a.Reserve !== b.Reserve) return (a.Reserve === "R" ? 1 : 0) - (b.Reserve === "R" ? 1 : 0);
-        return 0;
-      });
+      sortRoster(team[periodInfo.period]['ROSTER']);
       team[periodInfo.period]['TOTAL_SALARY'] = team[periodInfo.period]['ROSTER'].reduce((sum, p) => sum + (p.Salary || 0), 0);
       team[periodInfo.period]['TOTAL_COUNTS'] = team[periodInfo.period]['ROSTER']
         .reduce((counts, player) => ({
@@ -56,7 +46,7 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
           F: counts.F + (player.Position !== "G" && player.Position !== "D" ? 1 : 0)
         }), { F: 0, D: 0, G: 0 });
       team[periodInfo.period]['ACTIVE_COUNTS'] = team[periodInfo.period]['ROSTER']
-        .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
+        .filter(isActive)
         .reduce((counts, player) => ({
           G: counts.G + (player.Position === "G" ? 1 : 0),
           D: counts.D + (player.Position === "D" ? 1 : 0),

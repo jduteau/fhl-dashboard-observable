@@ -58,8 +58,12 @@ flowchart LR
   files in `src/*.md` (Standings, Teams, Draft Results, Roster, Compare Teams, Trades, Playoffs, ...). Navigation is
   configured in `observablehq.config.js`.
 - **Data loaders** (`src/data/*.json.js`, `*.csv.js`) run at **build time**. They read the CSV/JSON files in
-  `src/data/static/` and emit the JSON each page loads. Shared logic is in `src/components/` (`loadfiles.js` for stats
-  and seasons, `trades.js` for trade validation and "agreed trades" overlays).
+  `src/data/static/` and emit the JSON each page loads. Shared logic is in `src/components/`:
+  `loadfiles.js` (reading seasons, stats and rosters; stat lines and ratings; contracts and cash),
+  `playerRows.js` (the building blocks every loader composes its published player rows from),
+  `leagueRules.js` (the league's rules in one place: 25 periods, minimum period cost, roster limits, positions, the
+  stat weights and the record-by-rank table; also imported by the Worker and the GitHub scripts),
+  `standingsHelpers.js` (period and season rankings) and `trades.js` (trade validation and "agreed trades" overlays).
 - **Hosting:** GitHub Pages at `https://jduteau.github.io/fhl-dashboard-observable/`.
 - **Important consequence:** the site has no server. Anything dynamic (submitting a lineup, proposing a trade) is the
   browser calling the Worker directly (below). Anything that must appear on the site is committed to the repo and

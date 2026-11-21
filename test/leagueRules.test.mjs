@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   PERIODS_PER_SEASON, MIN_PERIOD_COST, periodCost, projectedBudget, MIN_ROSTER, MAX_ROSTER, ACTIVE_LINEUP, lineupProblems,
-  DSTAT_TOI_DIVISOR, GSTAT_WEIGHTS,
+  DSTAT_TOI_DIVISOR, GSTAT_WEIGHTS, mapPosition, POSITION_ORDER, recordForRank, TEAMS_IN_LEAGUE,
 } from "../src/components/leagueRules.js";
 import { calcDStat, calcGStat, periodCost as periodCostFromLoader } from "../src/components/loadfiles.js";
 
@@ -76,4 +76,22 @@ test("the stat formulas use the shared weights", () => {
   near(calcDStat("F", { toi: 300 }), 300 / DSTAT_TOI_DIVISOR.other);
   near(calcGStat({ wins: 1, ties: 1, so: 1, sa: 100, ga: 3 }),
     GSTAT_WEIGHTS.win + GSTAT_WEIGHTS.tie + GSTAT_WEIGHTS.shutout + GSTAT_WEIGHTS.shotAgainst * 100 - 3);
+});
+
+test("positions: G and D are kept, every other (or missing) position is a forward", () => {
+  assert.equal(mapPosition("G"), "G");
+  assert.equal(mapPosition("g"), "G");
+  assert.equal(mapPosition("D"), "D");
+  for (const p of ["C", "LW", "RW", "F", "W", "", null, undefined]) assert.equal(mapPosition(p), "F", String(p));
+  assert.deepEqual(Object.keys(POSITION_ORDER).sort((a, b) => POSITION_ORDER[a] - POSITION_ORDER[b]), ["D", "F", "G"]);
+});
+
+test("record by rank: every rank of a 32-team league earns a 3-game record, outside the table earns nothing", () => {
+  assert.equal(TEAMS_IN_LEAGUE, 32);
+  const record = (rank) => { const r = recordForRank(rank); return `${r.wins}-${r.losses}-${r.ties}`; };
+  const expected = [[1, 4, "3-0-0"], [5, 7, "2-0-1"], [8, 12, "2-1-0"], [13, 13, "1-0-2"], [14, 19, "1-1-1"], [20, 24, "1-2-0"], [25, 25, "0-1-2"], [26, 28, "0-2-1"], [29, 32, "0-3-0"]];
+  for (const [from, to, rec] of expected) for (let r = from; r <= to; r++) assert.equal(record(r), rec, `rank ${r}`);
+  for (let r = 1; r <= 32; r++) { const x = recordForRank(r); assert.equal(x.wins + x.losses + x.ties, 3, `rank ${r}`); }
+  assert.equal(record(0), "0-0-0");
+  assert.equal(record(33), "0-0-0");
 });

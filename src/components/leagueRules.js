@@ -58,3 +58,41 @@ export const DSTAT_TOI_DIVISOR = { D: 20, other: 30 };
 
 // GStat = wins * 2 + ties * 1 + shutouts * 2 + shots against * 0.15 - goals against
 export const GSTAT_WEIGHTS = { win: 2, tie: 1, shutout: 2, shotAgainst: 0.15 };
+
+// ---- Positions ----
+
+// Every skater position (C, LW, RW, F, ...) counts as F; only G and D are distinguished
+export function mapPosition(pos) {
+  if (!pos) return "F";
+  const position = pos.toUpperCase();
+  if (position === "G") return "G";
+  if (position === "D") return "D";
+  return "F";
+}
+
+// Display order of positions on a roster: defensemen, forwards, goalies
+export const POSITION_ORDER = { D: 1, F: 2, G: 3 };
+
+// ---- Standings ----
+
+// The record-by-rank table below is written for a league of this many teams
+export const TEAMS_IN_LEAGUE = 32;
+
+// Each period, the teams are ranked on five stats and the overall rank (1 = best) turns into a 3-game record
+// [from rank, to rank, wins, losses, ties]
+const RECORD_BY_RANK = [
+  [1, 4, 3, 0, 0],
+  [5, 7, 2, 0, 1],
+  [8, 12, 2, 1, 0],
+  [13, 13, 1, 0, 2],
+  [14, 19, 1, 1, 1],
+  [20, 24, 1, 2, 0],
+  [25, 25, 0, 1, 2],
+  [26, 28, 0, 2, 1],
+  [29, 32, 0, 3, 0],
+];
+
+export function recordForRank(overallRank) {
+  const row = RECORD_BY_RANK.find(([from, to]) => overallRank >= from && overallRank <= to);
+  return row ? { wins: row[2], losses: row[3], ties: row[4] } : { wins: 0, losses: 0, ties: 0 }; // outside the table
+}

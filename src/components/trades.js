@@ -1,6 +1,6 @@
 // Shared by the Compare Teams (propose), Trades (inbox) and My Account pages.
 
-import {MIN_ROSTER, MAX_ROSTER, projectedBudget} from "./leagueRules.js";
+import {MIN_ROSTER, MAX_ROSTER, POSITION_ORDER, projectedBudget} from "./leagueRules.js";
 
 export {MIN_ROSTER, MAX_ROSTER};
 
@@ -88,7 +88,6 @@ export function applyAgreedTrades({abbrs, rosterOf, picksOf, trades}) {
       }
     }
   }
-  const order = {D: 1, F: 2, G: 3};
-  for (const rows of roster.values()) rows.sort((a, b) => (order[a.Position] ?? 9) - (order[b.Position] ?? 9) || (a.Reserve === "R") - (b.Reserve === "R"));
+  for (const rows of roster.values()) rows.sort((a, b) => (POSITION_ORDER[a.Position] ?? 9) - (POSITION_ORDER[b.Position] ?? 9) || (a.Reserve === "R") - (b.Reserve === "R"));
   return {roster, picks, salaryDelta};
 }

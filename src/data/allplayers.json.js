@@ -1,4 +1,5 @@
-import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, calculateAge, getStatsForPeriod, periodLookup } from "../components/loadfiles.js";
+import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPosition, getStatsForPeriod, periodLookup } from "../components/loadfiles.js";
+import { identityColumns, statColumns } from "../components/playerRows.js";
 
 function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
   const { season, latestStatsIndex, latestRosterIndex, statsPeriods, statsData, availablePeriods, getOverallStats } = sf;
@@ -8,81 +9,26 @@ function buildSeasonAllPlayers(sf, teamInfo, playerInfo, contracts, drafted) {
   const draftedIds = new Set(drafted.map(d => String(d.hockeydb).trim()));
 
   const playerData = playerInfo.map(info => {
-    let player = {};
     const isDrafted = !!info.HockeyDB && draftedIds.has(String(info.HockeyDB).trim());
     const roster = latestRosterIndex.get(info.ID);
     const contract = getContract(contracts, info.ID);
     const position = mapPosition(info.Pos);
     const playerStats = getOverallStats(position, latestStatsIndex.get(info.ID) || {});
     const overallRating = playerStats.games_played ? playerStats.rating : 0;
-    player.OVERALL = {
+
+    // The same row layout for the season totals and for each period; the rating is always the season rating
+    const row = (lineOfStats) => ({
       PLAYER_ID: info.ID,
       FHL: roster?.ABBR || 'FA',
       Drafted: isDrafted,
-      Name: info.Name,
-      HockeyDB: info.HockeyDB,
-      PuckPedia: info.PuckPedia,
-      BirthDate: info.BirthDate,
-      Age: calculateAge(info.BirthDate, season),
-      Position: position,
-      NHLTeam: info.NHL,
-      Salary: contract?.Salary || 0,
-      Contract: contract?.Contract || '---',
-      Goals: position === "G" ? null : playerStats.goals,
-      Assists: position === "G" ? null : playerStats.assists,
-      PIM: position === "G" ? null : playerStats.pim,
-      Hits: position === "G" ? null : playerStats.hits,
-      Blocks: position === "G" ? null : playerStats.blocks,
-      Take: position === "G" ? null : playerStats.take,
-      Give: position === "G" ? null : playerStats.give,
-      TOI: position === "G" ? null : playerStats.toi,
-      Wins: position === "G" ? (playerStats.wins || 0) : null,
-      Losses: position === "G" ? (playerStats.losses || 0) : null,
-      Ties: position === "G" ? (playerStats.ties || 0) : null,
-      Record: position === "G" ? playerStats.wins !== null ? `${playerStats.wins}-${playerStats.losses}-${playerStats.ties}` : '0-0-0' : null,
-      SO: position === "G" ? (playerStats.so || 0) : null,
-      SA: position === "G" ? (playerStats.sa || 0) : null,
-      GA: position === "G" ? (playerStats.ga || 0) : null,
-      Toughness: position === "G" ? null : playerStats.toughness,
-      DStat: position === "G" ? (playerStats.gstat || 0) : playerStats.dstat,
-      GamesPlayed: playerStats.games_played,
-      Rating: overallRating
-    };
+      ...identityColumns(info, position, season, contract),
+      ...statColumns(position, lineOfStats, { goalieRecord: true }),
+      Rating: overallRating,
+    });
+
+    const player = { OVERALL: row(playerStats) };
     statsPeriods.forEach(periodInfo => {
-      const periodPlayerStats = getStatsForPeriod(position, stats.stats(periodInfo.period).get(info.ID) || {}, stats.previous(periodInfo.period).get(info.ID) || {});
-      player[periodInfo.period] = {
-        PLAYER_ID: info.ID,
-        FHL: roster?.ABBR || 'FA',
-        Drafted: isDrafted,
-        Name: info.Name,
-        HockeyDB: info.HockeyDB,
-        PuckPedia: info.PuckPedia,
-        BirthDate: info.BirthDate,
-        Age: calculateAge(info.BirthDate, season),
-        Position: position,
-        NHLTeam: info.NHL,
-        Salary: contract?.Salary || 0,
-        Contract: contract?.Contract || '---',
-        Goals: position === "G" ? null : periodPlayerStats.goals,
-        Assists: position === "G" ? null : periodPlayerStats.assists,
-        PIM: position === "G" ? null : periodPlayerStats.pim,
-        Hits: position === "G" ? null : periodPlayerStats.hits,
-        Blocks: position === "G" ? null : periodPlayerStats.blocks,
-        Take: position === "G" ? null : periodPlayerStats.take,
-        Give: position === "G" ? null : periodPlayerStats.give,
-        TOI: position === "G" ? null : periodPlayerStats.toi,
-        Wins: position === "G" ? (periodPlayerStats.wins || 0) : null,
-        Losses: position === "G" ? (periodPlayerStats.losses || 0) : null,
-        Ties: position === "G" ? (periodPlayerStats.ties || 0) : null,
-        Record: position === "G" ? periodPlayerStats.wins !== null ? `${periodPlayerStats.wins}-${periodPlayerStats.losses}-${periodPlayerStats.ties}` : '0-0-0' : null,
-        SO: position === "G" ? (periodPlayerStats.so || 0) : null,
-        SA: position === "G" ? (periodPlayerStats.sa || 0) : null,
-        GA: position === "G" ? (periodPlayerStats.ga || 0) : null,
-        Toughness: position === "G" ? null : periodPlayerStats.toughness,
-        DStat: position === "G" ? (periodPlayerStats.gstat || 0) : periodPlayerStats.dstat,
-        GamesPlayed: periodPlayerStats.games_played,
-        Rating: overallRating,
-      };
+      player[periodInfo.period] = row(getStatsForPeriod(position, stats.stats(periodInfo.period).get(info.ID) || {}, stats.previous(periodInfo.period).get(info.ID) || {}));
     });
     return player;
   });
@@ -101,5 +47,3 @@ for (const season of seasons) {
 }
 
 process.stdout.write(JSON.stringify({ seasons, currentSeason, data: allData }));
-
-//process.stdout.write(JSON.stringify(playerData.map(p => p["2"])));

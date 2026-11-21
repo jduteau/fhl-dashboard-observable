@@ -4,7 +4,7 @@ import {readFileSync} from "fs";
 import stripBom from "strip-bom";
 import {csvParse} from "d3-dsv";
 import path from "path";
-import {lineupProblems} from "./src/components/leagueRules.js";
+import {lineupProblems, mapPosition} from "./src/components/leagueRules.js";
 
 // Function to validate team roster legality (the rules live in src/components/leagueRules.js)
 function validateTeamRoster(teamData, totalPlayers, isPlayoffRoster) {
@@ -14,18 +14,14 @@ function validateTeamRoster(teamData, totalPlayers, isPlayoffRoster) {
   ).map(problem => problem.message);
 }
 
-// Function to map positions to G, D, or F (copied from loadfiles.js)
-function mapPosition(pos) {
-  if (!pos) return "F";
-  const position = pos.toUpperCase();
-  if (position === "G") return "G";
-  if (position === "D") return "D";
-  return "F"; // All other positions (C, LW, RW, F, etc.) become F
-}
-
 // Function to read CSV files
 function readCsvFile(fileName) {
   return csvParse(stripBom(readFileSync(fileName, "utf-8")));
+}
+
+// The season marked current in seasons.csv
+function currentSeason() {
+  return readCsvFile("src/data/static/seasons.csv").find(s => s.current === "true")?.season;
 }
 
 // Main function to count active roster positions
@@ -38,8 +34,10 @@ function countActiveRoster(rosterFile) {
     // Detect if this is a playoff roster (check filename)
     const isPlayoffRoster = rosterPath.includes('playoff') || (roster.length > 0 && roster[0].hasOwnProperty('NHL'));
     
-    // Read player info for position lookup
-    const playerInfoPath = path.resolve("src/data/static/2026-27/player_info.csv");
+    // Read player info for position lookup: the season is the one in the roster file's path
+    // (src/data/static/<season>/rosters/...), else the current season from seasons.csv
+    const season = /static[\\/](\d{4}-\d{2})[\\/]/.exec(rosterPath)?.[1] ?? currentSeason();
+    const playerInfoPath = path.resolve(`src/data/static/${season}/player_info.csv`);
     const playerInfo = readCsvFile(playerInfoPath);
     
     // Create a lookup map for player positions
@@ -170,10 +168,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (!rosterFile) {
     console.log("Usage: node countActiveRoster.js <roster-file>");
     console.log("\nExamples:");
-    console.log("  node countActiveRoster.js src/data/static/rosters/rosters_p25.csv");
-    console.log("  node countActiveRoster.js src/data/static/rosters/rosters_p01.csv");
-    console.log("  node countActiveRoster.js src/data/static/rosters/rosters_playoff_r01.csv");
-    console.log("  node countActiveRoster.js src/data/static/rosters/rosters_playoff_r02.csv");
+    console.log("  node countActiveRoster.js src/data/static/2026-27/rosters/rosters_p25.csv");
+    console.log("  node countActiveRoster.js src/data/static/2026-27/rosters/rosters_p01.csv");
+    console.log("  node countActiveRoster.js src/data/static/2026-27/rosters/rosters_playoff_r01.csv");
+    console.log("  node countActiveRoster.js src/data/static/2026-27/rosters/rosters_playoff_r02.csv");
     process.exit(1);
   }
   

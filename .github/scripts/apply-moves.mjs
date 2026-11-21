@@ -13,13 +13,12 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from "fs";
 import { csvParse } from "d3-dsv";
 import { applyTrades, updatePicksText, reconcileMoves } from "./trades-lib.mjs";
-import { lineupProblems } from "../../src/components/leagueRules.js";
+import { lineupProblems, mapPosition } from "../../src/components/leagueRules.js";
 
 const root = "src/data/static";
 const read = (p) => csvParse(readFileSync(p, "utf-8").replace(/^﻿/, ""));
 const pad = (n) => String(n).padStart(2, "0");
 const fail = (msg) => { console.error(`::error::${msg}`); process.exit(1); };
-const pos = (p) => ({ G: "G", D: "D" }[(p || "").toUpperCase()] || "F");
 
 const currentSeason = () => read(`${root}/seasons.csv`).find((s) => s.current === "true")?.season;
 const latestRosterPeriod = (season) =>
@@ -45,7 +44,7 @@ function applyToTeam(base, team, promote, demote, playerInfo) {
     r.RESERVE = "R";
   }
   const active = [...byId.values()].filter((r) => r.RESERVE !== "R" && r.RESERVE !== "N/A");
-  const count = (p) => active.filter((r) => pos(playerInfo.find((i) => i.ID === r.ID)?.Pos) === p).length;
+  const count = (p) => active.filter((r) => mapPosition(playerInfo.find((i) => i.ID === r.ID)?.Pos) === p).length;
   const problems = lineupProblems({ total: active.length, defensemen: count("D"), goalies: count("G") });
   if (problems.length) throw new Error(`Illegal roster for ${team}: ${problems.map((p) => p.message).join("; ")}`);
   return [...byId.values()];

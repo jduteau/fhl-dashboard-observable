@@ -1,47 +1,23 @@
 import {csvFormat} from "d3-dsv";
-import { readCsvFile, getContract, currentSeason, latestStatsIndex, latestRosterIndex, mapPosition, calculateAge, getOverallStats } from "../components/loadfiles.js";
+import { readCsvFile, getContract, currentSeason, latestStatsIndex, latestRosterIndex, mapPosition, getOverallStats } from "../components/loadfiles.js";
+import { identityColumns, statColumns } from "../components/playerRows.js";
 
 const basePath = `src/data/static/${currentSeason}`;
 const playerInfo = await readCsvFile(`${basePath}/player_info.csv`);
 const contracts = await readCsvFile(`${basePath}/contracts.csv`);
 
 const playerData = playerInfo.map(info => {
-
   const roster = latestRosterIndex.get(info.ID);
   const contract = getContract(contracts, info.ID);
   const position = mapPosition(info.Pos);
   const playerStats = getOverallStats(position, latestStatsIndex.get(info.ID) || {});
   return {
-      PLAYER_ID: info.ID,
-      FHL: roster?.ABBR || 'FA',
-      Name: info.Name,
-      BirthDate: info.BirthDate,
-      Age: calculateAge(info.BirthDate, currentSeason),
-      Position: position,
-      NHLTeam: info.NHL,
-      Salary: contract?.Salary || 0,
-      Contract: contract?.Contract || '---',
-      Goals: position === "G" ? null : playerStats.goals,
-      Assists: position === "G" ? null : playerStats.assists,
-      PIM: position === "G" ? null : playerStats.pim,
-      Hits: position === "G" ? null : playerStats.hits,
-      Blocks: position === "G" ? null : playerStats.blocks,
-      Take: position === "G" ? null : playerStats.take,
-      Give: position === "G" ? null : playerStats.give,
-      TOI: position === "G" ? null : playerStats.toi,
-      Wins: position === "G" ? (playerStats.wins || 0) : null,
-      Losses: position === "G" ? (playerStats.losses || 0) : null,
-      Ties: position === "G" ? (playerStats.ties || 0) : null,
-      Record: position === "G" ? playerStats.wins !== null ? `${playerStats.wins}-${playerStats.losses}-${playerStats.ties}` : '0-0-0' : null,
-      SO: position === "G" ? (playerStats.so || 0) : null,
-      SA: position === "G" ? (playerStats.sa || 0) : null,
-      GA: position === "G" ? (playerStats.ga || 0) : null,
-      Toughness: position === "G" ? null : playerStats.toughness,
-      DStat: position === "G" ? null : playerStats.dstat,
-      GStat: position === "G" ? (playerStats.gstat || 0) : null,
-      GamesPlayed: playerStats.games_played,
-      Rating: playerStats.games_played ? playerStats.rating : 0,
-    };
-  });
+    PLAYER_ID: info.ID,
+    FHL: roster?.ABBR || 'FA',
+    ...identityColumns(info, position, currentSeason, contract, { links: false }),
+    ...statColumns(position, playerStats, { goalieRecord: true, separateGStat: true }),
+    Rating: playerStats.games_played ? playerStats.rating : 0,
+  };
+});
 
 process.stdout.write(csvFormat(playerData));

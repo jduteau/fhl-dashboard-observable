@@ -207,6 +207,19 @@ test("readStatsFile turns the numeric columns into numbers and blanks into 0", (
   assert.equal(typeof rows[3]["stats/toi"], "number");
 });
 
+test("every stat the app reads is numeric, including a goalie's losses (it used to stay a string)", () => {
+  const rows = readStatsFile("test/fixtures/league/stats/stats_p01.csv");
+  for (const col of ["gp", "goals", "assists", "pim", "hits", "toi", "blocks", "take", "give", "wins", "losses", "ties", "so", "sa", "ga"])
+    for (const row of rows) assert.equal(typeof row[`stats/${col}`], "number", `${row.hockeyRef} stats/${col}`);
+  assert.equal(rows.find((r) => r.hockeyRef === "g3")["stats/losses"], 2);
+  // ... and so are the totals built from them, so a table can sort the column numerically
+  const g3 = sf.getOverallStats("G", sf.latestStatsFile.find((r) => r.hockeyRef === "g3"));
+  assert.equal(g3.losses, 2);
+  assert.equal(typeof g3.losses, "number");
+  const g1 = sf.getOverallStats("G", sf.latestStatsFile.find((r) => r.hockeyRef === "g1"));
+  assert.equal(g1.losses, 0);
+});
+
 test("skater rating: the average of four percentile ratings (a tie counts half), against everyone in the league", () => {
   // Fixture skaters s1..s4 have goals 0,1,1,3 / assists 0,0,2,2 / toughness 0,10,10,20 / DStat 0,1,2,3
   const rating = (id) => sf.getOverallStats("F", sf.latestStatsFile.find((r) => r.hockeyRef === id)).rating;

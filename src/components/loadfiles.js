@@ -1,8 +1,8 @@
 import {readFileSync, readdirSync, existsSync} from "fs";
-import {periodCost, DSTAT_TOI_DIVISOR, GSTAT_WEIGHTS} from "./leagueRules.js";
+import {periodCost, mapPosition, DSTAT_TOI_DIVISOR, GSTAT_WEIGHTS} from "./leagueRules.js";
 
-// Re-exported so existing importers keep working; the rule itself lives in leagueRules.js
-export {periodCost};
+// Re-exported so existing importers keep working; the rules themselves live in leagueRules.js
+export {periodCost, mapPosition};
 import stripBom from "strip-bom";
 import {csvParse} from "d3-dsv";
 
@@ -22,7 +22,7 @@ export async function readCsvFile(fileName) {
 export function readStatsFile(fileName) {
   return csvParse(stripBom(readFileSync(fileName, "utf-8")), (row) => {
     // Convert numeric fields
-    const numericFields = ["stats/gp", "stats/goals", "stats/assists", "stats/pim", "stats/hits", "stats/toi", "stats/blocks", "stats/take", "stats/give", "stats/wins", "stats/ties", "stats/so", "stats/sa", "stats/ga"];
+    const numericFields = ["stats/gp", "stats/goals", "stats/assists", "stats/pim", "stats/hits", "stats/toi", "stats/blocks", "stats/take", "stats/give", "stats/wins", "stats/losses", "stats/ties", "stats/so", "stats/sa", "stats/ga"];
     numericFields.forEach(field => {
       row[field] = row[field] ? +row[field] : 0;
     });
@@ -118,33 +118,11 @@ function createGetOverallStats(distributions) {
   }
 
   return function getOverallStats(position, currentStats) {
-    const inputs = statInputs(currentStats);
-    const dstat = position === "G" ? 0 : calcDStat(position, inputs);
-    const gstat = position === "G" ? calcGStat(inputs) : null;
-    const toughness = position === "G" ? 0 : calcToughness(inputs);
-
+    const stats = statLine(position, currentStats, null, true);
     return {
-      hockeyRef: currentStats.hockeyRef,
-      team: currentStats.team,
-      goals: (position === "G") ? null : (currentStats["stats/goals"] || 0),
-      assists: (position === "G") ? null : (currentStats["stats/assists"] || 0),
-      pim: (position === "G") ? null : (currentStats["stats/pim"] || 0),
-      hits: (position === "G") ? null : (currentStats["stats/hits"] || 0),
-      toughness: (position === "G") ? null : toughness,
-      blocks: (position === "G") ? null : (currentStats["stats/blocks"] || 0),
-      take: (position === "G") ? null : (currentStats["stats/take"] || 0),
-      give: (position === "G") ? null : (currentStats["stats/give"] || 0),
-      toi: (position === "G") ? null : (currentStats["stats/toi"] || 0),
-      dstat: (position === "G") ? null : dstat,
-      wins: (position === "G") ? (currentStats["stats/wins"] || 0) : null,
-      losses: (position === "G") ? (currentStats["stats/losses"] || 0) : null,
-      ties: (position === "G") ? (currentStats["stats/ties"] || 0) : null,
-      so: (position === "G") ? (currentStats["stats/so"] || 0) : null,
-      sa: (position === "G") ? (currentStats["stats/sa"] || 0) : null,
-      ga: (position === "G") ? (currentStats["stats/ga"] || 0) : null,
-      gstat: gstat,
-      games_played: (currentStats["stats/gp"] || 0),
-      rating: getOverallRanking(position, (currentStats["stats/goals"] || 0), (currentStats["stats/assists"] || 0), toughness, dstat, gstat),
+      ...stats,
+      gstat: position === "G" ? stats.gstat : null,
+      rating: getOverallRanking(position, stats.goals, stats.assists, stats.toughness, stats.dstat, stats.gstat),
     };
   };
 }
@@ -315,15 +293,6 @@ export const latestRosterFile = _currentSeasonData.latestRosterFile;
 export const latestStatsIndex = _currentSeasonData.latestStatsIndex;
 export const latestRosterIndex = _currentSeasonData.latestRosterIndex;
 
-// Function to map positions to G, D, or F
-export function mapPosition(pos) {
-  if (!pos) return "F";
-  const position = pos.toUpperCase();
-  if (position === "G") return "G";
-  if (position === "D") return "D";
-  return "F"; // All other positions (C, LW, RW, F, etc.) become F
-}
-
 // Parse a YYYY-MM-DD date string as a local date (avoids the UTC shift of new Date(str))
 function parseLocalDate(dateStr) {
   const [year, month, day] = String(dateStr).split("-").map(Number);
@@ -355,42 +324,42 @@ export function calculateAge(birthDateStr, season = currentSeason) {
   return age;
 }
 
+// ---- One player's stat line ----
+//
+// getOverallStats (the season so far) and getStatsForPeriod (one period) return the same line: skaters have the skater
+// stats and goalies the goalie stats, and the other kind is null. The two differ only in the numbers:
+//   raw = true   running totals, as the stats file has them (the file's own value, 0 when blank)
+//   raw = false  what was added since the previous file (`previous` null/undefined = since the start)
+const SKATER_STATS_BEFORE_TOUGHNESS = ["goals", "assists", "pim", "hits"];
+const SKATER_STATS_AFTER_TOUGHNESS = ["blocks", "take", "give", "toi"];
+const GOALIE_STATS = ["wins", "losses", "ties", "so", "sa", "ga"];
+
+const statValue = (row, name) => row?.[`stats/${name}`] || 0;
+
+function statLine(position, current, previous, raw) {
+  const isGoalie = position === "G";
+  const currentInputs = statInputs(current);
+  const previousInputs = previous ? statInputs(previous) : null;
+  const value = (name) => (raw ? statValue(current, name) : statValue(current, name) - statValue(previous, name));
+  // A computed stat (toughness, DStat, GStat) over the same span
+  const computed = (formula) => (raw || !previousInputs ? formula(currentInputs) : formula(currentInputs) - formula(previousInputs));
+  const skater = (stat) => (isGoalie ? null : stat());
+  const goalie = (stat) => (isGoalie ? stat() : null);
+
+  const line = { hockeyRef: current.hockeyRef, team: current.team };
+  for (const name of SKATER_STATS_BEFORE_TOUGHNESS) line[name] = skater(() => value(name));
+  line.toughness = skater(() => computed(calcToughness));
+  for (const name of SKATER_STATS_AFTER_TOUGHNESS) line[name] = skater(() => value(name));
+  line.dstat = skater(() => computed((inputs) => calcDStat(position, inputs)));
+  for (const name of GOALIE_STATS) line[name] = goalie(() => value(name));
+  line.gstat = isGoalie ? computed(calcGStat) : 0;
+  line.games_played = value("gp");
+  return line;
+}
+
 // Function to get stats for the selected period
 export function getStatsForPeriod(position, currentStats, previousStats) {
-
-  const currentInputs = statInputs(currentStats);
-  const prevInputs = previousStats ? statInputs(previousStats) : null;
-  const isGoalie = position === "G";
-
-  const currentDstat = isGoalie ? 0 : calcDStat(position, currentInputs);
-  const prevDstat = prevInputs && !isGoalie ? calcDStat(position, prevInputs) : 0;
-  const currentGstat = isGoalie ? calcGStat(currentInputs) : 0;
-  const prevGstat = prevInputs && isGoalie ? calcGStat(prevInputs) : 0;
-  const currentToughness = isGoalie ? 0 : calcToughness(currentInputs);
-  const prevToughness = prevInputs && !isGoalie ? calcToughness(prevInputs) : 0;
-
-  return {
-    hockeyRef: currentStats.hockeyRef,
-    team: currentStats.team,
-    goals: (position === "G") ? null : ((currentStats["stats/goals"] || 0) - (previousStats?.["stats/goals"] || 0)),
-    assists: (position === "G") ? null : ((currentStats["stats/assists"] || 0) - (previousStats?.["stats/assists"] || 0)),
-    pim: (position === "G") ? null : ((currentStats["stats/pim"] || 0) - (previousStats?.["stats/pim"] || 0)),
-    hits: (position === "G") ? null : ((currentStats["stats/hits"] || 0) - (previousStats?.["stats/hits"] || 0)),
-    toughness: (position === "G") ? null : (currentToughness - prevToughness),
-    blocks: (position === "G") ? null : ((currentStats["stats/blocks"] || 0) - (previousStats?.["stats/blocks"] || 0)),
-    take: (position === "G") ? null : ((currentStats["stats/take"] || 0) - (previousStats?.["stats/take"] || 0)),
-    give: (position === "G") ? null : ((currentStats["stats/give"] || 0) - (previousStats?.["stats/give"] || 0)),
-    toi:  (position === "G") ? null : ((currentStats["stats/toi"] || 0) - (previousStats?.["stats/toi"] || 0)),
-    dstat: (position === "G") ? null : (currentDstat - prevDstat),
-    wins: (position === "G") ? ((currentStats["stats/wins"] || 0) - (previousStats?.["stats/wins"] || 0)) : null,
-    losses: (position === "G") ? ((currentStats["stats/losses"] || 0) - (previousStats?.["stats/losses"] || 0)) : null,
-    ties: (position === "G") ? ((currentStats["stats/ties"] || 0) - (previousStats?.["stats/ties"] || 0)) : null,
-    so: (position === "G") ? ((currentStats["stats/so"] || 0) - (previousStats?.["stats/so"] || 0)) : null,
-    sa: (position === "G") ? ((currentStats["stats/sa"] || 0) - (previousStats?.["stats/sa"] || 0)) : null,
-    ga: (position === "G") ? ((currentStats["stats/ga"] || 0) - (previousStats?.["stats/ga"] || 0)) : null,
-    gstat: (currentGstat - prevGstat),
-    games_played: (currentStats["stats/gp"] || 0) - (previousStats?.["stats/gp"] || 0)
-  };
+  return statLine(position, currentStats, previousStats, false);
 }
 
 

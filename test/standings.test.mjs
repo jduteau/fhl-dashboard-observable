@@ -202,6 +202,17 @@ test("with no stats at all, no periods and an all-zero overall table", () => {
   assert.ok(r.rankings.overallStandings.every((t) => t.points === 0 && t.wins === 0));
 });
 
+test("a league that is not 32 teams is warned about, since the record-by-rank table is written for 32", () => {
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (...a) => warnings.push(a.join(" "));
+  try {
+    buildSeasonStandings({ season: "t", statsData: {}, rosterPeriods: [], availablePeriods: [] }, [{ ABBR: "AAA", NAME: "A", DIVISION: "X" }], []);
+  } finally { console.warn = realWarn; }
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /written for 32 teams but this league has 1/);
+});
+
 test("a roster file whose period has no stats yet (the upcoming period) is skipped, not a crash", () => {
   const r = league(ordered, [1], { rosterOnlyPeriods: [2] });
   assert.equal(r.rankings.periods.length, 1);

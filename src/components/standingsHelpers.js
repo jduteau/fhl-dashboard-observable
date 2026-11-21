@@ -1,168 +1,61 @@
 import { readCsvFile, seasons, currentSeason, loadSeasonData, mapPosition, getStatsForPeriod, indexBy, periodLookup, assertPlayersKnown } from "./loadfiles.js";
+import { recordForRank, TEAMS_IN_LEAGUE } from "./leagueRules.js";
+import { statColumns, sortRoster, activeTotals } from "./playerRows.js";
 
-// Function to calculate rankings for a specific stat across all teams
+// ---- Ranking one stat across the teams ----
+//
+// The best value gets the highest rank (the number of teams, 32 in this league) and the worst gets 1; teams with equal
+// values share the rank of the first of them. Values within `tolerance` of the previous one count as equal (0 = must be
+// exactly equal), which absorbs floating-point noise in DStat and GStat.
+const STAT_TOLERANCE = { goals: 0, assists: 0, toughness: 0, dstat: 0.0001, gstat: 0.01 };
+
+// Decimals a team's period total is rounded to before ranking (the season totals are ranked unrounded)
+const STAT_DECIMALS = { dstat: 4, gstat: 2 };
+
+// entries: [{key, value}] -> {key: rank}; ranks count down from `top`
+function rankDescending(entries, top, tolerance) {
+  const sorted = [...entries].sort((a, b) => b.value - a.value);
+  const ranks = {};
+  let rank = top;
+  let previous = null;
+  sorted.forEach((entry, index) => {
+    const equal = previous !== null && (tolerance > 0 ? Math.abs(entry.value - previous) < tolerance : entry.value === previous);
+    if (!equal) rank = top - index;
+    ranks[entry.key] = rank;
+    previous = entry.value;
+  });
+  return ranks;
+}
+
+// entries: [{key, value, played}]. GStat is special: a team whose goalies played no games ranks below EVERY team whose
+// goalies did, however poor their GStat (a team with no goalie games has a GStat of 0, which would otherwise beat a bad one).
+function rankStat(entries, statKey, total) {
+  const tolerance = STAT_TOLERANCE[statKey];
+  if (statKey !== "gstat") return rankDescending(entries, total, tolerance);
+  const ranks = rankDescending(entries.filter(e => e.played), total, tolerance);
+  const lowestRankWithGames = Object.values(ranks).length ? Math.min(...Object.values(ranks)) : total + 1;
+  return { ...ranks, ...rankDescending(entries.filter(e => !e.played), lowestRankWithGames - 1, tolerance) };
+}
+
+// Games played by the goalies a team had active in a period
+function goalieGames(team, period) {
+  return (team[period]?.ROSTER || [])
+    .filter(player => player.Position === "G" && player.Reserve !== "R")
+    .reduce((total, goalie) => total + (goalie.GamesPlayed || 0), 0);
+}
+
+// Rankings of one stat for one period: {teamAbbr: rank}
 function calculateRankings(teams, period, statKey) {
-  if (statKey === 'gstat') {
-    return calculateGstatRankings(teams, period);
-  }
-  
-  // Determine precision based on stat type
-  let precision, multiplier;
-  if (statKey === 'dstat') {
-    precision = 0.0001; // 4 decimal places
-    multiplier = 10000;
-  } else {
-    precision = 0; // Integer stats
-    multiplier = 1;
-  }
-  
-  const isFloatStat = statKey === 'dstat';
-  
-  // Get all values for this stat in this period
-  const teamStats = teams.map(team => {
-    let value = team[period]?.ACTIVE_TOTALS?.[statKey] || 0;
-    // Round float values to avoid precision issues
-    if (isFloatStat) {
-      value = Math.round(value * multiplier) / multiplier;
-    }
+  const decimals = STAT_DECIMALS[statKey];
+  const entries = teams.map(team => {
+    const value = team[period]?.ACTIVE_TOTALS?.[statKey] || 0;
     return {
-      team: team,
-      value: value
+      key: team.ABBR,
+      value: decimals ? Math.round(value * 10 ** decimals) / 10 ** decimals : value,
+      played: statKey !== "gstat" || goalieGames(team, period) > 0,
     };
   });
-  
-  // Sort by value (descending - highest gets rank 32)
-  teamStats.sort((a, b) => b.value - a.value);
-  
-  // Assign rankings with ties handled properly
-  const rankings = {};
-  let currentRank = teams.length; // Start with 32 (or total number of teams)
-  let previousValue = null;
-  let teamsAtCurrentRank = 0;
-  
-  teamStats.forEach((teamStat, index) => {
-    // For float comparison, check if values are approximately equal
-    const valuesEqual = isFloatStat ? 
-      Math.abs(teamStat.value - (previousValue || 0)) < precision :
-      previousValue === teamStat.value;
-    
-    if (previousValue === null || !valuesEqual) {
-      // New value, so rank changes
-      currentRank = teams.length - index;
-      teamsAtCurrentRank = 1;
-    } else {
-      // Same value as previous, keep same rank
-      teamsAtCurrentRank++;
-    }
-    
-    rankings[teamStat.team.ABBR] = currentRank;
-    previousValue = teamStat.value;
-  });
-  
-  return rankings;
-}
-
-// Special function to calculate gstat rankings
-function calculateGstatRankings(teams, period) {
-  // Separate teams into those with goalie games and those without
-  const teamsWithGoalieGames = [];
-  const teamsWithoutGoalieGames = [];
-  
-  teams.forEach(team => {
-    const roster = team[period]?.ROSTER || [];
-    const goalieGamesPlayed = roster
-      .filter(player => player.Position === "G" && player.Reserve !== "R")
-      .reduce((total, goalie) => total + (goalie.GamesPlayed || 0), 0);
-    
-    // Round gstat value to 2 decimal places for consistent comparison
-    let gstatValue = team[period]?.ACTIVE_TOTALS?.gstat || 0;
-    gstatValue = Math.round(gstatValue * 100) / 100;
-    
-    const teamStat = {
-      team: team,
-      value: gstatValue,
-      hasGoalieGames: goalieGamesPlayed > 0
-    };
-    
-    if (goalieGamesPlayed > 0) {
-      teamsWithGoalieGames.push(teamStat);
-    } else {
-      teamsWithoutGoalieGames.push(teamStat);
-    }
-  });
-  
-  // Sort teams with goalie games by gstat (descending)
-  teamsWithGoalieGames.sort((a, b) => b.value - a.value);
-  
-  // Sort teams without goalie games by gstat (descending) for consistent ordering
-  teamsWithoutGoalieGames.sort((a, b) => b.value - a.value);
-  
-  const rankings = {};
-  const gstatPrecision = 0.01; // 2 decimal places precision
-  
-  // Assign rankings to teams with goalie games first (highest ranks)
-  let currentRank = teams.length;
-  let previousValue = null;
-  
-  teamsWithGoalieGames.forEach((teamStat, index) => {
-    // Use precision comparison for gstat values
-    const valuesEqual = previousValue !== null && 
-      Math.abs(teamStat.value - previousValue) < gstatPrecision;
-    
-    if (!valuesEqual) {
-      currentRank = teams.length - index;
-    }
-    rankings[teamStat.team.ABBR] = currentRank;
-    previousValue = teamStat.value;
-  });
-  
-  // Find the lowest rank assigned to teams with goalie games
-  const lowestRankWithGames = teamsWithGoalieGames.length > 0 ? 
-    Math.min(...teamsWithGoalieGames.map(t => rankings[t.team.ABBR])) : teams.length + 1;
-  
-  // Assign rankings to teams without goalie games (lower than all teams with games)
-  let rankForNoGames = lowestRankWithGames - 1;
-  previousValue = null;
-  
-  teamsWithoutGoalieGames.forEach((teamStat, index) => {
-    // Use precision comparison for gstat values (teams without goalie games)
-    const valuesEqual = previousValue !== null && 
-      Math.abs(teamStat.value - previousValue) < gstatPrecision;
-    
-    if (!valuesEqual) {
-      rankForNoGames = lowestRankWithGames - 1 - index;
-    }
-    rankings[teamStat.team.ABBR] = rankForNoGames;
-    previousValue = teamStat.value;
-  });
-  
-  return rankings;
-}
-
-// Function to calculate wins, losses, ties based on overall rank
-function calculateRecordByRank(overallRank) {
-  if (overallRank >= 1 && overallRank <= 4) {
-    return { wins: 3, losses: 0, ties: 0 };
-  } else if (overallRank >= 5 && overallRank <= 7) {
-    return { wins: 2, losses: 0, ties: 1 };
-  } else if (overallRank >= 8 && overallRank <= 12) {
-    return { wins: 2, losses: 1, ties: 0 };
-  } else if (overallRank === 13) {
-    return { wins: 1, losses: 0, ties: 2 };
-  } else if (overallRank >= 14 && overallRank <= 19) {
-    return { wins: 1, losses: 1, ties: 1 };
-  } else if (overallRank >= 20 && overallRank <= 24) {
-    return { wins: 1, losses: 2, ties: 0 };
-  } else if (overallRank === 25) {
-    return { wins: 0, losses: 1, ties: 2 };
-  } else if (overallRank >= 26 && overallRank <= 28) {
-    return { wins: 0, losses: 2, ties: 1 };
-  } else if (overallRank >= 29 && overallRank <= 32) {
-    return { wins: 0, losses: 3, ties: 0 };
-  } else {
-    // Default case for ranks outside expected range
-    return { wins: 0, losses: 0, ties: 0 };
-  }
+  return rankStat(entries, statKey, teams.length);
 }
 
 // Function to calculate overall rankings based on sum of individual ranks
@@ -258,7 +151,7 @@ function createTeamRankings(teams, availablePeriods) {
     teams.forEach(team => {
       const activeTotals = team[period]?.ACTIVE_TOTALS || {};
       const teamOverallRank = overallRankings[team.ABBR] || 0;
-      const record = calculateRecordByRank(teamOverallRank);
+      const record = recordForRank(teamOverallRank); // the 3-game record this rank earns (table in leagueRules.js)
       
       teamRankings[periodIndex].push({
         period: period,
@@ -269,9 +162,7 @@ function createTeamRankings(teams, availablePeriods) {
         toughness: activeTotals.toughness || 0,
         dstat: activeTotals.dstat || 0,
         gstat: activeTotals.gstat || 0,
-        goalieGames: (team[period]?.ROSTER || [])
-          .filter(player => player.Position === "G" && player.Reserve !== "R")
-          .reduce((total, goalie) => total + (goalie.GamesPlayed || 0), 0),
+        goalieGames: goalieGames(team, period),
         // Individual stat rankings
         goalsRank: individualRankings.goals[team.ABBR] || 0,
         assistsRank: individualRankings.assists[team.ABBR] || 0,
@@ -354,104 +245,16 @@ function createTeamRankings(teams, availablePeriods) {
     team.overallRank = index + 1;
   });
 
-  // Calculate individual stat rankings for overall standings
-  const statCategories = ['goals', 'assists', 'toughness', 'dstat', 'gstat'];
-  
-  statCategories.forEach(statKey => {
-    // Create array of teams with their stat values
-    const teamStats = overallStandings.map(team => ({
-      team: team.team,
-      value: team[statKey] || 0,
-      hasGoalieGames: (team.goalieGames || 0) > 0
-    }));
-    
-    // Handle gstat special ranking (teams with 0 goalie games ranked lower)
-    if (statKey === 'gstat') {
-      // Separate teams with and without goalie games (assuming 0 gstat means no goalie games)
-      const teamsWithGoalieGames = teamStats.filter(t => t.hasGoalieGames);
-      const teamsWithoutGoalieGames = teamStats.filter(t => !t.hasGoalieGames);
-      
-      // Sort teams with goalie games by gstat (descending)
-      teamsWithGoalieGames.sort((a, b) => b.value - a.value);
-      
-      // Sort teams without goalie games by gstat (descending), matching the period rankings
-      teamsWithoutGoalieGames.sort((a, b) => b.value - a.value);
-      
-      const gstatRankings = {};
-      const gstatPrecision = 0.01;
-      
-      // Assign rankings to teams with goalie games first (highest ranks)
-      let currentRank = overallStandings.length;
-      let previousValue = null;
-      
-      teamsWithGoalieGames.forEach((teamStat, index) => {
-        const valuesEqual = previousValue !== null && 
-          Math.abs(teamStat.value - previousValue) < gstatPrecision;
-        
-        if (!valuesEqual) {
-          currentRank = overallStandings.length - index;
-        }
-        gstatRankings[teamStat.team] = currentRank;
-        previousValue = teamStat.value;
-      });
-      
-      // Find the lowest rank assigned to teams with goalie games
-      const lowestRankWithGames = teamsWithGoalieGames.length > 0 ? 
-        Math.min(...teamsWithGoalieGames.map(t => gstatRankings[t.team])) : overallStandings.length + 1;
-      
-      // Assign rankings to teams without goalie games (lower than all teams with games)
-      let rankForNoGames = lowestRankWithGames - 1;
-      previousValue = null;
-      
-      teamsWithoutGoalieGames.forEach((teamStat, index) => {
-        const valuesEqual = previousValue !== null &&
-          Math.abs(teamStat.value - previousValue) < gstatPrecision;
-        
-        if (!valuesEqual) {
-          rankForNoGames = lowestRankWithGames - 1 - index;
-        }
-        gstatRankings[teamStat.team] = rankForNoGames;
-        previousValue = teamStat.value;
-      });
-      
-      // Apply gstat rankings to overallStandings
-      overallStandings.forEach(team => {
-        team[`${statKey}Rank`] = gstatRankings[team.team];
-      });
-      
-    } else {
-      // Standard ranking for other stats (goals, assists, toughness, dstat)
-      // Sort by value (descending - highest gets rank 1)
-      teamStats.sort((a, b) => b.value - a.value);
-      
-      // Determine precision based on stat type
-      let precision = statKey === 'dstat' ? 0.0001 : 0;
-      const isFloatStat = statKey === 'dstat';
-      
-      // Assign rankings with ties handled properly
-      const statRankings = {};
-      let currentRank = overallStandings.length;
-      let previousValue = null;
-      
-      teamStats.forEach((teamStat, index) => {
-        // For float comparison, check if values are approximately equal
-        const valuesEqual = isFloatStat ? 
-          Math.abs(teamStat.value - (previousValue || 0)) < precision :
-          previousValue === teamStat.value;
-        
-        if (index > 0 && !valuesEqual) {
-          currentRank = overallStandings.length - index;
-        }
-        
-        statRankings[teamStat.team] = currentRank;
-        previousValue = teamStat.value;
-      });
-      
-      // Apply rankings to overallStandings
-      overallStandings.forEach(team => {
-        team[`${statKey}Rank`] = statRankings[team.team];
-      });
-    }
+  // Season-long rank of each stat (ranked on the unrounded season totals)
+  ['goals', 'assists', 'toughness', 'dstat', 'gstat'].forEach(statKey => {
+    const ranks = rankStat(
+      overallStandings.map(team => ({ key: team.team, value: team[statKey] || 0, played: (team.goalieGames || 0) > 0 })),
+      statKey,
+      overallStandings.length
+    );
+    overallStandings.forEach(team => {
+      team[`${statKey}Rank`] = ranks[team.team];
+    });
   });
 
   // Return object with both period rankings and overall standings
@@ -463,6 +266,8 @@ function createTeamRankings(teams, availablePeriods) {
 
 export function buildSeasonStandings(sf, teamInfo, playerInfo) {
   const { statsData, rosterPeriods, availablePeriods } = sf;
+  if (teamInfo.length !== TEAMS_IN_LEAGUE)
+    console.warn(`[${sf.season ?? ""}] the record-by-rank table is written for ${TEAMS_IN_LEAGUE} teams but this league has ${teamInfo.length}; ranks outside it earn no record`);
   const playerIndex = indexBy(playerInfo, "ID");
   assertPlayersKnown(playerIndex, rosterPeriods.map(p => ({ name: `${sf.season ?? ""} rosters_p${String(p.period).padStart(2, "0")}.csv`.trim(), rows: p.data })));
   const stats = periodLookup(statsData);
@@ -485,44 +290,11 @@ export function buildSeasonStandings(sf, teamInfo, playerInfo) {
           Position: position,
           NHLTeam: info.NHL,
           Reserve: player.RESERVE,
-          Goals: position === "G" ? null : playerStats.goals,
-          Assists: position === "G" ? null : playerStats.assists,
-          PIM: position === "G" ? null : playerStats.pim,
-          Hits: position === "G" ? null : playerStats.hits,
-          Blocks: position === "G" ? null : playerStats.blocks,
-          Take: position === "G" ? null : playerStats.take,
-          Give: position === "G" ? null : playerStats.give,
-          TOI: position === "G" ? null : playerStats.toi,
-          Record: position === "G" ? playerStats.wins !== null ? `${playerStats.wins}-${playerStats.losses}-${playerStats.ties}` : '0-0-0' : null,
-          SO: position === "G" ? (playerStats.so || 0) : null,
-          SA: position === "G" ? (playerStats.sa || 0) : null,
-          GA: position === "G" ? (playerStats.ga || 0) : null,
-          Toughness: position === "G" ? null : playerStats.toughness,
-          DStat: position === "G" ? null : playerStats.dstat,
-          GStat: position === "G" ? (playerStats.gstat || 0) : null,
-          GamesPlayed: playerStats.games_played,
+          ...statColumns(position, playerStats, { separateGStat: true }),
         };
       });
-      team[periodInfo.period]['ROSTER'].sort((a, b) => {
-        const posOrder = { 'G': 3, 'D': 1, 'F': 2 };
-        if (posOrder[a.Position] !== posOrder[b.Position]) {
-          return posOrder[a.Position] - posOrder[b.Position];
-        }
-        if (a.Reserve !== b.Reserve) {
-          return (a.Reserve === "R" ? 1 : 0) - (b.Reserve === "R" ? 1 : 0);
-        }
-        return a.GamesPlayed - b.GamesPlayed;
-      });
-
-      team[periodInfo.period]['ACTIVE_TOTALS'] = team[periodInfo.period]['ROSTER']
-        .filter(player => player.Reserve !== "R" && player.Reserve !== "N/A")
-        .reduce((totals, player) => ({
-          goals: totals.goals + (player.Position !== "G" ? (player.Goals || 0) : 0),
-          assists: totals.assists + (player.Position !== "G" ? (player.Assists || 0) : 0),
-          toughness: totals.toughness + (player.Position !== "G" ? (player.Toughness || 0) : 0),
-          dstat: totals.dstat + (player.DStat || 0),
-          gstat: totals.gstat + (player.GStat !== null ? player.GStat : 0)
-        }), { goals: 0, assists: 0, toughness: 0, dstat: 0, gstat: 0 });
+      sortRoster(team[periodInfo.period]['ROSTER'], (a, b) => a.GamesPlayed - b.GamesPlayed);
+      team[periodInfo.period]['ACTIVE_TOTALS'] = activeTotals(team[periodInfo.period]['ROSTER'], { separateGStat: true });
     });
     return team;
   });
