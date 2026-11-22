@@ -11,6 +11,10 @@ on:
         description: "Write rosters_pNN.csv for the next period from stored moves"
         type: boolean
         default: true
+      email:
+        description: "Email the league report (trades, moves, signings, waivers) when done; untick when re-running"
+        type: boolean
+        default: true
 
 # Runs are NOT queued behind each other for roster moves: GitHub keeps only one pending run per concurrency group, so a
 # third submission arriving while one run executes and one waits would silently cancel the waiting one and lose that
@@ -36,11 +40,13 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply and commit
+        id: apply
         if: github.event_name == 'repository_dispatch' || inputs.materialize
         env:
           EVENT: ${{ github.event_name }}
           BRANCH: ${{ github.event.repository.default_branch }}
           MOVES: ${{ toJson(github.event.client_payload) }}
+          REPORT_FILE: ${{ runner.temp }}/league-report.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -58,7 +64,22 @@ jobs:
             git add src/data/static
             git diff --cached --quiet && exit 0
             git commit -m "Roster moves ($EVENT)"
-            git push origin "HEAD:$BRANCH" && exit 0
+            if git push origin "HEAD:$BRANCH"; then
+              [ "$EVENT" = "workflow_dispatch" ] && echo "report=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             sleep $((i * 3))
           done
           exit 1
+      # Only after the new roster is pushed. Needs the EMAILJS_PRIVATE_KEY repository secret (Settings > Secrets > Actions);
+      # the rest is the same non-secret config as worker/wrangler.toml. Without the secret it only warns.
+      - name: Email league report
+        if: steps.apply.outputs.report == 'true' && inputs.email
+        env:
+          REPORT_FILE: ${{ runner.temp }}/league-report.json
+          LEAGUE_EMAIL: fhltalk@googlegroups.com
+          EMAILJS_SERVICE_ID: service_k8uynjg
+          EMAILJS_TEMPLATE_ID: template_spwr299
+          EMAILJS_PUBLIC_KEY: m2JaSdtXv7JaHBl7r
+          EMAILJS_PRIVATE_KEY: ${{ secrets.EMAILJS_PRIVATE_KEY }}
+        run: node .github/scripts/send-league-report.mjs

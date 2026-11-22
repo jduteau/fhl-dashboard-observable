@@ -8,7 +8,10 @@
 //                                              src/data/static/<season>/transactions/transactions_pNN.json (waivers, then FA signings;
 //                                              see record-transactions.mjs; signings also get a contracts.csv row), then the agreed trades in
 //                                              src/data/static/<season>/trades/trades_pNN.json (see record-trades.mjs; traded picks
-//                                              are rewritten in the draft_picks.csv files) + the stored moves
+//                                              are rewritten in the draft_picks.csv files) + the stored moves.
+//                                              If $REPORT_FILE is set, the league report (trades, moves, signings, waivers; see
+//                                              league-report-lib.mjs) is also written there as JSON {subject, message}; the
+//                                              workflow emails it once the commit is pushed.
 //
 // $MOVES = {season, period, team, promote:[playerId], demote:[playerId]}
 //   promote = reserve -> active, demote = active -> reserve, relative to the latest roster file AFTER the recorded
@@ -19,6 +22,7 @@ import { applyTrades, updatePicksText, reconcileMoves, materializeTarget, revert
 import { upsertContractRows } from "./transactions-lib.mjs";
 import { applyTransactions } from "../../src/components/transactionRules.js";
 import { lineupProblems, mapPosition } from "../../src/components/leagueRules.js";
+import { buildLeagueReport } from "./league-report-lib.mjs";
 
 const root = "src/data/static";
 const read = (p) => csvParse(readFileSync(p, "utf-8").replace(/^﻿/, ""));
@@ -108,6 +112,9 @@ if (mode === "materialize") {
   // 0. Waived players leave their team, signed free agents join in reserve (with a new contract): the order FHL Trader
   //    uses. Trades come next, so a player signed this period can be traded on.
   let transactionSummary = "";
+  let reportTransactions = [];
+  let reportTrades = [];
+  const reportMoves = [];
   const x = loadTransactions(season, period);
   if (x) {
     const { applied, skipped } = applyTransactions(rows, x.transactions);
@@ -116,6 +123,7 @@ if (mode === "materialize") {
     const signed = x.transactions.filter((t) => t.type === "sign" && !t.skipped).map((t) => ({ ID: t.player, Salary: t.salary, Contract: t.contract }));
     const contractsFile = `${root}/${season}/contracts.csv`;
     if (signed.length) writeFileSync(contractsFile, upsertContractRows(readFileSync(contractsFile, "utf-8"), signed, period));
+    reportTransactions = x.transactions.filter((t) => !t.skipped);
     transactionSummary = `; transactions: ${applied.length} applied, ${skipped.length} skipped`;
   }
 
@@ -136,6 +144,7 @@ if (mode === "materialize") {
       if (moved.size && existsSync(f)) writeFileSync(f, updatePicksText(readFileSync(f, "utf-8"), moved));
     }
     writeFileSync(t.file, JSON.stringify({ ...t.stored, trades: t.trades }, null, 2) + "\n");
+    reportTrades = t.trades.filter((tr) => !tr.skipped);
     tradeSummary = `; trades: ${applied.length} applied, ${skipped.length} skipped`;
   }
 
@@ -146,13 +155,24 @@ if (mode === "materialize") {
     // A trade agreed after the GM submitted can leave moves that name players who are no longer theirs; drop those.
     const { promote, demote, dropped } = reconcileMoves(rows, team, m.promote, m.demote);
     if (dropped.length) console.warn(`::warning::${team}: ignored moves for ${dropped.join(", ")} (no longer on their roster or already changed by a trade); the GM should re-check their lineup`);
-    try { for (const r of applyToTeam(rows, team, promote, demote, playerInfo)) changed.set(r.ID + "|" + r.ABBR, r.RESERVE); }
+    try {
+      for (const r of applyToTeam(rows, team, promote, demote, playerInfo)) changed.set(r.ID + "|" + r.ABBR, r.RESERVE);
+      reportMoves.push({ team, promote, demote });
+    }
     catch (e) { console.warn(`::warning::Skipping invalid moves for ${team}: ${e.message}`); }
   }
   for (const r of rows) r.RESERVE = changed.get(r.ID + "|" + r.ABBR) ?? r.RESERVE;
 
   const lines = ["ID,ABBR,RESERVE", ...rows.map((r) => `${r.ID},${r.ABBR},${r.RESERVE}`)];
   writeFileSync(`${root}/${season}/rosters/rosters_p${pad(period)}.csv`, lines.join("\n") + "\n");
+  if (process.env.REPORT_FILE) {
+    const periodStart = existsSync(`${root}/${season}/periods.csv`) ? read(`${root}/${season}/periods.csv`).find((p) => Number(p.period) === period)?.start : undefined;
+    const report = buildLeagueReport({
+      season, period, periodStart, trades: reportTrades, moves: reportMoves, transactions: reportTransactions,
+      info: new Map(playerInfo.map((i) => [i.ID, i])), mapPos: mapPosition,
+    });
+    writeFileSync(process.env.REPORT_FILE, JSON.stringify(report));
+  }
   console.log(`Wrote rosters_p${pad(period)}.csv with moves for ${Object.keys(moves).length} team(s)${transactionSummary}${tradeSummary}`);
 } else {
   const m = JSON.parse(process.env.MOVES || fail("MOVES env var missing"));

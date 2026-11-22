@@ -133,14 +133,35 @@ All workflows that change data commit to `master` as `github-actions[bot]`, and 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
 | **Read Stats** (`read-stats.yml`) | Daily 13:00 UTC cron; manual (optional season/period) | Works out the current season and period (`.github/scripts/resolve-period.mjs`, from `seasons.csv` and `periods.csv`), builds `FHLScripts/`, scrapes hockey-reference.com into `stats_pNN.csv`, then adds any new players to `player_info.csv` (`update-player-info.mjs`, which prefers the NHL API and is rate-limited to be polite to scraped sites). |
-| **Apply Roster Moves** (`apply-moves.yml`) | `roster-moves` dispatch from the Worker; manual "materialize" | On dispatch: validates and stores one team's moves in `moves/moves_pNN.json`. On manual run (the commissioner starting a new period): applies the agreed trades, then every team's stored moves, and writes `rosters_p(NN+1).csv`; traded picks are rewritten in `draft_picks.csv`. |
+| **Apply Roster Moves** (`apply-moves.yml`) | `roster-moves` dispatch from the Worker; manual "materialize" | On dispatch: validates and stores one team's moves in `moves/moves_pNN.json` (runs in parallel; see *Concurrent dispatches* below). On manual run (the commissioner starting a new period): applies the agreed trades, then every team's stored moves, and writes `rosters_p(NN+1).csv`; traded picks are rewritten in `draft_picks.csv`. |
 | **Record Trades** (`record-trades.yml`) | `trade-approved` dispatch from the Worker | Merges accepted trades into `trades/trades_pNN.json` (the public trade log). The Worker always sends *all* accepted trades for the period, so a dropped queued run cannot lose one. |
 | **Record Transactions** (`record-transactions.yml`) | `transaction` dispatch from the Worker | Adds (or removes) a batch of commissioner-entered free-agent signings, waiver cuts and waiver claims in `transactions/transactions_pNN.json`. Checked against the latest roster plus the transactions already recorded. |
 | **Deploy** (`deploy.yml`) | Push to `master`; after the three workflows above succeed; manual | `npm ci && npm test && npm run build`, publishes `dist/` to GitHub Pages. **Nothing is deployed unless the tests pass**, so a bad commit (code or data) leaves the live site as it was. (Pushes made with the built-in token do not trigger the `push` trigger, which is why `workflow_run` is needed.) |
 | **Test** (`test.yml`) | Pull requests; manual | `npm ci && npm test && npm run build`: the same checks Deploy runs, for a change that has not been pushed to `master` yet. |
 
-Workflows use only the built-in `GITHUB_TOKEN`; there are no custom Actions secrets. The two workflows that receive
-Worker dispatches are serialized by separate concurrency groups so a trade can never displace a queued roster move.
+Workflows use only the built-in `GITHUB_TOKEN`; there are no custom Actions secrets.
+
+**Concurrent dispatches.** GMs can submit at nearly the same time, and each submission is its own run that edits and
+pushes the same data files. Three things make that safe:
+- **Check out the branch tip, not the dispatch commit.** For `repository_dispatch`, `actions/checkout` defaults to the
+  commit the branch pointed at when the event was *sent*. A run that waited in a queue would start from a stale tree,
+  miss the previous run's commit and conflict when pushing, so the dispatch workflows check out
+  `github.event.repository.default_branch` explicitly.
+- **Roster moves are never queued.** GitHub keeps only *one pending* run per concurrency group, so a third submission
+  arriving while one run executes and one waits would cancel the waiting run and silently lose that team's moves (each
+  dispatch carries just one team's moves). Apply Roster Moves therefore gives each dispatch its own group
+  (`apply-moves-<run_id>`) so none is cancelled; only the commissioner's materialize runs share a group. To keep
+  parallel runs from conflicting, the commit step *redoes* the work instead of rebasing: each attempt fetches the branch
+  tip, resets to it, re-runs the script, commits and pushes, and a rejected push (another run got there first) just
+  starts over on top of the new tip (up to 8 attempts). A script failure, such as invalid moves, is a real error and
+  fails the run without retrying.
+- **Record Trades** keeps a serialized group (separate from the others, so a trade can't displace a queued roster
+  move). That is safe because the payload is self-healing: the Worker re-sends every accepted trade for the period and
+  they merge by id, so a dropped queued run is made up for by the next one. It keeps the `git pull --rebase` retry.
+- **Record Transactions** also keeps a serialized group and the rebase retry, but its dispatches are *not*
+  self-healing: each carries only its own batch. A third batch queued while one runs and one waits would cancel the
+  waiting one. Only the commissioner submits these, one batch at a time, so this is unlikely in practice; if it ever
+  matters, give it the same per-run group + redo-on-reject commit step as Apply Roster Moves.
 
 ### 5. EmailJS
 - **What:** a hosted email-sending service. The Worker calls its REST API (`api.emailjs.com`) server-side, using a
@@ -221,6 +242,14 @@ the league email, with mentions disabled. Unset means off.
    team's cash from the period the cut was applied (`computeTeamCash`), so cash going into the new period already reflects
    it. Until then, Compare Teams and Trades budget maths already subtract the pending cuts. Claims and signings cost
    nothing extra (a signing's salary is charged through the normal period cost).
+
+**League report email.** When the materialize run pushes the new roster, it emails the league list (`fhltalk@googlegroups.com`)
+an "FHL Trader Volume NNN (Week ending ...)" report: the applied trades, each team's roster moves, free-agent signings, waiver
+claims and cuts (sections with nothing in them are left out). `apply-moves.mjs` builds it (`league-report-lib.mjs`) and the
+workflow's last step sends it (`send-league-report.mjs`) through the same EmailJS template the Worker uses. It needs the
+**`EMAILJS_PRIVATE_KEY` repository secret** (Settings > Secrets and variables > Actions; same value as the Worker secret); without it the
+step only warns. Re-running materialize emails again, so untick the workflow's **email** box when re-running. The volume number
+counts one per period from an anchor in `league-report-lib.mjs` (period 4 of 2026-27 = 577) and must be re-anchored for a new season.
 
 ### Stats arrive
 Daily cron -> Read Stats scrapes the current period's stats, commits `stats_pNN.csv` (and any new `player_info.csv`
