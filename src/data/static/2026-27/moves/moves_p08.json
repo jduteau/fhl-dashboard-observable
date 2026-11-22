@@ -153,5 +153,14 @@
     "promote": [],
     "demote": [],
     "submittedAt": "2026-11-22T21:51:58.144Z"
+  },
+  "TOR": {
+    "promote": [
+      "tolopni01"
+    ],
+    "demote": [
+      "bobrose01"
+    ],
+    "submittedAt": "2026-11-22T22:27:25.675Z"
   }
 }
