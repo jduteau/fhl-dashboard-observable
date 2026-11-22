@@ -8,6 +8,15 @@
       "salary": 1,
       "contract": "C-27",
       "at": "2026-11-22T03:35:21.529Z"
+    },
+    {
+      "id": "81866fc1-0728-4229-bc08-fb38393adcca",
+      "type": "sign",
+      "team": "VAN",
+      "player": "kuninlu01",
+      "salary": 2,
+      "contract": "C-27",
+      "at": "2026-11-22T03:35:46.120Z"
     }
   ]
 }
