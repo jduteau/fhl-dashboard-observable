@@ -113,5 +113,20 @@
       "colansa01"
     ],
     "submittedAt": "2026-11-22T16:19:06.927Z"
+  },
+  "BUF": {
+    "promote": [
+      "nikisal01",
+      "guentdy01",
+      "connetr01",
+      "melanja01"
+    ],
+    "demote": [
+      "pohlker01",
+      "yurovda01",
+      "palmiky01",
+      "shabama01"
+    ],
+    "submittedAt": "2026-11-22T18:56:19.550Z"
   }
 }
