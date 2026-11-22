@@ -1,0 +1,13 @@
+{
+  "transactions": [
+    {
+      "id": "356efe43-54c8-4de7-a311-949f2a2cbfa5",
+      "type": "sign",
+      "team": "UTA",
+      "player": "obrieli01",
+      "salary": 1,
+      "contract": "C-27",
+      "at": "2026-11-22T03:35:21.529Z"
+    }
+  ]
+}
