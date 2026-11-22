@@ -39,7 +39,7 @@ leaves the old Worker working, then deploy the new Worker (step 4). Afterwards t
 `npx wrangler d1 execute fhl-trades --remote --command "DROP TABLE IF EXISTS auth_failures"`.
 
 Request shapes (`season` must be the current season; `give` = what the proposer sends, `get` = what they receive):
-- propose: `{season, team, password, to, give:{players:[id], picks:[{pick,season}]}, get:{...}, note?, counters?: tradeId}`
+- propose: `{season, team, password, to, give:{players:[id], picks:[{pick,season}]}, get:{...}, note?, considerations?, counters?: tradeId}  (`note` is private to the other GM; `considerations` is free text that is public: both GMs, the trade log, the emails and Discord)`
 - list: `{season, team, password}` -> `{period, trades:[{id, from, to, status, give, get, ...}]}`
 - respond: `{season, team, password, id, decision: "accept"|"decline"|"withdraw"}`
 

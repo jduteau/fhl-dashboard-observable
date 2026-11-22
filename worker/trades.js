@@ -13,6 +13,7 @@ import { tradeProblem, SEASON, TEAM, PLAYER, PICK, TRADE_ID } from "../src/compo
 const MAX_ITEMS = 15; // per side
 const MAX_OPEN = 20; // open outgoing proposals per team
 const MAX_NOTE = 500;
+const MAX_CONSIDERATIONS = 500;
 
 const pad = (n) => String(n).padStart(2, "0");
 const bad = (message) => new HttpError(400, message);
@@ -172,7 +173,7 @@ function sides(t, items) {
 function present(t, items, ctx) {
   return {
     id: t.id, season: t.season, period: t.period, from: t.from_team, to: t.to_team,
-    status: effectiveStatus(t, ctx), note: t.note, counters: t.counters,
+    status: effectiveStatus(t, ctx), note: t.note, considerations: t.considerations ?? null, counters: t.counters,
     createdAt: t.created_at, respondedAt: t.responded_at,
     ...sides(t, items),
   };
@@ -229,6 +230,7 @@ async function propose(body, env, ctx, owners, mail) {
   const to = body.to;
   if (!TEAM.test(to ?? "") || to === from || !owners.some((o) => o.ABBR === to)) throw bad("Invalid trade partner");
   const note = body.note == null ? null : String(body.note).slice(0, MAX_NOTE).trim() || null;
+  const considerations = body.considerations == null ? null : String(body.considerations).slice(0, MAX_CONSIDERATIONS).trim() || null;
   const giveItems = parseSide(body.give, "give");
   const getItems = parseSide(body.get, "get");
   if (!giveItems.length && !getItems.length) throw bad("A trade needs at least one player or pick");
@@ -263,8 +265,8 @@ async function propose(body, env, ctx, owners, mail) {
     env.DB.prepare("INSERT INTO trade_items (trade_id, kind, ref, pick_season, giver, receiver) VALUES (?, ?, ?, ?, ?, ?)")
       .bind(id, it.kind, it.ref, it.pick_season, giver, receiver);
   await env.DB.batch([
-    env.DB.prepare("INSERT INTO trades (id, season, period, from_team, to_team, note, counters, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-      .bind(id, ctx.season, ctx.period, from, to, note, countered?.id ?? null, now),
+    env.DB.prepare("INSERT INTO trades (id, season, period, from_team, to_team, note, considerations, counters, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(id, ctx.season, ctx.period, from, to, note, considerations, countered?.id ?? null, now),
     ...giveItems.map((it) => insertItem(it, from, to)),
     ...getItems.map((it) => insertItem(it, to, from)),
   ]);
@@ -272,7 +274,7 @@ async function propose(body, env, ctx, owners, mail) {
     players: items.filter((i) => i.kind === "player").map((i) => i.ref),
     picks: items.filter((i) => i.kind === "pick").map((i) => ({ pick: i.ref, season: i.pick_season })),
   });
-  await mail(countered ? "countered" : "proposed", { id, season: ctx.season, period: ctx.period, from, to, note, give: side(giveItems), get: side(getItems) });
+  await mail(countered ? "countered" : "proposed", { id, season: ctx.season, period: ctx.period, from, to, note, considerations, give: side(giveItems), get: side(getItems) });
   return { ok: true, id, period: ctx.period };
 }
 
@@ -289,7 +291,7 @@ async function respond(body, env, ctx, mail) {
   const now = new Date().toISOString();
   // What the notification emails need to know about this trade (the proposer's private note only goes to the other GM).
   const mailInfo = (items) => ({
-    id: trade.id, season: trade.season, period: trade.period, from: trade.from_team, to: trade.to_team, note: trade.note,
+    id: trade.id, season: trade.season, period: trade.period, from: trade.from_team, to: trade.to_team, note: trade.note, considerations: trade.considerations,
     ...sides(trade, items),
   });
   const finish = async (status, event) => {
@@ -369,6 +371,7 @@ async function publishAccepted(env, season, period) {
         season, period,
         trades: trades.map((t) => ({
           id: t.id, from: t.from_team, to: t.to_team, acceptedAt: t.responded_at,
+          ...(t.considerations ? { considerations: t.considerations } : {}),
           ...sides(t, items.filter((i) => i.trade_id === t.id)),
         })),
       },

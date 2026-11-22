@@ -1,7 +1,7 @@
 // Pure trade logic shared by record-trades.mjs and apply-moves.mjs (materialize). No file or network access here.
 //
 // A stored trade (src/data/static/<season>/trades/trades_pNN.json, {"trades": [...]}):
-//   { id, from, to, give: {players:[id], picks:[{pick, season}]}, get: {...}, acceptedAt,
+//   { id, from, to, give: {players:[id], picks:[{pick, season}]}, get: {...}, considerations? (free text), acceptedAt,
 //     appliedAt?  (set by materialize when the trade was applied to the new roster),
 //     skipped?    (set by materialize, with the reason, when the trade could no longer be applied) }
 // `give` is what team `from` sends to `to`; `get` is what `from` receives.
@@ -24,7 +24,8 @@ export function cleanTrade(t) {
   const get = cleanSide(t.get, "get");
   const assets = give.players.length + give.picks.length + get.players.length + get.picks.length;
   if (assets === 0) throw new Error(`Trade ${t.id} is empty`);
-  return { id: t.id, from: t.from, to: t.to, give, get, acceptedAt: t.acceptedAt };
+  const considerations = typeof t.considerations === "string" ? t.considerations.trim().slice(0, 500) : "";
+  return { id: t.id, from: t.from, to: t.to, give, get, ...(considerations ? { considerations } : {}), acceptedAt: t.acceptedAt };
 }
 
 const byAcceptedAt = (a, b) => a.acceptedAt.localeCompare(b.acceptedAt) || a.id.localeCompare(b.id);

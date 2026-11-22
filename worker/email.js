@@ -81,9 +81,10 @@ const describeSide = (side, names) => [
   ...side.picks.map((p) => `${p.pick} (${p.season})`),
 ];
 
-// trade = {from, to, period, note?, give, get}; `give` is what `from` sends, `get` what `to` sends.
+// trade = {from, to, period, note?, considerations?, give, get}; `give` is what `from` sends, `get` what `to` sends.
 function tradeBlock(trade, names) {
-  return `${trade.from} sends:\n${bullets(describeSide(trade.give, names))}\n\n${trade.to} sends:\n${bullets(describeSide(trade.get, names))}`;
+  const considerations = trade.considerations ? `\n\nFuture considerations: ${trade.considerations}` : ""; // public: part of the trade itself
+  return `${trade.from} sends:\n${bullets(describeSide(trade.give, names))}\n\n${trade.to} sends:\n${bullets(describeSide(trade.get, names))}${considerations}`;
 }
 
 // The emails to send for an event, as [{to, toName, subject, message}].

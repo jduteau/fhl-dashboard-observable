@@ -7,6 +7,8 @@
 --
 -- status: PROPOSED -> ACCEPTED | DECLINED | WITHDRAWN | COUNTERED | VOID
 --   VOID = an asset in it was committed to another accepted trade.
+-- An existing database needs the considerations column added once:
+--   npx wrangler d1 execute fhl-trades --remote --command "ALTER TABLE trades ADD COLUMN considerations TEXT"
 -- "Expired" is not stored: a PROPOSED trade whose `period` already has a roster file is shown as EXPIRED.
 
 CREATE TABLE IF NOT EXISTS trades (
@@ -17,7 +19,8 @@ CREATE TABLE IF NOT EXISTS trades (
   to_team      TEXT NOT NULL,              -- the GM who must accept
   status       TEXT NOT NULL DEFAULT 'PROPOSED'
                CHECK (status IN ('PROPOSED', 'ACCEPTED', 'DECLINED', 'WITHDRAWN', 'COUNTERED', 'VOID')),
-  note         TEXT,
+  note         TEXT,                       -- private note from the proposer to the other GM
+  considerations TEXT,                     -- public free text: future considerations agreed as part of the trade
   counters     TEXT,                       -- id of the proposal this one is a counter-offer to
   created_at   TEXT NOT NULL,
   responded_at TEXT,

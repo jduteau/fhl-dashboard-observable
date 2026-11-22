@@ -70,6 +70,7 @@ const tradeLog = logTrades.length
       <div><strong>${t.from} ⇄ ${t.to}</strong> · agreed ${new Date(t.acceptedAt).toLocaleDateString()} · ${logStatus(t)}</div>
       <div>${t.to} receives: ${logAssets(t.give)}</div>
       <div>${t.from} receives: ${logAssets(t.get)}</div>
+      ${t.considerations ? html`<div><strong>Future considerations:</strong> ${t.considerations}</div>` : ""}
     </div>`)}</div>`
   : html`<p><em>No trades yet this season.</em></p>`;
 
@@ -158,6 +159,7 @@ function tradeCard(t, me, period) {
       <div><strong>You send</strong>${assetList(send)}</div>
       <div><strong>You receive</strong>${assetList(receive)}</div>
     </div>
+    ${t.considerations ? html`<p><strong>Future considerations:</strong> ${t.considerations}</p>` : ""}
     ${t.note ? html`<p><em>"${t.note}"</em></p>` : ""}
     ${ev ? html`<div style="font-size:0.9em;">
       After this trade: ${me} budget $${ev.budget1.toFixed(2)}, ${ev.size1} players · ${other} budget $${ev.budget2.toFixed(2)}, ${ev.size2} players
@@ -211,6 +213,7 @@ adminButton.onclick = async () => {
     <div><strong>${t.from} → ${t.to}</strong> · <em>${statusLabel[t.status] ?? t.status}</em> · period ${t.period} · proposed ${new Date(t.createdAt).toLocaleString()}${t.respondedAt ? ` · answered ${new Date(t.respondedAt).toLocaleString()}` : ""}${t.counters ? " · counter-offer" : ""}</div>
     <div>${t.from} sends: ${adminSide(t.give)}</div>
     <div>${t.to} sends: ${adminSide(t.get)}</div>
+    ${t.considerations ? html`<div><strong>Future considerations:</strong> ${t.considerations}</div>` : ""}
     ${t.note ? html`<div><em>"${t.note}"</em></div>` : ""}
   </div>`));
 };

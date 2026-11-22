@@ -201,3 +201,11 @@ test("revertAppliedPicks ignores a trade flagged skipped: it moved nothing", () 
   assert.equal(revertAppliedPicks([stale], owners), 0);
   assert.equal(owners.get("2026-27").get("ANA1"), "BOS");
 });
+
+test("cleanTrade keeps future considerations (trimmed, capped) and omits them when blank", () => {
+  const base = trade(1, { give: { players: ["ana01"], picks: [] } });
+  assert.equal(cleanTrade({ ...base, considerations: "  2nd-round pick if he scores 60  " }).considerations, "2nd-round pick if he scores 60");
+  assert.equal(cleanTrade({ ...base, considerations: "x".repeat(900) }).considerations.length, 500);
+  assert.equal("considerations" in cleanTrade({ ...base, considerations: "   " }), false);
+  assert.equal("considerations" in cleanTrade(base), false);
+});

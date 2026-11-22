@@ -203,6 +203,7 @@ const pwInput = html`<input type="password" placeholder="${selectedTeam1} passwo
 pwInput.value = window._fhlPw ?? "";
 pwInput.oninput = () => { window._fhlPw = pwInput.value; };
 const noteInput = html`<input type="text" maxlength="500" placeholder="Note to ${selectedTeam2} (optional)" style="width:20em;">`;
+const considerationsInput = html`<input type="text" maxlength="500" placeholder="Future considerations (public, optional)" style="width:26em;">`;
 const proposeStatus = html`<div></div>`;
 const proposeButton = html`<button ${proposeError ? "disabled" : ""}>${counterId ? "Send counter-offer" : "Propose this trade"}</button>`;
 proposeButton.onclick = async () => {
@@ -211,7 +212,7 @@ proposeButton.onclick = async () => {
   const r = await callTrades("propose", {
     season: _season, team: selectedTeam1, password: pwInput.value, to: selectedTeam2,
     give: side(team1Selections, team1PickSelections), get: side(team2Selections, team2PickSelections),
-    note: noteInput.value || undefined, counters: counterId ?? undefined
+    note: noteInput.value || undefined, considerations: considerationsInput.value || undefined, counters: counterId ?? undefined
   });
   if (!r.ok) { proposeStatus.textContent = `FAILED: ${r.error}`; return; }
   window._fhlTeam = selectedTeam1;
@@ -222,6 +223,7 @@ display(html`<div class="card" style="max-width:50em;">
   ${counterId ? html`<p><em>This is a counter-offer: sending it replaces ${selectedTeam2}'s earlier proposal.</em></p>` : ""}
   ${proposeError ? html`<p><em>${proposeError}</em></p>` : ""}
   <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">${pwInput} ${noteInput} ${proposeButton}</div>
+  <div style="margin-top:0.5rem;">${considerationsInput}<div style="font-size:0.85em;">Future considerations (e.g. "conditional 2nd-round pick if he scores 60 points") are shown to both GMs and in the public trade log. The note above is private.</div></div>
   ${proposeStatus}
 </div>`);
 ```
