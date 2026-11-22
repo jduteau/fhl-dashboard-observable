@@ -20,17 +20,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  # Build and test, then hand the site to the deploy job as a Pages artifact. Kept separate from the deploy so the artifact is
+  # fully stored before anything looks for it (deploying in the same job occasionally fails with 'No artifacts named
+  # "github-pages" were found for this workflow run'), and so a failed deploy can be re-run on its own, without rebuilding.
+  build:
     # For workflow_run, only deploy if the triggering workflow succeeded.
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -45,6 +43,17 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+
+  deploy:
+    needs: build # skipped too when build is skipped
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
