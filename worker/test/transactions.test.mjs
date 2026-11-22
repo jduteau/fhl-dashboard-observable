@@ -62,7 +62,7 @@ test("a waiver cut and a signing are dispatched for the next period", async () =
   const cut = await add({ type: "waive", team: "ANA", player: "ana01" });
   assert.equal(cut.status, 200);
   assert.equal(cut.body.period, 8);
-  const sign = await add({ type: "sign", team: "BOS", player: "fa01", salary: 3, contract: "C-27" });
+  const sign = await add({ type: "sign", team: "BOS", player: "fa01", salary: 3 });
   assert.equal(sign.status, 200);
   assert.deepEqual(dispatches.map((d) => d.event_type), ["transaction", "transaction"]);
   const t = dispatches[1].client_payload.transaction;
@@ -74,12 +74,12 @@ test("a waiver cut and a signing are dispatched for the next period", async () =
 test("requests that don't make sense are refused", async () => {
   const bad = async (extra) => assert.equal((await add(extra)).status, 400, JSON.stringify(extra));
   await bad({ type: "waive", team: "BOS", player: "ana01" }); // wrong team
-  await bad({ type: "sign", team: "BOS", player: "ana01", salary: 1, contract: "C-27" }); // already rostered
-  await bad({ type: "sign", team: "BOS", player: "nobody", salary: 1, contract: "C-27" }); // not in player_info
-  await bad({ type: "sign", team: "BOS", player: "fa01", salary: -1, contract: "C-27" });
-  await bad({ type: "sign", team: "BOS", player: "fa01", salary: 1 }); // no contract
-  await bad({ type: "sign", team: "XXX", player: "fa01", salary: 1, contract: "C-27" });
+  await bad({ type: "sign", team: "BOS", player: "ana01", salary: 1 }); // already rostered
+  await bad({ type: "sign", team: "BOS", player: "nobody", salary: 1 }); // not in player_info
+  await bad({ type: "sign", team: "BOS", player: "fa01", salary: -1 });
+  await bad({ type: "sign", team: "XXX", player: "fa01", salary: 1 });
   await bad({ type: "trade", team: "ANA", player: "ana01" });
+  assert.match((await add({ type: "sign", team: "BOS", player: "fa01", salary: 1.5 })).body.error, /salary/);
   assert.equal(dispatches.length, 0);
 });
 
@@ -88,8 +88,8 @@ test("transactions already recorded count: a waived player can be claimed, a sig
     { id: "00000000-0000-0000-0000-000000000001", type: "waive", team: "ANA", player: "ana01", at: "2026-11-19T10:00:00Z" },
     { id: "00000000-0000-0000-0000-000000000002", type: "sign", team: "BOS", player: "fa01", salary: 1, contract: "C-27", at: "2026-11-19T10:00:01Z" },
   ] });
-  assert.equal((await add({ type: "sign", team: "BOS", player: "ana01", salary: 2, contract: "C-27" })).status, 200);
-  assert.equal((await add({ type: "sign", team: "ANA", player: "fa01", salary: 2, contract: "C-27" })).status, 400);
+  assert.equal((await add({ type: "sign", team: "BOS", player: "ana01", salary: 2 })).status, 200);
+  assert.equal((await add({ type: "sign", team: "ANA", player: "fa01", salary: 2 })).status, 400);
   assert.equal((await add({ type: "waive", team: "ANA", player: "ana01" })).status, 400); // already cut
 });
 

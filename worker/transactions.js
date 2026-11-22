@@ -1,6 +1,7 @@
 // Free-agent signings and waiver cuts, recorded by the commissioner (ADMIN_PASSWORD) as they happen during a period.
 //
-//   POST /transactions/add     {password, season, type: "sign"|"waive", team, player, salary?, contract?}
+//   POST /transactions/add     {password, season, type: "sign"|"waive", team, player, salary?}
+//   (an in-season signing is always on a C-YY contract: C-27 in 2026-27, so the contract is not sent)
 //   POST /transactions/remove  {password, season, id}
 //
 // Both send a `transaction` repository_dispatch (Record Transactions workflow), which stores them in
@@ -25,8 +26,8 @@ export async function handleTransactions(action, body, env, client) {
   if (action === "add") {
     let t;
     try {
-      t = cleanTransaction({ id: crypto.randomUUID(), at: new Date().toISOString(), type: body.type, team: body.team, player: body.player, salary: body.salary, contract: body.contract });
-    } catch (e) { throw bad("Invalid transaction"); }
+      t = cleanTransaction({ id: crypto.randomUUID(), at: new Date().toISOString(), type: body.type, team: body.team, player: body.player, salary: body.salary, contract: `C-${ctx.season.slice(5)}` });
+    } catch (e) { throw bad(`Invalid transaction: ${e.message.replace(/ in transaction [0-9a-f-]+/, "").replace(/^Invalid /, "bad ")}`); }
     const [own, info, owners] = await Promise.all([
       loadOwnership(env, ctx),
       ghFile(env, `src/data/static/${ctx.season}/player_info.csv`),
