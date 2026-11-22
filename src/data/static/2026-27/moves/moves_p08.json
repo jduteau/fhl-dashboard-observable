@@ -100,5 +100,16 @@
       "coleia01"
     ],
     "submittedAt": "2026-11-22T01:23:19.389Z"
+  },
+  "DET": {
+    "promote": [
+      "solbest01",
+      "protail01"
+    ],
+    "demote": [
+      "kessemi01",
+      "colansa01"
+    ],
+    "submittedAt": "2026-11-22T16:19:06.927Z"
   }
 }
