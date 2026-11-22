@@ -15,12 +15,14 @@
   },
   "TBL": {
     "promote": [
+      "kessema01",
       "quillja01"
     ],
     "demote": [
+      "stanllo01",
       "garlaco01"
     ],
-    "submittedAt": "2026-11-19T16:15:24.890Z"
+    "submittedAt": "2026-11-22T17:27:04.717Z"
   },
   "CHI": {
     "promote": [
