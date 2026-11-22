@@ -64,13 +64,13 @@ const playerChoices = sign
   ? transactionsData.players.filter((p) => !rostered.has(p.id)).sort((a, b) => a.name.localeCompare(b.name))
   : (_tx.roster.get(team) ?? []).map((p) => ({id: p.PLAYER_ID, name: p.Name, pos: p.Position, nhl: p.NHLTeam})).sort((a, b) => a.name.localeCompare(b.name));
 const playerInput = Inputs.select(playerChoices, {label: sign ? "Free agent" : "Player to waive", format: (p) => `${p.name} (${p.pos}, ${p.nhl})`});
-const player = Generators.input(playerInput);
 const salaryInput = Inputs.number({label: "Salary ($)", min: 0, step: 1, value: 1});
 const contract = `C-${_season.slice(5)}`; // in-season signings are always C-YY (C-27 in 2026-27)
 const status = html`<div style="margin:0.5rem 0;"></div>`;
 const go = html`<button ${isCurrentSeason ? "" : "disabled"}>${sign ? "Sign" : "Waive"} for period ${nextPeriod}</button>`;
 go.onclick = async () => {
-  if (!player) { status.textContent = "Pick a player."; return; }
+  const player = playerInput.value; // (read it here: a generator made in this cell would be the generator itself)
+  if (!player?.id) { status.textContent = "Pick a player."; return; }
   const salary = Number(salaryInput.value);
   if (sign && !(Number.isInteger(salary) && salary >= 0)) { status.textContent = "Enter the salary as a whole number."; return; }
   status.textContent = "Submitting…";
