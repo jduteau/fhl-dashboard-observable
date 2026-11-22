@@ -54,12 +54,14 @@
   },
   "CAR": {
     "promote": [
+      "tsyplma01",
       "desmica01"
     ],
     "demote": [
+      "pospima01",
       "bussibr01"
     ],
-    "submittedAt": "2026-11-21T13:39:49.031Z"
+    "submittedAt": "2026-11-22T14:26:09.097Z"
   },
   "MIN": {
     "promote": [
