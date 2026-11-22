@@ -1,4 +1,4 @@
-import { readCsvFile, getContract, computeTeamCash, seasonsConfig, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge, indexBy, requireRow, assertPlayersKnown } from "../components/loadfiles.js";
+import { readCsvFile, readTransactions, waiverCostsFor, getContract, computeTeamCash, seasonsConfig, seasons, allSeasons, currentSeason, loadSeasonData, mapPosition, calculateAge, indexBy, requireRow, assertPlayersKnown } from "../components/loadfiles.js";
 import { PERIODS_PER_SEASON, projectedBudget } from "../components/leagueRules.js";
 import { identityColumns, sortRoster, isActive } from "../components/playerRows.js";
 
@@ -11,10 +11,12 @@ function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contrac
   const latestKey = availablePeriods[availablePeriods.length - 1]; // the period in progress, as a key into team[...]
   // autoCash seasons: team_cash.csv is the starting cash and current cash is derived from the rosters
   const autoCash = seasonsConfig.find(s => s.season === season)?.autoCash === "true";
+  // Waiver cuts cost cash from the period they take effect (see waiverCost in leagueRules.js)
+  const waiverCosts = waiverCostsFor(readTransactions(sf.basePath), contracts, season).filter(w => w.applied);
 
   const teams = teamInfo.map(team => {
     const cashInfo = requireRow(cashIndex, team.ABBR, "Team", `${season} team_cash.csv`);
-    team['CASH'] = autoCash ? computeTeamCash(cashInfo.CASH, team.ABBR, rosterPeriods, contracts) : cashInfo.CASH;
+    team['CASH'] = autoCash ? computeTeamCash(cashInfo.CASH, team.ABBR, rosterPeriods, contracts, waiverCosts) : cashInfo.CASH;
     const ownerInfo = requireRow(ownerIndex, team.ABBR, "Team", `${season} owners.csv`);
     team['OWNER'] = ownerInfo.OWNER;
     team['LOCATION'] = ownerInfo.LOCATION;

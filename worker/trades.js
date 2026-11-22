@@ -54,7 +54,7 @@ export async function loadContext(env, season) {
 }
 
 // Who owns what according to the latest roster file and the draft_picks files (current + next season), with the
-// free-agent signings and waiver cuts the commissioner has recorded for the period already applied (they happen before
+// free-agent signings, waiver cuts and claims the commissioner has recorded for the period already applied (they happen before
 // any trade, so a player signed this period can be traded and one waived can't).
 export async function loadOwnership(env, ctx) {
   const draftSeasons = [ctx.season, ctx.nextSeason].filter(Boolean);
@@ -75,6 +75,10 @@ export async function loadOwnership(env, ctx) {
     if (t.type === "sign" && !playerOwner.has(t.player)) {
       playerOwner.set(t.player, t.team);
       signed.add(t.player);
+      sizes.set(t.team, (sizes.get(t.team) ?? 0) + 1);
+    } else if (t.type === "claim" && playerOwner.get(t.player) === t.from) {
+      playerOwner.set(t.player, t.team);
+      sizes.set(t.from, sizes.get(t.from) - 1);
       sizes.set(t.team, (sizes.get(t.team) ?? 0) + 1);
     } else if (t.type === "waive" && playerOwner.get(t.player) === t.team) {
       playerOwner.delete(t.player);

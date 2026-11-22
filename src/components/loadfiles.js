@@ -1,5 +1,5 @@
 import {readFileSync, readdirSync, existsSync} from "fs";
-import {periodCost, mapPosition, DSTAT_TOI_DIVISOR, GSTAT_WEIGHTS} from "./leagueRules.js";
+import {periodCost, mapPosition, waiverCost, DSTAT_TOI_DIVISOR, GSTAT_WEIGHTS} from "./leagueRules.js";
 
 // Re-exported so existing importers keep working; the rules themselves live in leagueRules.js
 export {periodCost, mapPosition};
@@ -412,14 +412,45 @@ export function latestContracts(contracts) {
 }
 
 // A team's cash going into the latest period: its starting cash less the cost of every
-// earlier period, each priced from that period's roster and the contracts in effect then.
-// The latest period is still in progress, so it has not been charged yet.
-export function computeTeamCash(startCash, abbr, rosterPeriods, contracts) {
+// earlier period, each priced from that period's roster and the contracts in effect then,
+// less the cost of the waiver cuts that took effect up to and including the latest period
+// (waiverCosts: [{team, period, cost}], see waiverCostsFor). The latest period is still in
+// progress, so its own running cost has not been charged yet.
+export function computeTeamCash(startCash, abbr, rosterPeriods, contracts, waiverCosts = []) {
   const latest = rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].period : 0;
-  return rosterPeriods.filter(rp => rp.period < latest).reduce((cash, rp) => {
+  const cash = rosterPeriods.filter(rp => rp.period < latest).reduce((cash, rp) => {
     const salary = rp.data
       .filter(player => player.ABBR === abbr)
       .reduce((sum, player) => sum + (getContract(contracts, player.ID, rp.period)?.Salary || 0), 0);
     return Math.round((cash - periodCost(salary)) * 100) / 100;
   }, startCash);
+  const waived = waiverCosts.filter(w => w.team === abbr && w.period <= latest).reduce((sum, w) => sum + w.cost, 0);
+  return Math.round((cash - waived) * 100) / 100;
+}
+
+// Every transaction the commissioner recorded for a season, [{period, ...transaction}], oldest period first
+// (src/data/static/<season>/transactions/transactions_pNN.json; see transactionRules.js).
+export function readTransactions(basePath) {
+  const dir = `${basePath}/transactions`;
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).sort().flatMap(file => {
+    const period = /^transactions_p(\d+)\.json$/.exec(file)?.[1];
+    if (!period) return [];
+    return (JSON.parse(readFileSync(`${dir}/${file}`, "utf-8")).transactions ?? []).map(t => ({...t, period: Number(period)}));
+  });
+}
+
+// What each waiver cut costs: [{id, team, player, period, cost, applied}], where `applied` = the cut was applied to the
+// period's roster (so it is charged to cash). The contract is the one in effect for the period, or the one signed earlier
+// in that same period (a signing is only written to contracts.csv when the period is created).
+export function waiverCostsFor(transactions, contracts, season) {
+  return transactions.filter(t => t.type === "waive").map(t => {
+    const signed = transactions.find(x => x.type === "sign" && x.player === t.player && x.period === t.period && x.at < t.at);
+    const contract = signed ?? getContract(contracts, t.player, t.period);
+    return {
+      id: t.id, team: t.team, player: t.player, period: t.period,
+      cost: waiverCost({salary: contract?.Salary ?? contract?.salary, contract: contract?.Contract ?? contract?.contract, period: t.period, season}),
+      applied: Boolean(t.appliedAt) && !t.skipped,
+    };
+  });
 }

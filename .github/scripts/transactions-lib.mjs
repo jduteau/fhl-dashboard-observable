@@ -2,20 +2,24 @@
 // the rules). Shared by record-transactions.mjs and apply-moves.mjs (materialize). No file or network access here.
 import { cleanTransaction, applyTransactions, sortTransactions } from "../../src/components/transactionRules.js";
 
-// Adds a transaction to the stored list (ignored if its id is already there) or removes one by id, then checks the
-// whole list still applies cleanly to `baseRows` (the latest roster), so a removal can't strand a later transaction.
+// Adds a batch of transactions to the stored list (ones whose id is already there are ignored) and/or removes some by id,
+// then checks the whole list still applies cleanly to `baseRows` (the latest roster), so a removal can't strand a later
+// transaction. change = {add?: [transaction], remove?: [id]}.
 // Returns {transactions, changed}. Throws a sentence on anything wrong.
 export function changeTransactions(existing, change, baseRows) {
   let list = existing.map((t) => ({ ...t }));
   let changed = false;
-  if (change.action === "add") {
-    const t = cleanTransaction(change.transaction);
-    if (!list.some((x) => x.id === t.id)) { list.push(t); changed = true; }
-  } else if (change.action === "remove") {
+  const remove = change.remove ?? [];
+  if (!Array.isArray(remove) || !Array.isArray(change.add ?? [])) throw new Error("add and remove must be lists");
+  if (remove.length) {
     const before = list.length;
-    list = list.filter((x) => x.id !== change.id);
+    list = list.filter((x) => !remove.includes(x.id));
     changed = list.length !== before;
-  } else throw new Error(`Unknown action ${change.action}`);
+  }
+  for (const raw of change.add ?? []) {
+    const t = cleanTransaction(raw);
+    if (!list.some((x) => x.id === t.id)) { list.push(t); changed = true; }
+  }
   const problem = applyTransactions(baseRows.map((r) => ({ ID: r.ID, ABBR: r.ABBR, RESERVE: r.RESERVE })), list.map((t) => ({ ...t })));
   if (problem.skipped.length) throw new Error(problem.skipped.map((s) => s.reason).join("; "));
   return { transactions: sortTransactions(list), changed };

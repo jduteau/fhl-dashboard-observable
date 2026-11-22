@@ -24,6 +24,20 @@ export function projectedBudget(cash, latestSalary, periodsCompleted) {
   return cash - periodCost(latestSalary) * (PERIODS_PER_SEASON - periodsCompleted);
 }
 
+// What waiving a player costs his team, charged to its cash from the period the cut takes effect: half his salary, for
+// the part of his contract still to run, as a fraction of a season. A "C-YY" contract runs to the end of season YY, so
+// besides the periods left this season (period..25, counting the period the cut takes effect in) it has 25 for every
+// later season. Draft (D26) and under-22 (U22, D26U22) contracts cost nothing.
+//   C-27 $6 cut for period 8 of 2026-27: 1/2 x 6 x (18/25) = 2.16;  C-28: 1/2 x 6 x (43/25) = 5.16
+// Rounded to cents, like the FHL Trader report it matches.
+export function waiverCost({ salary, contract, period, season }) {
+  const m = /^C-(\d\d)$/.exec(contract ?? "");
+  const extraSeasons = m ? Number(m[1]) - Number(String(season).slice(5)) : -1;
+  if (extraSeasons < 0) return 0;
+  const periodsToRun = PERIODS_PER_SEASON - period + 1 + extraSeasons * PERIODS_PER_SEASON;
+  return Math.round(((salary || 0) / 2) * (periodsToRun / PERIODS_PER_SEASON) * 100) / 100;
+}
+
 // ---- Rosters ----
 
 // Everyone a team owns, active and reserve: a trade must leave both teams within these limits

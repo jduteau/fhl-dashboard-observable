@@ -49,53 +49,70 @@ const post = async (path, body) => {
   return { status: res.status, body: await res.json() };
 };
 const base = { password: "boss", season: "2026-27" };
-const add = (extra) => post("/transactions/add", { ...base, ...extra });
+const add = (...transactions) => post("/transactions/add", { ...base, transactions });
+const waive = (team, player) => ({ type: "waive", team, player });
+const sign = (team, player, salary = 3) => ({ type: "sign", team, player, salary });
+const claim = (team, from, player) => ({ type: "claim", team, from, player });
 
 test("only the commissioner can record transactions", async () => {
-  assert.equal((await add({ password: "nope", type: "waive", team: "ANA", player: "ana01" })).status, 401);
+  assert.equal((await post("/transactions/add", { ...base, password: "nope", transactions: [waive("ANA", "ana01")] })).status, 401);
   env.ADMIN_PASSWORD = undefined;
-  assert.equal((await add({ type: "waive", team: "ANA", player: "ana01" })).status, 403);
+  assert.equal((await add(waive("ANA", "ana01"))).status, 403);
   assert.equal(dispatches.length, 0);
 });
 
-test("a waiver cut and a signing are dispatched for the next period", async () => {
-  const cut = await add({ type: "waive", team: "ANA", player: "ana01" });
-  assert.equal(cut.status, 200);
-  assert.equal(cut.body.period, 8);
-  const sign = await add({ type: "sign", team: "BOS", player: "fa01", salary: 3 });
-  assert.equal(sign.status, 200);
-  assert.deepEqual(dispatches.map((d) => d.event_type), ["transaction", "transaction"]);
-  const t = dispatches[1].client_payload.transaction;
-  assert.equal(dispatches[1].client_payload.period, 8);
-  assert.deepEqual([t.type, t.team, t.player, t.salary, t.contract], ["sign", "BOS", "fa01", 3, "C-27"]);
-  assert.match(t.id, /^[0-9a-f-]{36}$/);
+test("a whole batch goes out as ONE dispatch for the next period, in order, with a C-YY contract", async () => {
+  const r = await add(waive("ANA", "ana01"), sign("BOS", "fa01"), claim("BOS", "ANA", "ana02"));
+  assert.equal(r.status, 200);
+  assert.deepEqual([r.body.period, r.body.count], [8, 3]);
+  assert.equal(dispatches.length, 1);
+  assert.equal(dispatches[0].event_type, "transaction");
+  const { period, add: sent } = dispatches[0].client_payload;
+  assert.equal(period, 8);
+  assert.deepEqual(sent.map((t) => [t.type, t.team, t.player, t.salary, t.contract, t.from]), [
+    ["waive", "ANA", "ana01", undefined, undefined, undefined],
+    ["sign", "BOS", "fa01", 3, "C-27", undefined],
+    ["claim", "BOS", "ana02", undefined, undefined, "ANA"],
+  ]);
+  assert.ok(sent[0].at < sent[1].at && sent[1].at < sent[2].at);
+  assert.ok(sent.every((t) => /^[0-9a-f-]{36}$/.test(t.id)));
 });
 
-test("requests that don't make sense are refused", async () => {
-  const bad = async (extra) => assert.equal((await add(extra)).status, 400, JSON.stringify(extra));
-  await bad({ type: "waive", team: "BOS", player: "ana01" }); // wrong team
-  await bad({ type: "sign", team: "BOS", player: "ana01", salary: 1 }); // already rostered
-  await bad({ type: "sign", team: "BOS", player: "nobody", salary: 1 }); // not in player_info
-  await bad({ type: "sign", team: "BOS", player: "fa01", salary: -1 });
-  await bad({ type: "sign", team: "XXX", player: "fa01", salary: 1 });
-  await bad({ type: "trade", team: "ANA", player: "ana01" });
-  assert.match((await add({ type: "sign", team: "BOS", player: "fa01", salary: 1.5 })).body.error, /salary/);
+test("one bad line rejects the whole batch and names the line", async () => {
+  const bad = async (txs, re) => {
+    const r = await add(...txs);
+    assert.equal(r.status, 400, JSON.stringify(txs));
+    if (re) assert.match(r.body.error, re);
+  };
+  await bad([waive("ANA", "ana01"), waive("BOS", "ana02")], /Line 2.*not BOS/); // wrong team
+  await bad([waive("ANA", "ana01"), waive("ANA", "ana01")], /Line 2.*not on any roster/); // cut twice
+  await bad([sign("BOS", "ana01")], /already on ANA/);
+  await bad([sign("BOS", "nobody")], /not in player_info/);
+  await bad([sign("BOS", "fa01", -1)], /Line 1.*salary/);
+  await bad([sign("BOS", "fa01", 1.5)], /salary/);
+  await bad([sign("XXX", "fa01")], /unknown team/);
+  await bad([claim("BOS", "BOS", "bos01")], /from team/);
+  await bad([claim("BOS", "ANA", "bos01")], /not ANA/);
+  await bad([{ type: "trade", team: "ANA", player: "ana01" }], /Line 1/);
+  await bad([]);
   assert.equal(dispatches.length, 0);
 });
 
-test("transactions already recorded count: a waived player can be claimed, a signed one can't be signed again", async () => {
+test("lines see the ones before them; transactions already recorded count too", async () => {
+  // cut then sign the same player elsewhere is fine inside one batch; signing him twice is not
+  assert.equal((await add(waive("ANA", "ana01"), sign("BOS", "ana01"))).status, 200);
+  assert.equal((await add(sign("BOS", "fa01"), sign("ANA", "fa01"))).status, 400);
   files["src/data/static/2026-27/transactions/transactions_p08.json"] = JSON.stringify({ transactions: [
-    { id: "00000000-0000-0000-0000-000000000001", type: "waive", team: "ANA", player: "ana01", at: "2026-11-19T10:00:00Z" },
-    { id: "00000000-0000-0000-0000-000000000002", type: "sign", team: "BOS", player: "fa01", salary: 1, contract: "C-27", at: "2026-11-19T10:00:01Z" },
+    { id: "00000000-0000-0000-0000-000000000001", type: "claim", team: "BOS", from: "ANA", player: "ana01", at: "2026-11-19T10:00:00Z" },
   ] });
-  assert.equal((await add({ type: "sign", team: "BOS", player: "ana01", salary: 2 })).status, 200);
-  assert.equal((await add({ type: "sign", team: "ANA", player: "fa01", salary: 2 })).status, 400);
-  assert.equal((await add({ type: "waive", team: "ANA", player: "ana01" })).status, 400); // already cut
+  assert.equal((await add(waive("BOS", "ana01"))).status, 200); // BOS owns him now
+  assert.equal((await add(waive("ANA", "ana01"))).status, 400);
 });
 
-test("remove dispatches the id", async () => {
+test("remove dispatches the ids", async () => {
   const id = "00000000-0000-0000-0000-000000000001";
-  assert.equal((await post("/transactions/remove", { ...base, id: "bad" })).status, 400);
-  assert.equal((await post("/transactions/remove", { ...base, id })).status, 200);
-  assert.deepEqual(dispatches[0].client_payload, { season: "2026-27", period: 8, action: "remove", id });
+  assert.equal((await post("/transactions/remove", { ...base, ids: ["bad"] })).status, 400);
+  assert.equal((await post("/transactions/remove", { ...base, ids: [] })).status, 400);
+  assert.equal((await post("/transactions/remove", { ...base, ids: [id] })).status, 200);
+  assert.deepEqual(dispatches[0].client_payload, { season: "2026-27", period: 8, remove: [id] });
 });

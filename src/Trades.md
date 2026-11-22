@@ -42,7 +42,7 @@ const _eff = applyAgreedTrades({
 const rosterOf = (abbr) => _eff.roster.get(abbr);
 const teamOf = (abbr) => {
   const t = _tisd.teams.find((x) => x.ABBR === abbr);
-  return {...t, LatestSalary: t.LatestSalary + _eff.salaryDelta.get(abbr) + _tx.salaryDelta.get(abbr)};
+  return {...t, LatestSalary: t.LatestSalary + _eff.salaryDelta.get(abbr) + _tx.salaryDelta.get(abbr), CASH: t.CASH - _tx.waiverCost.get(abbr)};
 };
 const playerById = new Map(_rsd.teamData.flatMap((t) => t.OVERALL.ROSTER.map((p) => [p.PLAYER_ID, p])));
 const playerText = (id) => {

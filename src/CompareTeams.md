@@ -40,7 +40,8 @@ const _eff = applyAgreedTrades({
 });
 const _salaryDelta = (abbr) => _eff.salaryDelta.get(abbr) + _tx.salaryDelta.get(abbr);
 // Team info with the salary total the agreed trades will leave the team with (budget maths starts from that)
-const _effTeam = (t) => ({...t, LatestSalary: t.LatestSalary + _salaryDelta(t.ABBR)});
+// ...and the cash left after the waiver cuts recorded for the next period have been paid for
+const _effTeam = (t) => ({...t, LatestSalary: t.LatestSalary + _salaryDelta(t.ABBR), CASH: t.CASH - _tx.waiverCost.get(t.ABBR)});
 
 // Optional prefill from the URL (used by "Counter" on the Trades page):
 //   team1, team2, p1/p2 = player ids team 1/2 send, k1/k2 = picks team 1/2 send as "ANA1:2026-27,..."

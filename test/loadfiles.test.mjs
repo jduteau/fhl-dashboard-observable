@@ -6,9 +6,9 @@ import assert from "node:assert/strict";
 import {
   calcToughness, calcDStat, calcGStat, statInputs, mapPosition, calculateAge, getAgeCutoff, getStatsForPeriod,
   getContract, latestContracts, periodCost, computeTeamCash, loadSeasonData, readStatsFile,
-  indexBy, periodLookup, assertPlayersKnown, requireRow,
+  indexBy, periodLookup, assertPlayersKnown, requireRow, waiverCostsFor,
 } from "../src/components/loadfiles.js";
-import { PERIODS_PER_SEASON } from "../src/components/leagueRules.js";
+import { PERIODS_PER_SEASON, waiverCost } from "../src/components/leagueRules.js";
 
 const near = (actual, expected, eps = 1e-9) => assert.ok(Math.abs(actual - expected) < eps, `${actual} !== ${expected}`);
 
@@ -360,4 +360,44 @@ test("a new season (a first roster, no stats yet) counts as period 1 with empty 
 
 test("a season with no rosters and no stats is an error that says what to do, not a crash later", async () => {
   await assert.rejects(() => loadSeasonData("../../../test/fixtures/no-such-season"), /no rosters or stats.*mark it stub in seasons\.csv/);
+});
+
+test("waiverCost matches the FHL Trader report: half the salary for the part of the contract still to run", () => {
+  const cost = (salary, contract, period = 8, season = "2026-27") => waiverCost({ salary, contract, period, season });
+  assert.equal(cost(6, "C-28"), 5.16); // 1/2 x 6 x (43/25)   (18 periods left this season + 25)
+  assert.equal(cost(6, "C-27"), 2.16); // 1/2 x 6 x (18/25)
+  assert.equal(cost(7, "C-28"), 6.02);
+  assert.equal(cost(1, "C-27"), 0.36);
+  assert.equal(cost(24, "C-27"), 8.64);
+  assert.equal(cost(14, "C-27"), 5.04);
+  assert.equal(cost(1, "D26"), 0); // draft and under-22 contracts cost nothing
+  assert.equal(cost(2, "U22"), 0);
+  assert.equal(cost(4, "D26U22"), 0);
+  assert.equal(cost(6, "C-29"), 8.16); // 1/2 x 6 x (68/25)
+  assert.equal(cost(6, "C-27", 25), 0.12); // last period: 1/2 x 6 x (1/25)
+  assert.equal(cost(6, "C-26"), 0); // an old contract
+  assert.equal(cost(6, undefined), 0);
+});
+
+test("computeTeamCash charges waiver cuts from the period they took effect, not before", () => {
+  const cs = [{ ID: "p1", Salary: 10, Contract: "C-27" }];
+  const rp = [1, 2, 3].map((period) => ({ period, data: [{ ID: "p1", ABBR: "ANA" }] }));
+  const base = computeTeamCash(100, "ANA", rp, cs);
+  const costs = [{ team: "ANA", period: 3, cost: 5.16 }, { team: "ANA", period: 4, cost: 9 }, { team: "BOS", period: 3, cost: 7 }];
+  assert.equal(computeTeamCash(100, "ANA", rp, cs, costs), Math.round((base - 5.16) * 100) / 100); // period 3 is the latest; period 4 not yet
+  assert.equal(computeTeamCash(100, "ANA", rp.slice(0, 2), cs, costs), computeTeamCash(100, "ANA", rp.slice(0, 2), cs)); // latest is 2
+  assert.equal(computeTeamCash(100, "BOS", [], [], costs), 100);
+});
+
+test("waiverCostsFor prices each cut from the contract in effect, or the signing made earlier in the same period", () => {
+  const cs = [{ ID: "p1", Salary: 6, Contract: "C-28", Period: 1 }, { ID: "p2", Salary: 1, Contract: "D26", Period: 1 }];
+  const tx = [
+    { id: "a", type: "waive", team: "ANA", player: "p1", period: 8, at: "2026-11-20T00:00:00Z", appliedAt: "x" },
+    { id: "b", type: "waive", team: "ANA", player: "p2", period: 8, at: "2026-11-20T00:00:01Z" },
+    { id: "c", type: "sign", team: "BOS", player: "p3", period: 8, salary: 4, contract: "C-27", at: "2026-11-20T00:00:02Z" },
+    { id: "d", type: "waive", team: "BOS", player: "p3", period: 8, at: "2026-11-20T00:00:03Z", appliedAt: "x" },
+    { id: "e", type: "claim", team: "BOS", from: "ANA", player: "p1", period: 8, at: "2026-11-20T00:00:04Z" },
+  ];
+  const r = waiverCostsFor(tx, cs, "2026-27");
+  assert.deepEqual(r.map((w) => [w.id, w.cost, w.applied]), [["a", 5.16, true], ["b", 0, false], ["d", 1.44, true]]);
 });

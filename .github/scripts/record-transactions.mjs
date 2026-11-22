@@ -1,8 +1,8 @@
-// Records a free-agent signing or waiver cut the commissioner entered (sent by the Worker as a `transaction` dispatch) in
+// Records the free-agent signings, waiver cuts and waiver claims the commissioner entered (sent by the Worker as a
+// `transaction` dispatch, one batch per dispatch) in
 //   src/data/static/<season>/transactions/transactions_pNN.json   (pNN = the period whose roster they take effect in)
 //
-// $TRANSACTION = {season, period, action: "add", transaction: {id, type, team, player, salary?, contract?, at}}
-//             or {season, period, action: "remove", id}
+// $TRANSACTION = {season, period, add?: [{id, type, team, player, salary?, contract?, from?, at}], remove?: [id]}
 // They are applied to the rosters (and signings to contracts.csv) later by `apply-moves.mjs materialize`.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from "fs";
 import { csvParse } from "d3-dsv";
@@ -25,7 +25,7 @@ const file = `${dir}/transactions_p${pad(latest + 1)}.json`;
 const existing = existsSync(file) ? JSON.parse(readFileSync(file, "utf-8")).transactions ?? [] : [];
 const base = read(`${root}/${season}/rosters/rosters_p${pad(latest)}.csv`);
 const known = new Set(read(`${root}/${season}/player_info.csv`).map((p) => p.ID));
-if (payload.action === "add" && !known.has(payload.transaction?.player)) fail(`${payload.transaction?.player} is not in player_info.csv`);
+for (const t of payload.add ?? []) if (!known.has(t?.player)) fail(`${t?.player} is not in player_info.csv`);
 
 let result;
 try { result = changeTransactions(existing, payload, base); } catch (e) { fail(e.message); }
@@ -34,5 +34,5 @@ if (!result.changed) {
 } else {
   mkdirSync(dir, { recursive: true });
   writeFileSync(file, JSON.stringify({ transactions: result.transactions }, null, 2) + "\n");
-  console.log(`${payload.action === "add" ? "Recorded" : "Removed"} transaction for period ${latest + 1}`);
+  console.log(`Period ${latest + 1}: ${(payload.add ?? []).length} transaction(s) added, ${(payload.remove ?? []).length} removal(s) requested`);
 }

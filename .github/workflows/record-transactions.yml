@@ -1,8 +1,8 @@
 name: Record Transactions
 
 on:
-  # Triggered by the Cloudflare Worker (worker/transactions.js) when the commissioner records a free-agent signing or waiver
-  # cut (or removes one). One transaction per run; the Worker checks it first, and record-transactions.mjs checks it again.
+  # Triggered by the Cloudflare Worker (worker/transactions.js) when the commissioner records a batch of free-agent signings, waiver cuts and claims
+  # (or removes some). One batch per run; the Worker checks it first, and record-transactions.mjs checks it again.
   repository_dispatch:
     types: [transaction]
 

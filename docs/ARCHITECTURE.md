@@ -90,7 +90,7 @@ flowchart LR
   | Endpoint | Who | What |
   | --- | --- | --- |
   | `/` | GM | Submit lineup moves for the next period -> `roster-moves` dispatch |
-  | `/transactions/add`, `/transactions/remove` | Commissioner | Record or remove a free-agent signing / waiver cut for the next period -> `transaction` dispatch |
+  | `/transactions/add`, `/transactions/remove` | Commissioner | Record (a batch of) or remove free-agent signings / waiver cuts / waiver claims for the next period -> one `transaction` dispatch |
 | `/trades/propose` | GM | Create a proposal or counter-offer (stored in D1) |
   | `/trades/list` | GM | The GM's own proposals |
   | `/trades/respond` | GM | Accept / decline / withdraw; accept triggers the `trade-approved` dispatch |
@@ -135,7 +135,7 @@ All workflows that change data commit to `master` as `github-actions[bot]`, and 
 | **Read Stats** (`read-stats.yml`) | Daily 13:00 UTC cron; manual (optional season/period) | Works out the current season and period (`.github/scripts/resolve-period.mjs`, from `seasons.csv` and `periods.csv`), builds `FHLScripts/`, scrapes hockey-reference.com into `stats_pNN.csv`, then adds any new players to `player_info.csv` (`update-player-info.mjs`, which prefers the NHL API and is rate-limited to be polite to scraped sites). |
 | **Apply Roster Moves** (`apply-moves.yml`) | `roster-moves` dispatch from the Worker; manual "materialize" | On dispatch: validates and stores one team's moves in `moves/moves_pNN.json`. On manual run (the commissioner starting a new period): applies the agreed trades, then every team's stored moves, and writes `rosters_p(NN+1).csv`; traded picks are rewritten in `draft_picks.csv`. |
 | **Record Trades** (`record-trades.yml`) | `trade-approved` dispatch from the Worker | Merges accepted trades into `trades/trades_pNN.json` (the public trade log). The Worker always sends *all* accepted trades for the period, so a dropped queued run cannot lose one. |
-| **Record Transactions** (`record-transactions.yml`) | `transaction` dispatch from the Worker | Adds (or removes) one commissioner-entered free-agent signing or waiver cut in `transactions/transactions_pNN.json`. Checked against the latest roster plus the transactions already recorded. |
+| **Record Transactions** (`record-transactions.yml`) | `transaction` dispatch from the Worker | Adds (or removes) a batch of commissioner-entered free-agent signings, waiver cuts and waiver claims in `transactions/transactions_pNN.json`. Checked against the latest roster plus the transactions already recorded. |
 | **Deploy** (`deploy.yml`) | Push to `master`; after the three workflows above succeed; manual | `npm ci && npm test && npm run build`, publishes `dist/` to GitHub Pages. **Nothing is deployed unless the tests pass**, so a bad commit (code or data) leaves the live site as it was. (Pushes made with the built-in token do not trigger the `push` trigger, which is why `workflow_run` is needed.) |
 | **Test** (`test.yml`) | Pull requests; manual | `npm ci && npm test && npm run build`: the same checks Deploy runs, for a change that has not been pushed to `master` yet. |
 
@@ -198,19 +198,29 @@ the league email, with mentions disabled. Unset means off.
    are handed back first, so nothing is applied twice). Once the period has stats, the next run creates the following one.
 
 ### Free agents and waivers
-1. The commissioner uses the **Free Agents & Waivers** page (commissioner password) as transactions show up in FHL Trader: a
-   *waive* removes a player from a team, a *sign* adds a free agent in reserve with a salary and contract code. A waiver
-   claim by another team is recorded as a signing by that team (a team-to-team move that keeps the old contract is not
-   supported). The player must already be in `player_info.csv`.
-2. Worker `/transactions/add` checks the commissioner password and that the transaction makes sense (the player is
-   free / on that team, counting transactions already recorded), then sends a `transaction` dispatch.
-3. **Record Transactions** stores it in `transactions/transactions_pNN.json` (NN = next period); Deploy rebuilds.
+1. The commissioner uses the **Free Agents & Waivers** page (commissioner password) as transactions show up in FHL Trader.
+   Three kinds: *waive* (a team cuts a player), *claim* (a team claims a player off waivers: he moves straight from the
+   other team, keeping his contract and active/reserve status, like a trade the commissioner makes), and *sign* (a team adds a
+   free agent in reserve for a salary; the contract is always `C-YY`, e.g. `C-27` in 2026-27). A waiver run can be dozens,
+   so the page builds a list (a form, or pasted lines such as `claim BOS from ANA Player Name`), shows it, and submits it
+   all at once. A signed player must already be in `player_info.csv`.
+2. Worker `/transactions/add` checks the commissioner password and plays the whole list forward in order on top of what is
+   already recorded (the player is free / on that team at each step). One bad line rejects the batch, naming the line.
+   Then it sends ONE `transaction` dispatch for the whole batch.
+3. **Record Transactions** stores them in `transactions/transactions_pNN.json` (NN = next period); Deploy rebuilds.
 4. A player signed this period cannot be traded until the next period (the Worker refuses it; Compare Teams does not offer
    them). The Roster (Next Period tab), Compare Teams and Trades pages, and the Worker's trade checks, all apply the recorded
    transactions first, then the agreed trades, so GMs set lineups and trade against the roster they will really have.
-5. **New period** (materialize): waived players are dropped, signings are added in reserve and get a `contracts.csv` row for
-   the new period, then trades and GM lineup moves are applied (the order FHL Trader uses). Re-running is safe.
-   Transactions are entered one at a time; GitHub keeps one queued run, so wait for each to show up before entering a burst.
+5. **New period** (materialize): the transactions are applied in the order entered (cuts drop players, claims move them,
+   signings add them in reserve and get a `contracts.csv` row for the new period), then trades and GM lineup moves. Re-running
+   is safe.
+6. **Waiver cuts cost cash.** A cut costs half the player's salary for the part of his contract still to run, as a fraction of
+   a season: `C-27 $6` cut for period 8 is 1/2 x 6 x (18/25) = $2.16, and `C-28` adds 25 periods (43/25) = $5.16. Draft (`D26`)
+   and under-22 (`U22`) contracts cost nothing (`waiverCost` in `leagueRules.js`; it matches the FHL Trader report). The cost
+   is not stored: for an `autoCash` season the loader recomputes it from the contract and the period, and takes it off the
+   team's cash from the period the cut was applied (`computeTeamCash`), so cash going into the new period already reflects
+   it. Until then, Compare Teams and Trades budget maths already subtract the pending cuts. Claims and signings cost
+   nothing extra (a signing's salary is charged through the normal period cost).
 
 ### Stats arrive
 Daily cron -> Read Stats scrapes the current period's stats, commits `stats_pNN.csv` (and any new `player_info.csv`

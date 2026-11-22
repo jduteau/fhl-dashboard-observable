@@ -1,18 +1,20 @@
-// Free-agent signings and waiver cuts the commissioner records DURING a period. They take effect in the NEXT period's
-// roster, like agreed trades, and are applied before them (waived players, then signings, then trades, then the GMs'
-// lineup moves: the same order FHL Trader reports use). Pure functions and constants, shared by the Worker, the
+// Free-agent signings, waiver cuts and waiver claims the commissioner records DURING a period. They take effect in the
+// NEXT period's roster, like agreed trades, and are applied before them (in the order they were entered, then trades,
+// then the GMs' lineup moves). Pure functions and constants, shared by the Worker, the
 // GitHub scripts and the pages.
 //
 // A stored transaction (src/data/static/<season>/transactions/transactions_pNN.json, {"transactions": [...]}):
-//   { id, type: "sign" | "waive", team, player, salary?, contract?, at,
+//   { id, type: "sign" | "waive" | "claim", team, player, salary?, contract?, from?, at,
 //     appliedAt?  (set when the new period's roster was built with it),
 //     skipped?    (set, with the reason, when it could no longer be applied) }
 // "sign": the team adds a free agent, in reserve, on a new contract (salary + contract code, e.g. "C-27").
 //         A waiver claim by another team is just a signing of the waived player.
 // "waive": the team cuts the player; he is then on no FHL roster (a free agent).
+// "claim": a waiver claim, i.e. a trade the commissioner makes by himself: the player moves from team `from` to `team`
+//          with his contract and his active/reserve status unchanged.
 import { TEAM, PLAYER } from "./tradeRules.js";
 
-export const TRANSACTION_TYPES = ["sign", "waive"];
+export const TRANSACTION_TYPES = ["sign", "waive", "claim"];
 export const TRANSACTION_ID = /^[0-9a-f-]{36}$/; // a UUID
 export const CONTRACT = /^[\w-]{1,12}$/; // C-27
 
@@ -34,6 +36,10 @@ export function cleanTransaction(t) {
     clean.salary = salary;
     clean.contract = t.contract;
   }
+  if (t.type === "claim") {
+    if (!TEAM.test(t.from ?? "") || t.from === t.team) throw new Error(`Invalid from team in transaction ${t.id}`);
+    clean.from = t.from;
+  }
   clean.at = t.at;
   return clean;
 }
@@ -44,7 +50,8 @@ export function transactionProblem(t, state) {
   const owner = state.playerOwner(t.player);
   if (t.type === "sign") return owner ? `${t.player} is already on ${owner}'s roster` : null;
   if (owner === undefined) return `${t.player} is not on any roster`;
-  return owner === t.team ? null : `${t.player} is on ${owner}'s roster, not ${t.team}'s`;
+  const expected = t.type === "claim" ? t.from : t.team; // a claim takes the player from `from`
+  return owner === expected ? null : `${t.player} is on ${owner}'s roster, not ${expected}'s`;
 }
 
 // Applies transactions (oldest first) to roster rows, all-or-nothing each, skipping ones that no longer make sense.
@@ -67,6 +74,9 @@ export function applyTransactions(rows, transactions, now = new Date().toISOStri
     }
     if (t.type === "sign") {
       rows.push({ ID: t.player, ABBR: t.team, RESERVE: "R" });
+      owners.set(t.player, t.team);
+    } else if (t.type === "claim") {
+      rows.find((r) => r.ID === t.player).ABBR = t.team; // keeps RESERVE, like a trade
       owners.set(t.player, t.team);
     } else {
       rows.splice(rows.findIndex((r) => r.ID === t.player), 1);

@@ -8,19 +8,29 @@ const t = (n, type, team, player) => ({ id: id(n), type, team, player, at: `2026
 const base = [{ ID: "a1", ABBR: "ANA", RESERVE: "" }];
 
 test("add is idempotent by id and validated against the latest roster plus earlier transactions", () => {
-  const first = changeTransactions([], { action: "add", transaction: t(1, "waive", "ANA", "a1") }, base);
+  const first = changeTransactions([], { add: [t(1, "waive", "ANA", "a1")] }, base);
   assert.equal(first.changed, true);
-  assert.equal(changeTransactions(first.transactions, { action: "add", transaction: t(1, "waive", "ANA", "a1") }, base).changed, false);
-  assert.throws(() => changeTransactions(first.transactions, { action: "add", transaction: t(2, "waive", "ANA", "a1") }, base), /not on any roster/);
-  assert.equal(changeTransactions(first.transactions, { action: "add", transaction: t(2, "sign", "BOS", "a1") }, base).changed, true); // claim after the cut
+  assert.equal(changeTransactions(first.transactions, { add: [t(1, "waive", "ANA", "a1")] }, base).changed, false);
+  assert.throws(() => changeTransactions(first.transactions, { add: [t(2, "waive", "ANA", "a1")] }, base), /not on any roster/);
+  assert.equal(changeTransactions(first.transactions, { add: [t(2, "sign", "BOS", "a1")] }, base).changed, true); // claim after the cut
+});
+
+test("a batch is added in order and checked as a whole; a bad line rejects the batch", () => {
+  const batch = [t(1, "waive", "ANA", "a1"), { ...t(2, "claim", "BOS", "b1"), from: "CAR" }];
+  const rows = [...base, { ID: "b1", ABBR: "CAR", RESERVE: "R" }];
+  const r = changeTransactions([], { add: batch }, rows);
+  assert.deepEqual(r.transactions.map((x) => x.id), [id(1), id(2)]);
+  assert.throws(() => changeTransactions([], { add: [...batch, t(3, "waive", "ANA", "a1")] }, rows), /not on any roster/);
+  assert.throws(() => changeTransactions([], { add: [{ ...batch[1], from: "BOS" }] }, rows), /Invalid from team/); // from == team
+  assert.throws(() => changeTransactions([], { add: "x" }, rows));
 });
 
 test("remove drops one, and refuses if a later transaction depended on it", () => {
   const list = [t(1, "waive", "ANA", "a1"), t(2, "sign", "BOS", "a1")];
-  assert.throws(() => changeTransactions(list, { action: "remove", id: id(1) }, base), /already on ANA/);
-  const r = changeTransactions(list, { action: "remove", id: id(2) }, base);
+  assert.throws(() => changeTransactions(list, { remove: [id(1)] }, base), /already on ANA/);
+  const r = changeTransactions(list, { remove: [id(2)] }, base);
   assert.deepEqual(r.transactions.map((x) => x.id), [id(1)]);
-  assert.equal(changeTransactions(list, { action: "remove", id: id(9) }, base).changed, false);
+  assert.equal(changeTransactions(list, { remove: [id(9)] }, base).changed, false);
 });
 
 test("upsertContractRows appends, replaces a same-period row, keeps CRLF", () => {
