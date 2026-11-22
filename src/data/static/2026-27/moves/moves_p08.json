@@ -139,5 +139,14 @@
       "annunju01"
     ],
     "submittedAt": "2026-11-22T19:36:48.001Z"
+  },
+  "NJD": {
+    "promote": [
+      "salomel01"
+    ],
+    "demote": [
+      "yakemca01"
+    ],
+    "submittedAt": "2026-11-22T20:14:09.382Z"
   }
 }
