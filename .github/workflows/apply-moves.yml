@@ -12,9 +12,13 @@ on:
         type: boolean
         default: true
 
-# Serialize runs so simultaneous submissions don't collide on push.
+# Runs are NOT queued behind each other for roster moves: GitHub keeps only one pending run per concurrency group, so a
+# third submission arriving while one run executes and one waits would silently cancel the waiting one and lose that
+# team's moves. Instead every submission gets its own group (so none is cancelled) and the commit step below redoes
+# its work on top of the latest branch tip whenever a push is rejected, so parallel runs can't conflict.
+# The commissioner's materialize runs stay serialized with each other.
 concurrency:
-  group: apply-moves
+  group: ${{ github.event_name == 'workflow_dispatch' && 'apply-moves-materialize' || format('apply-moves-{0}', github.run_id) }}
   cancel-in-progress: false
 
 jobs:
@@ -23,8 +27,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      # Check out the branch as it is NOW, not the commit it pointed at when the dispatch was sent: a run that waited in
-      # the concurrency queue would otherwise start from a stale tree, miss the previous run's commit and conflict on push.
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.repository.default_branch }}
@@ -33,26 +35,30 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Store submitted moves
-        if: github.event_name == 'repository_dispatch'
-        env:
-          MOVES: ${{ toJson(github.event.client_payload) }}
-        run: node .github/scripts/apply-moves.mjs
-      - name: Materialize next-period roster
-        if: github.event_name == 'workflow_dispatch' && inputs.materialize
-        run: node .github/scripts/apply-moves.mjs materialize
-      - name: Commit
+      - name: Apply and commit
+        if: github.event_name == 'repository_dispatch' || inputs.materialize
         env:
           EVENT: ${{ github.event_name }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+          MOVES: ${{ toJson(github.event.client_payload) }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/static
-          git diff --cached --quiet && exit 0
-          git commit -m "Roster moves ($EVENT)"
-          # Another workflow may have pushed meanwhile; retry the rebase+push a few times.
-          for i in 1 2 3 4 5; do
-            git pull --rebase && git push && exit 0
-            sleep $((i * 5))
+          # Each attempt starts from the newest branch tip and applies the change again, so a push that loses a race
+          # with another run is simply redone on top of that run's commit (no merge, no conflict). A script failure
+          # (e.g. the moves are invalid) is real, not a race, so it fails the run straight away.
+          for i in 1 2 3 4 5 6 7 8; do
+            git fetch --depth=1 origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            if [ "$EVENT" = "repository_dispatch" ]; then
+              node .github/scripts/apply-moves.mjs || exit 1
+            else
+              node .github/scripts/apply-moves.mjs materialize || exit 1
+            fi
+            git add src/data/static
+            git diff --cached --quiet && exit 0
+            git commit -m "Roster moves ($EVENT)"
+            git push origin "HEAD:$BRANCH" && exit 0
+            sleep $((i * 3))
           done
           exit 1
