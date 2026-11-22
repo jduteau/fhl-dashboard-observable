@@ -7,12 +7,14 @@ toc: false
 
 ```js
 import {playerLinksFormat} from "./components/playerLink.js";
+import {pendingTransactions, applyPendingTransactions} from "./components/transactions.js";
 import {callTrades, pickLabel, evaluateTrade, nextPeriodOf, agreedTrades, applyAgreedTrades} from "./components/trades.js";
 
 // Load the data files
 const rosters = await FileAttachment("./data/rosters.json").json();
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
 const tradesData = await FileAttachment("./data/trades.json").json();
+const transactionsData = await FileAttachment("./data/transactions.json").json();
 const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || rosters.currentSeason;
 const _rsd = rosters.data[_season];
@@ -23,15 +25,22 @@ const isCurrentSeason = _season === rosters.currentSeason;
 // Trades both GMs already agreed to (they take effect in the next period's rosters) are applied here, so players and
 // picks a team is about to receive can be traded again, and ones it is about to send away can't be offered twice.
 const _nextPeriod = nextPeriodOf(_rsd);
+// The commissioner's recorded free-agent signings and waiver cuts come first (they are applied before trades).
+const _tx = applyPendingTransactions({
+  abbrs: _rsd.teams,
+  rosterOf: (abbr) => _rsd.teamData.find((t) => t.ABBR === abbr)["OVERALL"].ROSTER,
+  transactions: isCurrentSeason ? pendingTransactions(transactionsData, _season, _nextPeriod) : []
+});
 const _agreed = isCurrentSeason ? agreedTrades(tradesData, _season, _nextPeriod) : [];
 const _eff = applyAgreedTrades({
   abbrs: _rsd.teams,
-  rosterOf: (abbr) => _rsd.teamData.find((t) => t.ABBR === abbr)["OVERALL"].ROSTER,
+  rosterOf: (abbr) => _tx.roster.get(abbr),
   picksOf: (abbr) => { const t = _tisd.teams.find((x) => x.ABBR === abbr); return [...t.CURRENT_PICK_LIST, ...t.NEXT_PICK_LIST]; },
   trades: _agreed
 });
+const _salaryDelta = (abbr) => _eff.salaryDelta.get(abbr) + _tx.salaryDelta.get(abbr);
 // Team info with the salary total the agreed trades will leave the team with (budget maths starts from that)
-const _effTeam = (t) => ({...t, LatestSalary: t.LatestSalary + _eff.salaryDelta.get(t.ABBR)});
+const _effTeam = (t) => ({...t, LatestSalary: t.LatestSalary + _salaryDelta(t.ABBR)});
 
 // Optional prefill from the URL (used by "Counter" on the Trades page):
 //   team1, team2, p1/p2 = player ids team 1/2 send, k1/k2 = picks team 1/2 send as "ANA1:2026-27,..."
@@ -95,13 +104,15 @@ function createRosterTable(roster, preselectedIds = new Set()) {
 ```js
 const team1 = _tisd.teams.find((t) => t.ABBR === selectedTeam1);
 const team2 = _tisd.teams.find((t) => t.ABBR === selectedTeam2);
+// Players signed as free agents this period cannot be traded until the next one (they still count toward roster size)
+const tradable = (roster) => roster.filter((p) => p.Acquired !== "FA signing");
 const team1Roster = _eff.roster.get(selectedTeam1);
 const team2Roster = _eff.roster.get(selectedTeam2);
 ```
 
 ```js
-const team1Table = createRosterTable(team1Roster, _list("p1"));
-const team2Table = createRosterTable(team2Roster, _list("p2"));
+const team1Table = createRosterTable(tradable(team1Roster), _list("p1"));
+const team2Table = createRosterTable(tradable(team2Roster), _list("p2"));
 
 const team1Selections = view(team1Table);
 const team2Selections = view(team2Table);
@@ -162,7 +173,7 @@ if (_agreed.length) display(html`<div class="card" style="max-width:60em;">
   Assets a team is about to receive are marked <em>Trade / from XYZ</em> and can be traded again; assets it is about to send away are no longer listed.
 </div>`);
 // Plain text (not html) so it can sit inside the inline expressions of the team cards below.
-const afterTrades = (team) => _eff.salaryDelta.get(team.ABBR) ? ` (→ $ ${_effTeam(team).LatestSalary} after agreed trades)` : "";
+const afterTrades = (team) => _salaryDelta(team.ABBR) ? ` (→ $ ${_effTeam(team).LatestSalary} after agreed trades and signings)` : "";
 ```
 
 <pre>

@@ -517,3 +517,15 @@ test("admin: wrong password, a GM's team password, and an unset ADMIN_PASSWORD a
   assert.equal((await post("/trades/admin-list", { season: "2026-27", password: "boss" }, "https://evil.example")).status, 403);
   assert.equal((await post("/trades/admin-list", { season: "bad", password: "boss" })).status, 400);
 });
+
+test("a free agent signed this period cannot be traded, a waived player cannot either", async () => {
+  files["src/data/static/2026-27/transactions/transactions_p08.json"] = JSON.stringify({ transactions: [
+    { id: "00000000-0000-0000-0000-000000000001", type: "sign", team: "ANA", player: "fa01", salary: 1, contract: "C-27", at: "2026-11-19T10:00:00Z" },
+    { id: "00000000-0000-0000-0000-000000000002", type: "waive", team: "BOS", player: "bos01", at: "2026-11-19T10:00:01Z" },
+  ] });
+  const signed = await propose(A, { to: "BOS", give: { players: ["fa01"] }, get: {} });
+  assert.equal(signed.status, 400);
+  assert.match(signed.body.error, /until the next period/);
+  assert.equal((await propose(A, { to: "BOS", give: {}, get: { players: ["bos01"] } })).status, 400);
+  ok(await propose(A, { to: "BOS", give: { players: ["ana01"] }, get: {} })); // others are unaffected
+});

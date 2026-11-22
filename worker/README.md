@@ -6,6 +6,8 @@ fits with GitHub Actions, D1, EmailJS and the site. It is deployed by hand (`npx
 Secrets (`npx wrangler secret put NAME`): `GITHUB_TOKEN`, `EMAILJS_PRIVATE_KEY`, `ADMIN_PASSWORD` (commissioner view),
 `DISCORD_WEBHOOK_URL` (optional). Everything else is in `wrangler.toml`.
 
+Free agents and waivers: the commissioner posts to `/transactions/add` or `/transactions/remove` (ADMIN_PASSWORD); the Worker validates against the repo and sends a `transaction` dispatch (Record Transactions workflow). Redeploy the Worker after pulling this change.
+
 Roster-moves flow: Roster page -> this Worker (checks the password against the hashed accounts in D1) -> `repository_dispatch` ->
 `Apply Roster Moves` workflow (validates, writes `src/data/static/<season>/moves/moves_pNN.json`) -> Deploy.
 

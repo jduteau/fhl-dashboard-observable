@@ -8,11 +8,13 @@ toc: false
 ```js
 import {playerLinksFormat} from "./components/playerLink.js";
 import {pickLabel, agreedTrades, applyAgreedTrades, WORKER_URL} from "./components/trades.js";
+import {pendingTransactions, applyPendingTransactions, describeTransaction} from "./components/transactions.js";
 import {lineupProblems} from "./components/leagueRules.js";
 
 const teamInfo = await FileAttachment("./data/rosters.json").json();
 const movesData = await FileAttachment("./data/moves.json").json();
 const tradesData = await FileAttachment("./data/trades.json").json();
+const transactionsData = await FileAttachment("./data/transactions.json").json();
 const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || teamInfo.currentSeason;
 const _sd = teamInfo.data[_season];
@@ -72,16 +74,24 @@ display(html`<div class="tab-current"><p><em>View only.</em></p>${Inputs.table(r
 ```
 
 ```js
-// The roster for the next period = the current roster with the trades both GMs already agreed to applied: players
-// sent away are gone, players acquired are added (keeping their current active/reserve status until you change it).
-// This is also the roster the lineup you submit is checked against.
+// The roster for the next period = the current roster with the commissioner's recorded waiver cuts and free-agent
+// signings applied (cut players are gone, signed players join in reserve), then the trades both GMs already agreed to:
+// players sent away are gone, players acquired are added (keeping their current active/reserve status until you change
+// it). This is also the roster the lineup you submit is checked against.
+const allTransactions = isCurrentSeason ? pendingTransactions(transactionsData, _season, nextPeriod) : [];
+const teamTransactions = allTransactions.filter((t) => t.team === selectedTeam);
+const afterTransactions = applyPendingTransactions({
+  abbrs: _sd.teams,
+  rosterOf: (abbr) => _sd.teamData.find((x) => x.ABBR === abbr)[currentPeriod].ROSTER,
+  transactions: allTransactions
+}).roster;
 const allAgreed = isCurrentSeason ? agreedTrades(tradesData, _season, nextPeriod) : [];
 const teamTrades = allAgreed.filter((t) => t.from === selectedTeam || t.to === selectedTeam);
 const mySide = (t) => t.from === selectedTeam ? {other: t.to, send: t.give, receive: t.get} : {other: t.from, send: t.get, receive: t.give};
 // Applied across the whole league so chains work (a player acquired in one trade and sent on in another).
 const nextRoster = applyAgreedTrades({
   abbrs: _sd.teams,
-  rosterOf: (abbr) => _sd.teamData.find((x) => x.ABBR === abbr)[currentPeriod].ROSTER,
+  rosterOf: (abbr) => afterTransactions.get(abbr),
   picksOf: () => [],
   trades: allAgreed
 }).roster.get(selectedTeam);
@@ -94,18 +104,23 @@ const stalePending = pending && [...pending.promote, ...pending.demote].some((id
 const startReserve = nextRoster.filter((p) =>
   pending ? (p.Reserve === "R" ? !pending.promote.includes(p.PLAYER_ID) : pending.demote.includes(p.PLAYER_ID)) : p.Reserve === "R");
 const nextColumns = [...tableOptions.columns.filter((c) => c !== "Reserve"), ...(acquired.length ? ["Acquired"] : [])];
-const selTable = Inputs.table(nextRoster, {...tableOptions, columns: nextColumns, header: {...tableOptions.header, Acquired: "Trade"}, value: startReserve});
+const selTable = Inputs.table(nextRoster, {...tableOptions, columns: nextColumns, header: {...tableOptions.header, Acquired: "New"}, value: startReserve});
 const selection = Generators.input(selTable);
 
 const assetText = (side) => [...side.players.map((p) => p.name), ...side.picks.map(pickLabel)].join(", ") || "nothing";
+const transactionNote = teamTransactions.length ? html`<div class="card">
+  <strong>Free agents and waivers taking effect in period ${nextPeriod}</strong>
+  ${teamTransactions.map((t) => html`<div>${describeTransaction(t)}.</div>`)}
+  <div style="font-size:0.9em;"><em>The roster below already includes these. Signed players join as reserves until you change it here.</em></div>
+</div>` : "";
 const tradeNote = teamTrades.length ? html`<div class="card">
   <strong>Agreed trades taking effect in period ${nextPeriod}</strong>
   ${teamTrades.map((t) => { const {other, send, receive} = mySide(t); return html`<div>With ${other}: you send ${assetText(send)}; you receive ${assetText(receive)}.</div>`; })}
   <div style="font-size:0.9em;"><em>The roster below already includes these trades. Players you acquire keep their current active/reserve status until you change it here.</em></div>
 </div>` : "";
-const staleNote = stalePending ? html`<div class="card" style="border-color:#b45309;"><strong>⚠ Review your lineup.</strong> Your last submission (${new Date(pending.submittedAt).toLocaleString()}) names players who are no longer on your roster because of an agreed trade. Fix the lineup below and submit again, otherwise those moves are ignored.</div>` : "";
+const staleNote = stalePending ? html`<div class="card" style="border-color:#b45309;"><strong>⚠ Review your lineup.</strong> Your last submission (${new Date(pending.submittedAt).toLocaleString()}) names players who are no longer on your roster (a trade or a waiver cut). Fix the lineup below and submit again, otherwise those moves are ignored.</div>` : "";
 display(html`<div class="tab-next">
-  ${tradeNote}${staleNote}
+  ${transactionNote}${tradeNote}${staleNote}
   ${isCurrentSeason
     ? html`<p>A checked box means the player is on the <strong>reserve</strong> list. Check the players who should be reserves for period ${nextPeriod}, then submit. Submitting again replaces your earlier submission.</p>`
     : html`<p><em>Roster moves can only be made for the current season.</em></p>`}

@@ -5,6 +5,7 @@
 //   POST /trades/propose    propose (or counter) a trade            -> D1
 //   POST /trades/list       this GM's proposals                     -> D1
 //   POST /trades/respond    accept / decline / withdraw             -> D1 (+ repository_dispatch on accept)
+//   POST /transactions/add|remove   the commissioner records / removes a free-agent signing or waiver cut -> "Record Transactions" workflow
 //   POST /account/*         a GM changes their password/email; the commissioner resets them (see accounts.js)
 //
 // Secrets/vars (see worker/README.md):  GITHUB_TOKEN (secret), GITHUB_REPO, ALLOWED_ORIGIN, DB (D1 binding)
@@ -12,6 +13,7 @@ import { json, gh, HttpError } from "./lib.js";
 import { authenticate, handleAccount, clientOf } from "./accounts.js";
 import { TEAM, PLAYER, SEASON } from "../src/components/tradeRules.js";
 import { handleTrades } from "./trades.js";
+import { handleTransactions } from "./transactions.js";
 
 // ALLOWED_ORIGIN is a comma-separated list (the Pages site, plus local preview origins for development).
 // The request's own origin is echoed back when it is on the list, otherwise the first entry is returned (and the
@@ -56,6 +58,10 @@ async function handle(request, env, origin, execCtx) {
   const client = clientOf(request);
   if (path.startsWith("/trades/")) {
     const result = await handleTrades(path.slice("/trades/".length), m, env, execCtx, client);
+    return json(result, 200, origin);
+  }
+  if (path.startsWith("/transactions/")) {
+    const result = await handleTransactions(path.slice("/transactions/".length), m, env, client);
     return json(result, 200, origin);
   }
   if (path.startsWith("/account/")) {

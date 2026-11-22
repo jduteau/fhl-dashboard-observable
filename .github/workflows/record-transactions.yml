@@ -1,0 +1,43 @@
+name: Record Transactions
+
+on:
+  # Triggered by the Cloudflare Worker (worker/transactions.js) when the commissioner records a free-agent signing or waiver
+  # cut (or removes one). One transaction per run; the Worker checks it first, and record-transactions.mjs checks it again.
+  repository_dispatch:
+    types: [transaction]
+
+# Serialize runs; kept separate from the other recording workflows so none can replace another's queued run
+# (GitHub keeps only one pending run per concurrency group).
+concurrency:
+  group: record-transactions
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Record transaction
+        env:
+          TRANSACTION: ${{ toJson(github.event.client_payload) }}
+        run: node .github/scripts/record-transactions.mjs
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/static
+          git diff --cached --quiet && exit 0
+          git commit -m "Transactions (repository_dispatch)"
+          # Another workflow may have pushed meanwhile; retry the rebase+push a few times.
+          for i in 1 2 3 4 5; do
+            git pull --rebase && git push && exit 0
+            sleep $((i * 5))
+          done
+          exit 1

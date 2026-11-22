@@ -11,11 +11,13 @@ period's rosters. Proposals are private: you only see the ones that involve your
 and an unanswered proposal expires when the next period starts.
 
 ```js
+import {pendingTransactions, applyPendingTransactions} from "./components/transactions.js";
 import {callTrades, pickLabel, evaluateTrade, nextPeriodOf, agreedTrades, applyAgreedTrades} from "./components/trades.js";
 
 const rosters = await FileAttachment("./data/rosters.json").json();
 const teamInfo = await FileAttachment("./data/teamInfo.json").json();
 const tradesData = await FileAttachment("./data/trades.json").json();
+const transactionsData = await FileAttachment("./data/transactions.json").json();
 const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || rosters.currentSeason;
 const _rsd = rosters.data[_season];
@@ -26,16 +28,21 @@ const loggedIds = new Set(logTrades.map((t) => t.id));
 
 // Budgets and roster sizes are checked against the league as it will be after the trades already agreed to, because that
 // is what the Worker validates against (an asset acquired in an agreed trade can be traded again).
-const _eff = applyAgreedTrades({
+const _tx = applyPendingTransactions({ // the commissioner's free-agent signings and waiver cuts happen before trades
   abbrs: _rsd.teams,
   rosterOf: (abbr) => _rsd.teamData.find((t) => t.ABBR === abbr).OVERALL.ROSTER,
+  transactions: isCurrentSeason ? pendingTransactions(transactionsData, _season, nextPeriodOf(_rsd)) : []
+});
+const _eff = applyAgreedTrades({
+  abbrs: _rsd.teams,
+  rosterOf: (abbr) => _tx.roster.get(abbr),
   picksOf: () => [],
   trades: isCurrentSeason ? agreedTrades(tradesData, _season, nextPeriodOf(_rsd)) : []
 });
 const rosterOf = (abbr) => _eff.roster.get(abbr);
 const teamOf = (abbr) => {
   const t = _tisd.teams.find((x) => x.ABBR === abbr);
-  return {...t, LatestSalary: t.LatestSalary + _eff.salaryDelta.get(abbr)};
+  return {...t, LatestSalary: t.LatestSalary + _eff.salaryDelta.get(abbr) + _tx.salaryDelta.get(abbr)};
 };
 const playerById = new Map(_rsd.teamData.flatMap((t) => t.OVERALL.ROSTER.map((p) => [p.PLAYER_ID, p])));
 const playerText = (id) => {

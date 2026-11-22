@@ -7,6 +7,7 @@
 import { csvParse, ghFile, gh, HttpError } from "./lib.js";
 import { authenticate, assertAdmin } from "./accounts.js";
 import { makeMailer, sendDiscord } from "./email.js";
+import { sortTransactions } from "../src/components/transactionRules.js";
 import { tradeProblem, SEASON, TEAM, PLAYER, PICK, TRADE_ID } from "../src/components/tradeRules.js";
 
 const MAX_ITEMS = 15; // per side
@@ -38,7 +39,7 @@ export async function handleTrades(action, body, env, execCtx, client) {
 
 // ---- Season / period context -------------------------------------------------------------
 
-async function loadContext(env, season) {
+export async function loadContext(env, season) {
   const seasons = csvParse((await ghFile(env, "src/data/static/seasons.csv")) ?? "");
   const current = seasons.find((s) => s.current === "true")?.season;
   if (season !== current) throw bad(`${season} is not the current season`);
@@ -52,11 +53,14 @@ async function loadContext(env, season) {
   return { season, nextSeason, dir, latest, period: latest + 1 };
 }
 
-// Who owns what according to the latest roster file and the draft_picks files (current + next season).
-async function loadOwnership(env, ctx) {
+// Who owns what according to the latest roster file and the draft_picks files (current + next season), with the
+// free-agent signings and waiver cuts the commissioner has recorded for the period already applied (they happen before
+// any trade, so a player signed this period can be traded and one waived can't).
+export async function loadOwnership(env, ctx) {
   const draftSeasons = [ctx.season, ctx.nextSeason].filter(Boolean);
-  const [rosterText, ...pickTexts] = await Promise.all([
+  const [rosterText, transactionsText, ...pickTexts] = await Promise.all([
     ghFile(env, `${ctx.dir}/rosters_p${pad(ctx.latest)}.csv`),
+    ghFile(env, `src/data/static/${ctx.season}/transactions/transactions_p${pad(ctx.period)}.json`),
     ...draftSeasons.map((s) => ghFile(env, `src/data/static/${s}/draft_picks.csv`)),
   ]);
   if (rosterText === null) throw new HttpError(502, "Could not read the latest roster");
@@ -66,11 +70,22 @@ async function loadOwnership(env, ctx) {
     playerOwner.set(r.ID, r.ABBR);
     sizes.set(r.ABBR, (sizes.get(r.ABBR) ?? 0) + 1);
   }
+  const signed = new Set(); // signed this period: on the roster, but not tradable until the next period
+  for (const t of sortTransactions(transactionsText ? JSON.parse(transactionsText).transactions ?? [] : [])) {
+    if (t.type === "sign" && !playerOwner.has(t.player)) {
+      playerOwner.set(t.player, t.team);
+      signed.add(t.player);
+      sizes.set(t.team, (sizes.get(t.team) ?? 0) + 1);
+    } else if (t.type === "waive" && playerOwner.get(t.player) === t.team) {
+      playerOwner.delete(t.player);
+      sizes.set(t.team, sizes.get(t.team) - 1);
+    }
+  }
   const pickOwner = new Map();
   draftSeasons.forEach((s, i) => {
     if (pickTexts[i]) for (const r of csvParse(pickTexts[i])) pickOwner.set(`${s}|${r.PICK}`, r.OWNER);
   });
-  return { playerOwner, pickOwner, sizes };
+  return { playerOwner, pickOwner, sizes, signed };
 }
 
 // Items of trades both GMs already accepted for this period, oldest trade first (they take effect in this order).
@@ -88,7 +103,7 @@ async function acceptedItems(env, ctx) {
 // roster file, so an asset a team is about to receive can be traded onward, and one it already gave away can't be
 // offered again.
 function effectiveOwnership(own, accepted) {
-  const eff = { playerOwner: new Map(own.playerOwner), pickOwner: new Map(own.pickOwner), sizes: new Map(own.sizes) };
+  const eff = { playerOwner: new Map(own.playerOwner), pickOwner: new Map(own.pickOwner), sizes: new Map(own.sizes), signed: own.signed };
   for (const it of accepted) {
     if (it.kind === "player") {
       eff.playerOwner.set(it.ref, it.receiver);
@@ -120,6 +135,8 @@ function parseSide(side, label) {
 // Throws unless `from` really owns `give`, `to` really owns `get` (per `own`, the ownership after already-accepted
 // trades), and both rosters stay within MIN_ROSTER..MAX_ROSTER players.
 function validateTrade(own, from, to, give, get) {
+  const justSigned = [...give, ...get].find((it) => it.kind === "player" && own.signed?.has(it.ref));
+  if (justSigned) throw bad(`${justSigned.ref} was signed as a free agent this period and cannot be traded until the next period`);
   const leg = (giver, receiver, items) => ({
     giver, receiver,
     players: items.filter((it) => it.kind === "player").map((it) => it.ref),

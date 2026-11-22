@@ -39,6 +39,7 @@ export default {
     {name: "Overall Stats", path: "/Overall"},
     {name: "Compare Teams", path: "/CompareTeams"},
     {name: "Trades", path: "/Trades"},
+    {name: "Free Agents & Waivers", path: "/Transactions"},
     {name: "Stats Visualizations", path: "/StatViz"},
     {name: "Playoffs", path: "/Playoffs"},
     {name: "Playoff Statistics", path: "/PlayoffStats"},

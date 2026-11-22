@@ -5,15 +5,19 @@
 //   node apply-moves.mjs materialize [season] [period]
 //                                              (safe to run again: see below)
 //                                              write rosters_pNN.csv = previous roster + the agreed trades in
+//                                              src/data/static/<season>/transactions/transactions_pNN.json (waivers, then FA signings;
+//                                              see record-transactions.mjs; signings also get a contracts.csv row), then the agreed trades in
 //                                              src/data/static/<season>/trades/trades_pNN.json (see record-trades.mjs; traded picks
 //                                              are rewritten in the draft_picks.csv files) + the stored moves
 //
 // $MOVES = {season, period, team, promote:[playerId], demote:[playerId]}
-//   promote = reserve -> active, demote = active -> reserve, relative to the latest roster file AFTER the agreed
-//   trades for the next period have been applied (traded players keep their status until their new GM changes it)
+//   promote = reserve -> active, demote = active -> reserve, relative to the latest roster file AFTER the recorded
+//   transactions and agreed trades for the next period have been applied (traded players keep their status until their new GM changes it)
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from "fs";
 import { csvParse } from "d3-dsv";
 import { applyTrades, updatePicksText, reconcileMoves, materializeTarget, revertAppliedPicks } from "./trades-lib.mjs";
+import { upsertContractRows } from "./transactions-lib.mjs";
+import { applyTransactions } from "../../src/components/transactionRules.js";
 import { lineupProblems, mapPosition } from "../../src/components/leagueRules.js";
 
 const root = "src/data/static";
@@ -28,6 +32,7 @@ const rosterPeriods = (season) => periodsIn(`${root}/${season}/rosters`, "roster
 const statsPeriods = (season) => periodsIn(`${root}/${season}/stats`, "stats");
 const latestRosterPeriod = (season) => Math.max(...rosterPeriods(season));
 const movesPath = (season, period) => `${root}/${season}/moves/moves_p${pad(period)}.json`;
+const transactionsPath = (season, period) => `${root}/${season}/transactions/transactions_p${pad(period)}.json`;
 const tradesPath = (season, period) => `${root}/${season}/trades/trades_p${pad(period)}.json`;
 const loadMoves = (season, period) => (existsSync(movesPath(season, period)) ? JSON.parse(readFileSync(movesPath(season, period), "utf-8")) : {});
 
@@ -66,9 +71,20 @@ function loadTrades(season, period) {
   return { file, stored, trades, picksBySeason };
 }
 
-// The latest roster with the agreed trades for `period` applied (players only; nothing is written).
+// The recorded free-agent signings / waiver cuts for `period` (null if there are none).
+function loadTransactions(season, period) {
+  const file = transactionsPath(season, period);
+  if (!existsSync(file)) return null;
+  const stored = JSON.parse(readFileSync(file, "utf-8"));
+  return { file, stored, transactions: stored.transactions ?? [] };
+}
+
+// The latest roster with the recorded transactions and agreed trades for `period` applied (players only; nothing is
+// written).
 function postTradeRows(baseRows, season, period) {
   const rows = baseRows.map((r) => ({ ID: r.ID, ABBR: r.ABBR, RESERVE: r.RESERVE }));
+  const x = loadTransactions(season, period);
+  if (x) applyTransactions(rows, x.transactions);
   const t = loadTrades(season, period);
   if (t) applyTrades(rows, t.trades, t.picksBySeason);
   return rows;
@@ -89,7 +105,21 @@ if (mode === "materialize") {
   const playerInfo = read(`${root}/${season}/player_info.csv`);
   const rows = baseRows.map((r) => ({ ID: r.ID, ABBR: r.ABBR, RESERVE: r.RESERVE }));
 
-  // 1. Agreed trades first: players change team (keeping their active/reserve status) and traded picks change owner.
+  // 0. Waived players leave their team, signed free agents join in reserve (with a new contract): the order FHL Trader
+  //    uses. Trades come next, so a player signed this period can be traded on.
+  let transactionSummary = "";
+  const x = loadTransactions(season, period);
+  if (x) {
+    const { applied, skipped } = applyTransactions(rows, x.transactions);
+    for (const { id, reason } of skipped) console.warn(`::warning::Transaction ${id} NOT applied: ${reason}`);
+    writeFileSync(x.file, JSON.stringify({ ...x.stored, transactions: x.transactions }, null, 2) + "\n");
+    const signed = x.transactions.filter((t) => t.type === "sign" && !t.skipped).map((t) => ({ ID: t.player, Salary: t.salary, Contract: t.contract }));
+    const contractsFile = `${root}/${season}/contracts.csv`;
+    if (signed.length) writeFileSync(contractsFile, upsertContractRows(readFileSync(contractsFile, "utf-8"), signed, period));
+    transactionSummary = `; transactions: ${applied.length} applied, ${skipped.length} skipped`;
+  }
+
+  // 1. Agreed trades: players change team (keeping their active/reserve status) and traded picks change owner.
   //    GMs set their lineups against this post-trade roster (see the Roster page), so moves are applied after.
   let tradeSummary = "";
   const t = loadTrades(season, period);
@@ -123,7 +153,7 @@ if (mode === "materialize") {
 
   const lines = ["ID,ABBR,RESERVE", ...rows.map((r) => `${r.ID},${r.ABBR},${r.RESERVE}`)];
   writeFileSync(`${root}/${season}/rosters/rosters_p${pad(period)}.csv`, lines.join("\n") + "\n");
-  console.log(`Wrote rosters_p${pad(period)}.csv with moves for ${Object.keys(moves).length} team(s)${tradeSummary}`);
+  console.log(`Wrote rosters_p${pad(period)}.csv with moves for ${Object.keys(moves).length} team(s)${transactionSummary}${tradeSummary}`);
 } else {
   const m = JSON.parse(process.env.MOVES || fail("MOVES env var missing"));
   const season = currentSeason();
