@@ -128,5 +128,16 @@
       "shabama01"
     ],
     "submittedAt": "2026-11-22T18:56:19.550Z"
+  },
+  "SJS": {
+    "promote": [
+      "goodrba01",
+      "merille01"
+    ],
+    "demote": [
+      "kivirjo01",
+      "annunju01"
+    ],
+    "submittedAt": "2026-11-22T19:36:48.001Z"
   }
 }
