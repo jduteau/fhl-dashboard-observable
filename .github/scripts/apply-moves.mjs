@@ -181,6 +181,7 @@ if (mode === "materialize") {
   const arr = (x) => (Array.isArray(x) ? x.map(String) : fail("promote/demote must be arrays"));
   const [promote, demote] = [arr(m.promote), arr(m.demote)];
   if (m.season !== season) fail(`Season ${m.season} is not the current season`);
+  if (Number(m.period) <= base) fail(`Roster moves for period ${m.period} are closed: rosters_p${pad(m.period)}.csv already exists`);
   if (Number(m.period) !== base + 1) fail(`Moves are for period ${m.period} but the next period is ${base + 1} (stale page?)`);
   try {
     // Validate against the roster as it will be after the agreed trades, which is what the GM sees on the Roster page.

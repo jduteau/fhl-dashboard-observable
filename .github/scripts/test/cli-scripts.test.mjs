@@ -32,7 +32,19 @@ test("resolve-period: the current season, its stats year, and the first period t
     const r = run(L.dir, "resolve-period.mjs", [], { GITHUB_OUTPUT: out });
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, /season=2027-28 year=2028 period=03/); // periods 1 and 2 ended long ago; 3 is the first still to end
-    assert.equal(readFileSync(out, "utf-8"), "season=2027-28\nyear=2028\nperiod=03\n");
+    assert.equal(readFileSync(out, "utf-8"), "season=2027-28\nyear=2028\nperiod=03\nnext_period=\n");
+  } finally { rmSync(L.dir, { recursive: true, force: true }); }
+});
+
+test("resolve-period: on a period's last day the next period is also output, since the same stats start it", () => {
+  const L = league();
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    writeFileSync(join(L.s, SEASON, "periods.csv"), `period,start,end\n07,2000-01-01,${today}\n08,${today},2999-01-01\n`);
+    const out = join(L.dir, "gh-output");
+    const r = run(L.dir, "resolve-period.mjs", [], { GITHUB_OUTPUT: out });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(readFileSync(out, "utf-8"), "season=2027-28\nyear=2028\nperiod=07\nnext_period=08\n");
   } finally { rmSync(L.dir, { recursive: true, force: true }); }
 });
 

@@ -48,10 +48,15 @@ jobs:
           SEASON: ${{ steps.resolve.outputs.season }}
           YEAR: ${{ steps.resolve.outputs.year }}
           PERIOD: ${{ steps.resolve.outputs.period }}
+          NEXT_PERIOD: ${{ steps.resolve.outputs.next_period }}
         run: |
           node ./FHLScripts/lib/readStatsIndex.js "$YEAR" fhl_stats_overall
           mkdir -p "src/data/static/${SEASON}/stats"
           cp fhl_stats_overall.csv "src/data/static/${SEASON}/stats/stats_p${PERIOD}.csv"
+          # On a period's last day this is its final stats drop; the same file also starts the next period
+          if [ -n "$NEXT_PERIOD" ]; then
+            cp fhl_stats_overall.csv "src/data/static/${SEASON}/stats/stats_p${NEXT_PERIOD}.csv"
+          fi
       - name: Add new players to player_info.csv
         if: steps.resolve.outputs.period != ''
         continue-on-error: true

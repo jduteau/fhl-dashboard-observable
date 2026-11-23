@@ -109,6 +109,15 @@ test("existing roster-moves endpoint still works at the root path", async () => 
   assert.equal((await post("/", { ...as("ANA", "bad"), period: 8, promote: [], demote: [] })).status, 401);
 });
 
+test("roster moves are refused once the period's roster file exists, even before it has started", async () => {
+  files["src/data/static/2026-27/rosters/rosters_p08.csv"] = rosterCsv({ ANA: 21, BOS: 20, CAR: 20 });
+  const r = await post("/", { ...A, period: 8, promote: [], demote: [] });
+  assert.equal(r.status, 409);
+  assert.match(r.body.error, /closed/);
+  assert.equal(dispatches.length, 0);
+  assert.equal((await post("/", { ...A, period: 9, promote: [], demote: [] })).status, 202); // the period after that is still open
+});
+
 test("propose is visible to both GMs but never to a third team", async () => {
   const { id, period } = ok(await propose(A, { ...oneForOne, note: "hi" }));
   assert.equal(period, 8);

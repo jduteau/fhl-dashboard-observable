@@ -21,6 +21,8 @@ const _sd = teamInfo.data[_season];
 
 const currentPeriod = _sd.latestPeriod; // the period in progress
 const nextPeriod = currentPeriod + 1;
+// Once rosters_pNN.csv exists for the next period (the commissioner has materialized it) its lineups are final, even though the period has not started
+const movesClosed = _sd.latestRosterPeriod >= nextPeriod;
 const isCurrentSeason = _season === teamInfo.currentSeason;
 
 const teamSelector = Inputs.select(_sd.teams, {label: "Select Team:"});
@@ -121,9 +123,12 @@ const tradeNote = teamTrades.length ? html`<div class="card">
 const staleNote = stalePending ? html`<div class="card" style="border-color:#b45309;"><strong>⚠ Review your lineup.</strong> Your last submission (${new Date(pending.submittedAt).toLocaleString()}) names players who are no longer on your roster (a trade or a waiver cut). Fix the lineup below and submit again, otherwise those moves are ignored.</div>` : "";
 display(html`<div class="tab-next">
   ${transactionNote}${tradeNote}${staleNote}
-  ${isCurrentSeason
+  ${isCurrentSeason && movesClosed
+    ? html`<div class="card" style="border-color:#b45309;"><strong>Roster moves for period ${nextPeriod} are closed.</strong> The period ${nextPeriod} rosters have been created. The lineup below is final.</div>`
+    : ""}
+  ${isCurrentSeason && !movesClosed
     ? html`<p>A checked box means the player is on the <strong>reserve</strong> list. Check the players who should be reserves for period ${nextPeriod}, then submit. Submitting again replaces your earlier submission.</p>`
-    : html`<p><em>Roster moves can only be made for the current season.</em></p>`}
+    : isCurrentSeason ? "" : html`<p><em>Roster moves can only be made for the current season.</em></p>`}
   ${selTable}
 </div>`);
 ```
@@ -157,7 +162,7 @@ const passwordInput = html`<input type="password" placeholder="Team password" au
 passwordInput.value = window._fhlPw ?? "";
 passwordInput.oninput = () => { window._fhlPw = passwordInput.value; };
 const status = html`<div></div>`;
-const submit = html`<button ${(!isCurrentSeason || errors.length) ? "disabled" : ""}>Submit moves</button>`;
+const submit = html`<button ${(!isCurrentSeason || movesClosed || errors.length) ? "disabled" : ""}>Submit moves</button>`;
 submit.onclick = async () => {
   status.textContent = "Submitting…";
   try {

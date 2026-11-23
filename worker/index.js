@@ -12,7 +12,7 @@
 import { json, gh, HttpError } from "./lib.js";
 import { authenticate, handleAccount, clientOf } from "./accounts.js";
 import { TEAM, PLAYER, SEASON } from "../src/components/tradeRules.js";
-import { handleTrades } from "./trades.js";
+import { handleTrades, loadContext } from "./trades.js";
 import { handleTransactions } from "./transactions.js";
 
 // ALLOWED_ORIGIN is a comma-separated list (the Pages site, plus local preview origins for development).
@@ -77,6 +77,12 @@ async function handleMoves(m, env, origin, client) {
     return json({ error: "Invalid request" }, 400, origin);
 
   await authenticate(env, m.season, m.team, m.password, client);
+
+  // Moves are for the period after the latest rosters_pNN.csv. Once that period's roster file exists (the commissioner
+  // materialized it) its lineups are final, even if the period has not started yet.
+  const ctx = await loadContext(env, m.season);
+  if (m.period <= ctx.latest) return json({ error: `Roster moves for period ${m.period} are closed: its rosters have been created` }, 409, origin);
+  if (m.period !== ctx.period) return json({ error: `Moves are for period ${m.period} but the next period is ${ctx.period} (stale page?)` }, 409, origin);
 
   const dispatch = await gh(env, "dispatches", {
     method: "POST",
