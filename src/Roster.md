@@ -19,11 +19,11 @@ const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || teamInfo.currentSeason;
 const _sd = teamInfo.data[_season];
 
-const currentPeriod = _sd.latestPeriod; // the period in progress
-// Moves are for the period after the newest roster file: once the commissioner has materialized a period its lineups are
-// final, even though it may not have started, so moves are then for the following one.
-const baseRosterPeriod = _sd.latestRosterPeriod;
-const nextPeriod = baseRosterPeriod + 1;
+// The current roster is the newest roster file: once the commissioner has materialized a period its lineups are final and
+// in force, even though its stats have not started (this page shows no stats, so it does not matter that they lag behind).
+// Moves are then for the period after it.
+const currentPeriod = _sd.latestRosterPeriod;
+const nextPeriod = currentPeriod + 1;
 const isCurrentSeason = _season === teamInfo.currentSeason;
 
 const teamSelector = Inputs.select(_sd.teams, {label: "Select Team:"});
@@ -85,7 +85,7 @@ const allTransactions = isCurrentSeason ? pendingTransactions(transactionsData, 
 const teamTransactions = allTransactions.filter((t) => t.team === selectedTeam);
 const afterTransactions = applyPendingTransactions({
   abbrs: _sd.teams,
-  rosterOf: (abbr) => _sd.teamData.find((x) => x.ABBR === abbr)[baseRosterPeriod].ROSTER,
+  rosterOf: (abbr) => _sd.teamData.find((x) => x.ABBR === abbr)[currentPeriod].ROSTER,
   transactions: allTransactions
 }).roster;
 const allAgreed = isCurrentSeason ? agreedTrades(tradesData, _season, nextPeriod) : [];
