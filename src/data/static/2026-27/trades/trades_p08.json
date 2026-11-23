@@ -42,6 +42,40 @@
         "picks": []
       },
       "acceptedAt": "2026-11-21T13:31:34.772Z"
+    },
+    {
+      "id": "98f36c6a-2982-4187-b1d8-3d8aac66e8f9",
+      "from": "OTT",
+      "to": "CHI",
+      "give": {
+        "players": [
+          "lavoira01",
+          "verhaca01"
+        ],
+        "picks": [
+          {
+            "pick": "BUF4",
+            "season": "2026-27"
+          }
+        ]
+      },
+      "get": {
+        "players": [
+          "sillico01",
+          "toffoty01"
+        ],
+        "picks": [
+          {
+            "pick": "CAR3",
+            "season": "2026-27"
+          },
+          {
+            "pick": "CHI2",
+            "season": "2027-28"
+          }
+        ]
+      },
+      "acceptedAt": "2026-11-23T00:36:27.008Z"
     }
   ]
 }
