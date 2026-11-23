@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { projectedBudget } from "../src/components/leagueRules.js";
+import { projectedBudget, periodCost } from "../src/components/leagueRules.js";
 
 const loader = (name) => new URL(`../src/data/${name}`, import.meta.url).pathname;
 const SEASON = "2027-28";
@@ -78,5 +78,35 @@ test("once the first stats arrive the same season reports them", () => {
     const ana = rosters.teamData.find((t) => t.ABBR === "ANA");
     assert.equal(ana["1"].ROSTER[0].Goals, 1);
     assert.equal(ana["1"].ROSTER[0].GamesPlayed, 2);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("once the next period's roster exists, cash and budgets are as of that period even before its stats arrive", () => {
+  const dir = newSeason({ withStats: true });
+  try {
+    const s = join(dir, "src/data/static");
+    writeFileSync(join(s, "seasons.csv"), `season,label,ageCutoff,current,stub,autoCash\n${SEASON},${SEASON},2027-09-15,true,false,true\n`);
+    writeFileSync(join(s, SEASON, "rosters/rosters_p02.csv"), "ID,ABBR,RESERVE\nf1,ANA,\ng1,BOS,\n"); // period 2 created, no stats_p02 yet
+    const info = json(dir, "teamInfo.json.js");
+    assert.equal(info.latestPeriod, 2);
+    assert.equal(info.lastPeriodNum, 1);
+    assert.deepEqual(info.availablePeriods, ["1"]); // stats still only cover period 1
+    const ana = info.teams.find((t) => t.ABBR === "ANA");
+    assert.equal(ana.CASH, 100 - periodCost(40)); // period 1 is complete and charged
+    assert.equal(ana.Budget, projectedBudget(ana.CASH, 40, 1));
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("rosters.json publishes the newest roster file as the base for next-period moves, even without stats", () => {
+  const dir = newSeason({ withStats: true });
+  try {
+    writeFileSync(join(dir, "src/data/static", SEASON, "rosters/rosters_p02.csv"), "ID,ABBR,RESERVE\nf1,BOS,\ng1,ANA,\n"); // both players swapped teams
+    const rosters = json(dir, "rosters.json.js");
+    assert.equal(rosters.latestPeriod, 1);
+    assert.equal(rosters.latestRosterPeriod, 2);
+    assert.deepEqual(rosters.availablePeriods, ["1", "OVERALL"]);
+    const ana = rosters.teamData.find((t) => t.ABBR === "ANA");
+    assert.deepEqual(ana["2"].ROSTER.map((p) => p.PLAYER_ID), ["g1"]);
+    assert.deepEqual(ana.OVERALL.ROSTER.map((p) => p.PLAYER_ID), ["g1"]); // trades and transactions start from the newest roster
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

@@ -22,7 +22,7 @@ const _params = new URLSearchParams(window.location.search);
 const _season = _params.get("season") || rosters.currentSeason;
 const _rsd = rosters.data[_season];
 const isCurrentSeason = _season === rosters.currentSeason;
-const nextPeriod = _rsd.latestPeriod + 1;
+const nextPeriod = _rsd.latestRosterPeriod + 1; // the period after the newest roster file
 const log = transactionsData.data[_season] ?? [];
 const contract = `C-${_season.slice(5)}`; // in-season signings are always C-YY (C-27 in 2026-27)
 

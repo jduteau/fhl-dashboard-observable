@@ -2,15 +2,18 @@ import { readCsvFile, getContract, seasons, currentSeason, loadSeasonData, mapPo
 import { identityColumns, statColumns, sortRoster, activeTotals, reserveTotals } from "../components/playerRows.js";
 
 function buildSeasonRosters(sf, teamInfo, playerInfo, contracts) {
-  const { season, statsData, rosterPeriods, latestStatsIndex, latestRosterFile, availablePeriods, getOverallStats } = sf;
+  const { season, statsData, rosterPeriods, latestStatsIndex, availablePeriods, getOverallStats } = sf;
   const teams = teamInfo.map(team => team.ABBR).sort();
   // The newest roster file, which may be one period ahead of the stats (next period's lineup)
   const latestRosterPeriod = rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].period : 0;
+  // The lineups the league is on right now: the newest roster file, which is what trades and transactions build on
+  const latestRosterFile = rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].data : sf.latestRosterFile;
   const playerIndex = indexBy(playerInfo, "ID");
   assertPlayersKnown(playerIndex, rosterPeriods.map(p => ({ name: `${season} rosters_p${String(p.period).padStart(2, "0")}.csv`, rows: p.data })));
   const stats = periodLookup(statsData);
-  // Only periods that have stats are reported; a roster file with no stats yet (the upcoming period) is skipped
-  const scoredRosterPeriods = rosterPeriods.filter(p => statsData[p.period]);
+  // Periods with stats are reported, plus the newest roster file even if its stats have not arrived (a materialized period
+  // that has not started): it is the base the next period's moves are made from. Earlier roster files always have stats.
+  const scoredRosterPeriods = rosterPeriods.filter(p => statsData[p.period] || p.period === latestRosterPeriod);
   const bestRatingFirst = (a, b) => b.Rating - a.Rating;
 
   const teamData = teamInfo.map(team => {

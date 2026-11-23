@@ -20,9 +20,10 @@ const _season = _params.get("season") || teamInfo.currentSeason;
 const _sd = teamInfo.data[_season];
 
 const currentPeriod = _sd.latestPeriod; // the period in progress
-const nextPeriod = currentPeriod + 1;
-// Once rosters_pNN.csv exists for the next period (the commissioner has materialized it) its lineups are final, even though the period has not started
-const movesClosed = _sd.latestRosterPeriod >= nextPeriod;
+// Moves are for the period after the newest roster file: once the commissioner has materialized a period its lineups are
+// final, even though it may not have started, so moves are then for the following one.
+const baseRosterPeriod = _sd.latestRosterPeriod;
+const nextPeriod = baseRosterPeriod + 1;
 const isCurrentSeason = _season === teamInfo.currentSeason;
 
 const teamSelector = Inputs.select(_sd.teams, {label: "Select Team:"});
@@ -84,7 +85,7 @@ const allTransactions = isCurrentSeason ? pendingTransactions(transactionsData, 
 const teamTransactions = allTransactions.filter((t) => t.team === selectedTeam);
 const afterTransactions = applyPendingTransactions({
   abbrs: _sd.teams,
-  rosterOf: (abbr) => _sd.teamData.find((x) => x.ABBR === abbr)[currentPeriod].ROSTER,
+  rosterOf: (abbr) => _sd.teamData.find((x) => x.ABBR === abbr)[baseRosterPeriod].ROSTER,
   transactions: allTransactions
 }).roster;
 const allAgreed = isCurrentSeason ? agreedTrades(tradesData, _season, nextPeriod) : [];
@@ -123,12 +124,9 @@ const tradeNote = teamTrades.length ? html`<div class="card">
 const staleNote = stalePending ? html`<div class="card" style="border-color:#b45309;"><strong>⚠ Review your lineup.</strong> Your last submission (${new Date(pending.submittedAt).toLocaleString()}) names players who are no longer on your roster (a trade or a waiver cut). Fix the lineup below and submit again, otherwise those moves are ignored.</div>` : "";
 display(html`<div class="tab-next">
   ${transactionNote}${tradeNote}${staleNote}
-  ${isCurrentSeason && movesClosed
-    ? html`<div class="card" style="border-color:#b45309;"><strong>Roster moves for period ${nextPeriod} are closed.</strong> The period ${nextPeriod} rosters have been created. The lineup below is final.</div>`
-    : ""}
-  ${isCurrentSeason && !movesClosed
+  ${isCurrentSeason
     ? html`<p>A checked box means the player is on the <strong>reserve</strong> list. Check the players who should be reserves for period ${nextPeriod}, then submit. Submitting again replaces your earlier submission.</p>`
-    : isCurrentSeason ? "" : html`<p><em>Roster moves can only be made for the current season.</em></p>`}
+    : html`<p><em>Roster moves can only be made for the current season.</em></p>`}
   ${selTable}
 </div>`);
 ```
@@ -162,7 +160,7 @@ const passwordInput = html`<input type="password" placeholder="Team password" au
 passwordInput.value = window._fhlPw ?? "";
 passwordInput.oninput = () => { window._fhlPw = passwordInput.value; };
 const status = html`<div></div>`;
-const submit = html`<button ${(!isCurrentSeason || movesClosed || errors.length) ? "disabled" : ""}>Submit moves</button>`;
+const submit = html`<button ${(!isCurrentSeason || errors.length) ? "disabled" : ""}>Submit moves</button>`;
 submit.onclick = async () => {
   status.textContent = "Submitting…";
   try {

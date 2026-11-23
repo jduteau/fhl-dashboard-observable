@@ -36,7 +36,8 @@ test("sorted D, F, G with reserves last; agreedTrades / nextPeriodOf", () => {
   assert.deepEqual(r.roster.get("ANA").map((p) => p.PLAYER_ID), ["a1", "a2", "b1"]); // D, F(reserve), G
   const td = { data: { s: [{ period: 8 }, { period: 8, skipped: "x" }, { period: 7 }] } };
   assert.equal(agreedTrades(td, "s", 8).length, 1);
-  assert.equal(nextPeriodOf({ latestPeriod: 7, availablePeriods: ["1", "2", "7", "OVERALL"] }), 8);
+  assert.equal(nextPeriodOf({ latestPeriod: 7, latestRosterPeriod: 7 }), 8);
+  assert.equal(nextPeriodOf({ latestPeriod: 7, latestRosterPeriod: 8 }), 9); // period 8 is materialized but has no stats yet
 });
 
 test("evaluateTrade: the budget runs over the periods left in the season (25 in all)", () => {

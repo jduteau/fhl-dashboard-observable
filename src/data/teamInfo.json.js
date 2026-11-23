@@ -3,12 +3,17 @@ import { PERIODS_PER_SEASON, projectedBudget } from "../components/leagueRules.j
 import { identityColumns, sortRoster, isActive } from "../components/playerRows.js";
 
 function buildSeasonTeamInfo(sf, teamInfo, teamCash, owners, playerInfo, contracts, currentPicks, nextPicks, nextSeason) {
-  const { season, rosterPeriods, availablePeriods, lastPeriodNum, latestPeriod } = sf;
+  const { season, rosterPeriods, availablePeriods } = sf;
+  // Cash and budgets are as of the period in progress, and a period counts as in progress as soon as its roster file exists
+  // (the commissioner materialized it), even though its stats have not arrived yet: the lineups are final and its cost is
+  // what the teams now have to plan around. So this can be one ahead of the stats-based sf.latestPeriod.
+  const latestPeriod = Math.max(sf.latestPeriod, rosterPeriods.length ? rosterPeriods[rosterPeriods.length - 1].period : 0);
+  const lastPeriodNum = latestPeriod - 1;
   const playerIndex = indexBy(playerInfo, "ID");
   const cashIndex = indexBy(teamCash, "ABBR");
   const ownerIndex = indexBy(owners, "ABBR");
   assertPlayersKnown(playerIndex, rosterPeriods.map(p => ({ name: `${season} rosters_p${String(p.period).padStart(2, "0")}.csv`, rows: p.data })));
-  const latestKey = availablePeriods[availablePeriods.length - 1]; // the period in progress, as a key into team[...]
+  const latestKey = String(latestPeriod); // the period in progress, as a key into team[...]
   // autoCash seasons: team_cash.csv is the starting cash and current cash is derived from the rosters
   const autoCash = seasonsConfig.find(s => s.season === season)?.autoCash === "true";
   // Waiver cuts cost cash from the period they take effect (see waiverCost in leagueRules.js)
