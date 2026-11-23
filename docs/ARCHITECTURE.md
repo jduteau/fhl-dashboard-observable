@@ -70,6 +70,17 @@ flowchart LR
   A season whose first roster exists before any stats counts as period 1 with nothing played yet, so a brand-new season
   builds; the loaders publish `latestPeriod` (the period in progress) and the pages use it. Static scripts and styles
   shared by pages are in `src/js/` (`season-selector.js`, `tabs.js`) and `src/styles/`.
+
+  **Which period is "current"?** There are two answers, because a period's roster file (`rosters_pNN.csv`) is created when the
+  commissioner materializes it, before its stats (`stats_pNN.csv`) exist:
+  - *Stats-based* (`latestPeriod`, the newest stats file): Players, Overall, Standings and the stat tables.
+  - *Roster-based* (`latestRosterPeriod`, the newest roster file): everything about lineups and money. A materialized
+    period's lineups are final and in force even though it has not started. So the Roster page's Current Roster tab shows
+    that roster, the next period (for trade proposals, transactions and roster moves) is `latestRosterPeriod + 1`
+    (`nextPeriodOf` in `trades.js`), the `OVERALL` roster in `rosters.json` is that newest roster (so trades and
+    transactions start from it), and cash, salaries and budgets in `teamInfo.json` are as of that period (the period before
+    it counts as completed and is charged; see *Waiver cuts cost cash* below).
+  `rosters.json` publishes the newest roster file per team even when it has no stats yet (with zeroed stats).
 - **Hosting:** GitHub Pages at `https://jduteau.github.io/fhl-dashboard-observable/`.
 - **Important consequence:** the site has no server. Anything dynamic (submitting a lineup, proposing a trade) is the
   browser calling the Worker directly (below). Anything that must appear on the site is committed to the repo and
@@ -132,7 +143,7 @@ All workflows that change data commit to `master` as `github-actions[bot]`, and 
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| **Read Stats** (`read-stats.yml`) | Daily 13:00 UTC cron; manual (optional season/period) | Works out the current season and period (`.github/scripts/resolve-period.mjs`, from `seasons.csv` and `periods.csv`), builds `FHLScripts/`, scrapes hockey-reference.com into `stats_pNN.csv`, then adds any new players to `player_info.csv` (`update-player-info.mjs`, which prefers the NHL API and is rate-limited to be polite to scraped sites). |
+| **Read Stats** (`read-stats.yml`) | Daily 13:00 UTC cron; manual (optional season/period) | Works out the current season and period (`.github/scripts/resolve-period.mjs`, from `seasons.csv` and `periods.csv`), builds `FHLScripts/`, scrapes hockey-reference.com into `stats_pNN.csv` (on a period's last day, the final stats drop, it also copies the file to `stats_p(NN+1).csv`, since the same stats open the next period; `resolve-period.mjs` outputs `next_period` for this), then adds any new players to `player_info.csv` (`update-player-info.mjs`, which prefers the NHL API and is rate-limited to be polite to scraped sites). |
 | **Apply Roster Moves** (`apply-moves.yml`) | `roster-moves` dispatch from the Worker; manual "materialize" | On dispatch: validates and stores one team's moves in `moves/moves_pNN.json` (runs in parallel; see *Concurrent dispatches* below). On manual run (the commissioner starting a new period): applies the agreed trades, then every team's stored moves, and writes `rosters_p(NN+1).csv`; traded picks are rewritten in `draft_picks.csv`. |
 | **Record Trades** (`record-trades.yml`) | `trade-approved` dispatch from the Worker | Merges accepted trades into `trades/trades_pNN.json` (the public trade log). The Worker always sends *all* accepted trades for the period, so a dropped queued run cannot lose one. |
 | **Record Transactions** (`record-transactions.yml`) | `transaction` dispatch from the Worker | Adds (or removes) a batch of commissioner-entered free-agent signings, waiver cuts and waiver claims in `transactions/transactions_pNN.json`. Checked against the latest roster plus the transactions already recorded. |
@@ -201,6 +212,9 @@ the league email, with mentions disabled. Unset means off.
 3. Worker verifies the password against `owners.csv` (via the GitHub API) and sends a `roster-moves` dispatch.
 4. **Apply Roster Moves** stores `moves/moves_pNN.json` and commits; **Deploy** rebuilds so the site reflects it.
 5. Nothing changes in `rosters_pNN.csv` yet; that happens when the commissioner materializes the period.
+6. Moves are for the period after the newest roster file. Once a period is materialized its moves are closed: the Worker
+   answers 409 ("Roster moves for period N are closed") and `apply-moves.mjs` refuses them too, and the Roster page's Next
+   Period tab moves on to the following period. Moves already stored for a closed period are kept as they were.
 
 ### A trade, end to end
 1. **Propose** (Compare Teams page): browser -> Worker `/trades/propose`. Worker validates ownership and roster sizes,
@@ -217,6 +231,8 @@ the league email, with mentions disabled. Unset means off.
    Running it again is safe: while the new period has not started (no `stats_pNN.csv` for it yet) it rebuilds the same
    `rosters_pNN.csv` from the period before, picking up trades agreed and moves submitted since (picks it already moved
    are handed back first, so nothing is applied twice). Once the period has stats, the next run creates the following one.
+   The last-day stats drop creates `stats_p(NN+1).csv` for the period you just materialized, which is what starts it, so
+   the following materialize run creates the period after.
 
 ### Free agents and waivers
 1. The commissioner uses the **Free Agents & Waivers** page (commissioner password) as transactions show up in FHL Trader.
