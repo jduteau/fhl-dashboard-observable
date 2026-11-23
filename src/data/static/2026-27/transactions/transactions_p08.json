@@ -7,7 +7,8 @@
       "player": "obrieli01",
       "salary": 1,
       "contract": "C-27",
-      "at": "2026-11-22T03:35:21.529Z"
+      "at": "2026-11-22T03:35:21.529Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "81866fc1-0728-4229-bc08-fb38393adcca",
@@ -16,7 +17,8 @@
       "player": "kuninlu01",
       "salary": 2,
       "contract": "C-27",
-      "at": "2026-11-22T03:35:46.120Z"
+      "at": "2026-11-22T03:35:46.120Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "315ab5d8-f53e-4d44-aad6-b2c2f43b664c",
@@ -24,133 +26,152 @@
       "team": "CAR",
       "player": "smithga02",
       "from": "BUF",
-      "at": "2026-11-22T03:53:51.812Z"
+      "at": "2026-11-22T03:53:51.812Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "fb18ed45-817a-4c27-97f2-b8568e3db1df",
       "type": "waive",
       "team": "BOS",
       "player": "ingraco01",
-      "at": "2026-11-22T03:53:51.813Z"
+      "at": "2026-11-22T03:53:51.813Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "f99a5813-d15d-49f2-bac4-713d89cf82cc",
       "type": "waive",
       "team": "BUF",
       "player": "rittida01",
-      "at": "2026-11-22T03:53:51.814Z"
+      "at": "2026-11-22T03:53:51.814Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "d070c820-4e76-4f31-9071-dfb693465c0b",
       "type": "waive",
       "team": "CAR",
       "player": "kurasph01",
-      "at": "2026-11-22T03:53:51.815Z"
+      "at": "2026-11-22T03:53:51.815Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "5b516650-c764-4859-bfda-90e1043ed631",
       "type": "waive",
       "team": "CAR",
       "player": "vaakaur01",
-      "at": "2026-11-22T03:53:51.816Z"
+      "at": "2026-11-22T03:53:51.816Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "ef48f617-2760-4a54-9097-5dc386de0221",
       "type": "waive",
       "team": "CGY",
       "player": "reimeja01",
-      "at": "2026-11-22T03:53:51.817Z"
+      "at": "2026-11-22T03:53:51.817Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "f992d294-8ab8-4089-8802-6d8ae1f1db23",
       "type": "waive",
       "team": "CHI",
       "player": "tralmed01",
-      "at": "2026-11-22T03:53:51.818Z"
+      "at": "2026-11-22T03:53:51.818Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "c42f2686-52cf-44ff-8672-217b2c175a61",
       "type": "waive",
       "team": "LAK",
       "player": "kovacjo01",
-      "at": "2026-11-22T03:53:51.819Z"
+      "at": "2026-11-22T03:53:51.819Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "a2a7d977-986a-42c2-9f9b-b52bfeb3c7c8",
       "type": "waive",
       "team": "LAK",
       "player": "lambebr01",
-      "at": "2026-11-22T03:53:51.820Z"
+      "at": "2026-11-22T03:53:51.820Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "8a0fbb60-ccf3-4785-b376-e1fd520b05d1",
       "type": "waive",
       "team": "MTL",
       "player": "eliasga01",
-      "at": "2026-11-22T03:53:51.821Z"
+      "at": "2026-11-22T03:53:51.821Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "1ff14069-e30b-40a3-af55-a1bb8abdf8d1",
       "type": "waive",
       "team": "NJD",
       "player": "bernaja01",
-      "at": "2026-11-22T03:53:51.822Z"
+      "at": "2026-11-22T03:53:51.822Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "df85deff-0455-4837-92eb-c654ac1e769b",
       "type": "waive",
       "team": "PHI",
       "player": "fiskeos01",
-      "at": "2026-11-22T03:53:51.823Z"
+      "at": "2026-11-22T03:53:51.823Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "ed11b787-2049-4847-89dc-72b970ccdaf1",
       "type": "waive",
       "team": "SEA",
       "player": "romanal01",
-      "at": "2026-11-22T03:53:51.824Z"
+      "at": "2026-11-22T03:53:51.824Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "97f4e7e6-f2e3-469a-8e2e-76553c0956b3",
       "type": "waive",
       "team": "SEA",
       "player": "sundqos01",
-      "at": "2026-11-22T03:53:51.825Z"
+      "at": "2026-11-22T03:53:51.825Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "d1d5f661-9804-437d-96d8-a93af4301add",
       "type": "waive",
       "team": "SJS",
       "player": "bashaan01",
-      "at": "2026-11-22T03:53:51.826Z"
+      "at": "2026-11-22T03:53:51.826Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "a265c9f2-a171-42c9-8419-312e5f402240",
       "type": "waive",
       "team": "TOR",
       "player": "hollju01",
-      "at": "2026-11-22T03:53:51.827Z"
+      "at": "2026-11-22T03:53:51.827Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "11478375-de84-47e0-9cb2-62997b7e6ac1",
       "type": "waive",
       "team": "TOR",
       "player": "grundca01",
-      "at": "2026-11-22T03:53:51.828Z"
+      "at": "2026-11-22T03:53:51.828Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "6f73b565-aeac-465b-9da0-d5f33b5b1232",
       "type": "waive",
       "team": "VEG",
       "player": "lyubuil01",
-      "at": "2026-11-22T03:53:51.829Z"
+      "at": "2026-11-22T03:53:51.829Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     },
     {
       "id": "a13356e2-bbb4-4606-aacb-f2467af4ebb3",
       "type": "waive",
       "team": "WSH",
       "player": "jokihhe01",
-      "at": "2026-11-22T03:53:51.830Z"
+      "at": "2026-11-22T03:53:51.830Z",
+      "appliedAt": "2026-11-23T04:38:32.208Z"
     }
   ]
 }
