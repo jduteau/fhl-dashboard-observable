@@ -1,11 +1,13 @@
 {
   "WPG": {
     "promote": [
+      "vanritr01",
       "silovar01"
     ],
     "demote": [
+      "warreno01",
       "pickaca01"
     ],
-    "submittedAt": "2026-11-25T02:04:03.279Z"
+    "submittedAt": "2026-11-25T09:50:41.441Z"
   }
 }
