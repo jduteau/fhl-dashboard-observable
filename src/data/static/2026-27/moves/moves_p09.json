@@ -21,5 +21,15 @@
       "pickaca01"
     ],
     "submittedAt": "2026-11-25T15:10:40.072Z"
+  },
+  "VEG": {
+    "promote": [
+      "deshavi01",
+      "kapanol01"
+    ],
+    "demote": [
+      "yagerbr01"
+    ],
+    "submittedAt": "2026-11-26T05:41:23.745Z"
   }
 }
