@@ -1,0 +1,31 @@
+{
+  "transactions": [
+    {
+      "id": "4eb84102-d8d4-4f70-b98c-1b08ee1ab577",
+      "type": "sign",
+      "team": "CAR",
+      "player": "kiersma01",
+      "salary": 1,
+      "contract": "C-27",
+      "at": "2026-11-26T02:04:50.354Z"
+    },
+    {
+      "id": "5b6ca097-2730-439f-8c6f-def2cedb8d4a",
+      "type": "sign",
+      "team": "LAK",
+      "player": "kovacjo01",
+      "salary": 3,
+      "contract": "C-27",
+      "at": "2026-11-26T02:04:50.355Z"
+    },
+    {
+      "id": "132eb27d-085a-47b7-8598-95ffc3d3f72f",
+      "type": "sign",
+      "team": "TOR",
+      "player": "bernaja01",
+      "salary": 1,
+      "contract": "C-27",
+      "at": "2026-11-26T02:04:50.356Z"
+    }
+  ]
+}

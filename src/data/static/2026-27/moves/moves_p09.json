@@ -1,0 +1,25 @@
+{
+  "WPG": {
+    "promote": [
+      "crevilo01",
+      "vanritr01",
+      "wrighsh01",
+      "lizotbl01",
+      "koivuvi01",
+      "mcgroru01",
+      "hayesav01",
+      "silovar01"
+    ],
+    "demote": [
+      "faulkju01",
+      "warreno01",
+      "gudbrer01",
+      "horvabo01",
+      "boesebr01",
+      "zibanmi01",
+      "treniya01",
+      "pickaca01"
+    ],
+    "submittedAt": "2026-11-25T15:10:40.072Z"
+  }
+}
