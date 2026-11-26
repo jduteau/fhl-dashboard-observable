@@ -173,3 +173,29 @@ const removeButton = (t) => {
 };
 display(removable.length ? html`<details style="margin-top:1rem;"><summary><strong>Commissioner: remove a recorded transaction</strong></summary>${removable.map(removeButton)}${removeStatus}</details>` : "");
 ```
+
+```js
+// Commissioner: add a player the daily stats download has not picked up yet, so he can be signed above
+const adminPlayerPw = html`<input type="password" placeholder="Commissioner password" autocomplete="off">`;
+adminPlayerPw.value = window._fhlAdminPw ?? "";
+adminPlayerPw.oninput = () => { window._fhlAdminPw = adminPlayerPw.value; };
+const npName = html`<input type="text" size="28" placeholder="Full name" autocomplete="off">`;
+const npBirth = html`<input type="date">`;
+const npStatus = html`<div style="margin:0.5rem 0;"></div>`;
+const npButton = html`<button ${isCurrentSeason ? "" : "disabled"}>Look up and add player</button>`;
+npButton.onclick = async () => {
+  npStatus.textContent = "Looking him up…";
+  const r = await callWorker("players/add", {password: adminPlayerPw.value, season: _season, name: npName.value, birthDate: npBirth.value});
+  if (r.ok) {
+    const {name, birthDate, pos, nhl} = r.data;
+    npName.value = npBirth.value = "";
+    npStatus.textContent = `Found ${name} (${pos}, ${nhl === "---" ? "no NHL team" : nhl}, born ${birthDate}). The Hockey-Reference and HockeyDB ids are being looked up, which takes a minute or two; then the site rebuilds and he can be signed above.`;
+  } else npStatus.textContent = `FAILED: ${r.error}`;
+};
+display(html`<details style="margin-top:1rem;"><summary><strong>Commissioner: add a player to the player list</strong></summary>
+  <p style="font-size:0.9em;">Type the name of a player who is not in the player list yet. His birth date, position and NHL team come from the NHL, his
+  Hockey-Reference and HockeyDB ids from those sites. Give the birth date only if two players share the name. He is a free agent until signed above.</p>
+  <div style="display:flex; flex-direction:column; gap:0.5rem; max-width:32em;">
+    ${npName}<label>Birth date (only if needed) ${npBirth}</label>${adminPlayerPw}<div>${npButton}</div>
+  </div>${npStatus}</details>`);
+```

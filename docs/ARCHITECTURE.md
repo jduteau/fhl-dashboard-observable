@@ -102,6 +102,7 @@ flowchart LR
   | --- | --- | --- |
   | `/` | GM | Submit lineup moves for the next period -> `roster-moves` dispatch |
   | `/transactions/add`, `/transactions/remove` | Commissioner | Record (a batch of) or remove free-agent signings / waiver cuts / waiver claims for the next period -> one `transaction` dispatch |
+  | `/players/add` | Commissioner | Add a player missing from `player_info.csv` by name (the Worker looks up birth date, position and team on the NHL API) -> `add-player` dispatch |
 | `/trades/propose` | GM | Create a proposal or counter-offer (stored in D1) |
   | `/trades/list` | GM | The GM's own proposals |
   | `/trades/respond` | GM | Accept / decline / withdraw; accept triggers the `trade-approved` dispatch |
@@ -147,6 +148,7 @@ All workflows that change data commit to `master` as `github-actions[bot]`, and 
 | **Apply Roster Moves** (`apply-moves.yml`) | `roster-moves` dispatch from the Worker; manual "materialize" | On dispatch: validates and stores one team's moves in `moves/moves_pNN.json` (runs in parallel; see *Concurrent dispatches* below). On manual run (the commissioner starting a new period): applies the agreed trades, then every team's stored moves, and writes `rosters_p(NN+1).csv`; traded picks are rewritten in `draft_picks.csv`. |
 | **Record Trades** (`record-trades.yml`) | `trade-approved` dispatch from the Worker | Merges accepted trades into `trades/trades_pNN.json` (the public trade log). The Worker always sends *all* accepted trades for the period, so a dropped queued run cannot lose one. |
 | **Record Transactions** (`record-transactions.yml`) | `transaction` dispatch from the Worker | Adds (or removes) a batch of commissioner-entered free-agent signings, waiver cuts and waiver claims in `transactions/transactions_pNN.json`. Checked against the latest roster plus the transactions already recorded. |
+| **Add Player** (`add-player.yml`) | `add-player` dispatch from the Worker | Finds the player's Hockey-Reference id (the row's ID, verified by birth date) and HockeyDB id, politely, and appends him to `player_info.csv` (`add-player.mjs`). Fails, writing nothing, if there is no Hockey-Reference page. The form is on the Free Agents & Waivers page. |
 | **Deploy** (`deploy.yml`) | Push to `master`; after the three workflows above succeed; manual | `npm ci && npm test && npm run build`, publishes `dist/` to GitHub Pages. **Nothing is deployed unless the tests pass**, so a bad commit (code or data) leaves the live site as it was. (Pushes made with the built-in token do not trigger the `push` trigger, which is why `workflow_run` is needed.) |
 | **Test** (`test.yml`) | Pull requests; manual | `npm ci && npm test && npm run build`: the same checks Deploy runs, for a change that has not been pushed to `master` yet. |
 

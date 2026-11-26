@@ -8,6 +8,8 @@ Secrets (`npx wrangler secret put NAME`): `GITHUB_TOKEN`, `EMAILJS_PRIVATE_KEY`,
 
 Free agents and waivers: the commissioner posts a batch to `/transactions/add` or `/transactions/remove` (ADMIN_PASSWORD); the Worker validates the whole batch against the repo and sends one `transaction` dispatch (Record Transactions workflow). Redeploy the Worker after pulling this change.
 
+Adding a player: the commissioner posts to `/players/add` (ADMIN_PASSWORD); the Worker looks the name up on the NHL API (birth date, position, team), checks it against `player_info.csv` and sends one `add-player` dispatch (Add Player workflow). Redeploy the Worker after pulling this change.
+
 Roster-moves flow: Roster page -> this Worker (checks the password against the hashed accounts in D1) -> `repository_dispatch` ->
 `Apply Roster Moves` workflow (validates, writes `src/data/static/<season>/moves/moves_pNN.json`) -> Deploy.
 
