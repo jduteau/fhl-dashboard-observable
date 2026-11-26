@@ -26,6 +26,15 @@
       "salary": 1,
       "contract": "C-27",
       "at": "2026-11-26T02:04:50.356Z"
+    },
+    {
+      "id": "71e0c9d1-faf7-49e8-84b6-7fcc834d091d",
+      "type": "sign",
+      "team": "PHI",
+      "player": "kiiskje01",
+      "salary": 1,
+      "contract": "C-27",
+      "at": "2026-11-26T02:39:27.463Z"
     }
   ]
 }
