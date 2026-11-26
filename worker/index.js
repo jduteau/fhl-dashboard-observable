@@ -7,6 +7,7 @@
 //   POST /trades/respond    accept / decline / withdraw             -> D1 (+ repository_dispatch on accept)
 //   POST /transactions/add|remove   the commissioner records / removes a free-agent signing or waiver cut -> "Record Transactions" workflow
 //   POST /players/add               the commissioner adds a player to player_info.csv -> "Add Player" workflow
+//   (cron)                  Discord signing announcements -> "Discord Signing" workflow (discord-signings.js)
 //   POST /account/*         a GM changes their password/email; the commissioner resets them (see accounts.js)
 //
 // Secrets/vars (see worker/README.md):  GITHUB_TOKEN (secret), GITHUB_REPO, ALLOWED_ORIGIN, DB (D1 binding)
@@ -16,6 +17,7 @@ import { TEAM, PLAYER, SEASON } from "../src/components/tradeRules.js";
 import { handleTrades, loadContext } from "./trades.js";
 import { handleTransactions } from "./transactions.js";
 import { handlePlayers } from "./players.js";
+import { pollDiscordSignings } from "./discord-signings.js";
 
 // ALLOWED_ORIGIN is a comma-separated list (the Pages site, plus local preview origins for development).
 // The request's own origin is echoed back when it is on the list, otherwise the first entry is returned (and the
@@ -27,6 +29,10 @@ const originFor = (request, env) => {
 };
 
 export default {
+  // Cron trigger (wrangler.toml): pick up free-agent signings announced on Discord (see discord-signings.js)
+  async scheduled(_event, env, execCtx) {
+    execCtx.waitUntil(pollDiscordSignings(env).catch((e) => console.error("Discord signings:", e.message)));
+  },
   async fetch(request, env, execCtx) {
     const origin = originFor(request, env);
     try {

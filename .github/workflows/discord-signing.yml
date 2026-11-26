@@ -1,0 +1,48 @@
+name: Discord Signing
+
+on:
+  # Triggered by the Cloudflare Worker (worker/discord-signings.js) when a free-agent signing announcement appears on Discord.
+  # discord-signing.mjs adds players missing from player_info.csv, then records the signings as transactions.
+  repository_dispatch:
+    types: [discord-signing]
+
+# Serialize runs (they all edit player_info.csv); kept separate from the other workflows so none can replace another's queued run
+# (GitHub keeps only one pending run per concurrency group).
+concurrency:
+  group: discord-signing
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Check out the branch as it is NOW, not the commit it pointed at when the dispatch was sent: a run that waited in
+      # the concurrency queue would otherwise start from a stale tree, miss the previous run's commit and conflict on push.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Record signings
+        env:
+          DISCORD_SIGNING: ${{ toJson(github.event.client_payload) }}
+        run: node .github/scripts/discord-signing.mjs
+      - name: Commit
+        if: ${{ !cancelled() }} # keep the signings that worked even if another line failed (the previous step still fails the run)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/static
+          git diff --cached --quiet && exit 0
+          git commit -m "Discord signings (repository_dispatch)"
+          # Another workflow may have pushed meanwhile; retry the rebase+push a few times.
+          for i in 1 2 3 4 5; do
+            git pull --rebase && git push && exit 0
+            sleep $((i * 5))
+          done
+          exit 1

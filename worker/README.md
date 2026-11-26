@@ -10,6 +10,8 @@ Free agents and waivers: the commissioner posts a batch to `/transactions/add` o
 
 Adding a player: the commissioner posts to `/players/add` (ADMIN_PASSWORD); the Worker looks the name up on the NHL API (birth date, position, team), checks it against `player_info.csv` and sends one `add-player` dispatch (Add Player workflow). Redeploy the Worker after pulling this change.
 
+Discord signings: a cron trigger (every 10 minutes) reads new messages in the channel named by `DISCORD_SIGNINGS_CHANNEL_ID` with the bot `DISCORD_BOT_TOKEN`, parses the signing announcement lines (`src/components/signingRules.js`) and sends one `discord-signing` dispatch per message (Discord Signing workflow: adds players missing from `player_info.csv`, records the `sign` transactions). One-time setup: create a Discord bot with the Message Content intent, add it to the server with View Channel + Read Message History on that channel, `npx wrangler secret put DISCORD_BOT_TOKEN` and `DISCORD_SIGNINGS_CHANNEL_ID`, and create the new table with `npx wrangler d1 execute fhl-trades --remote --file=schema.sql`. The first run only notes where the channel is now. Redeploy the Worker.
+
 Roster-moves flow: Roster page -> this Worker (checks the password against the hashed accounts in D1) -> `repository_dispatch` ->
 `Apply Roster Moves` workflow (validates, writes `src/data/static/<season>/moves/moves_pNN.json`) -> Deploy.
 

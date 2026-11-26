@@ -63,3 +63,10 @@ CREATE TABLE IF NOT EXISTS login_failures (
 );
 CREATE INDEX IF NOT EXISTS login_failures_subject ON login_failures (subject, ip, at);
 CREATE INDEX IF NOT EXISTS login_failures_ip ON login_failures (ip, at);
+
+-- The last Discord message the Worker has handled in a channel it watches (see discord-signings.js). An existing database
+-- needs this table created once: npx wrangler d1 execute fhl-trades --remote --file=schema.sql
+CREATE TABLE IF NOT EXISTS discord_cursor (
+  key     TEXT PRIMARY KEY,
+  last_id TEXT NOT NULL
+);

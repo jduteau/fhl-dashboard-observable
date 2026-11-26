@@ -2,6 +2,10 @@ name = "fhl-roster-moves"
 main = "index.js"
 compatibility_date = "2025-01-01"
 
+[triggers]
+# Look for new free-agent signing announcements on Discord (discord-signings.js)
+crons = ["*/10 * * * *"]
+
 [vars]
 GITHUB_REPO = "jduteau/fhl-dashboard-observable"
 # Origins (no paths) allowed to call the Worker, comma-separated: the GitHub Pages site first, then the local
