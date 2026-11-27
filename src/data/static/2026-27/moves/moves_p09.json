@@ -31,5 +31,16 @@
       "yagerbr01"
     ],
     "submittedAt": "2026-11-26T05:41:23.745Z"
+  },
+  "CAR": {
+    "promote": [
+      "kiersma01",
+      "bussibr01"
+    ],
+    "demote": [
+      "brunefr01",
+      "desmica01"
+    ],
+    "submittedAt": "2026-11-27T21:03:46.389Z"
   }
 }
