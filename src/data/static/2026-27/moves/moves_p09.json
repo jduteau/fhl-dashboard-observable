@@ -42,5 +42,16 @@
       "desmica01"
     ],
     "submittedAt": "2026-11-27T21:03:46.389Z"
+  },
+  "TBL": {
+    "promote": [
+      "stanllo01",
+      "larkidy01"
+    ],
+    "demote": [
+      "dorofpa01",
+      "carcomi01"
+    ],
+    "submittedAt": "2026-11-28T13:15:43.152Z"
   }
 }
